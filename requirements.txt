@@ -1,0 +1,2 @@
+# Tidak ada dependensi eksternal
+# Hanya menggunakan modul standar Python
