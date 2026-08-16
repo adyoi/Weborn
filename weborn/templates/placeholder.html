@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">{{ title }}</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Modul ini akan hadir di milestone berikutnya.</div>
+
+<div class="card">
+    <p class="text-t2 text-[13px] leading-[1.7]">
+        Halaman <b>{{ page }}</b> masih berupa placeholder. Rencana modul:
+    </p>
+    <ul class="text-t2 text-[13px] leading-[2] pl-5">
+        {% if page == 'terminal' %}<li>Terminal web berbasis WebSocket (weborn/ws/)</li>{% endif %}
+        {% if page == 'files' %}<li>File explorer untuk /var/www/&lt;domain&gt;</li>{% endif %}
+        {% if page == 'processes' %}<li>Manajemen proses via psutil/htop</li>{% endif %}
+        {% if page == 'network' %}<li>Traffic monitor + firewall (nftables/iptables)</li>{% endif %}
+        {% if page == 'security' %}<li>Keamanan &amp; SIEM (Wazuh)</li>{% endif %}
+        {% if page == 'settings' %}<li>Pengaturan panel, theme, dan secret</li>{% endif %}
+        {% if page == 'ai' %}<li>AI Agent (Gemini) dengan aksi terkunci konfirmasi</li>{% endif %}
+        {% if page == 'dns' %}<li>Manajemen DNS zone</li>{% endif %}
+    </ul>
+</div>
+{% endblock %}

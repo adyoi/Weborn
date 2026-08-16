@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}File Explorer - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">📁 File Explorer</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Jelajahi file server (baca: semua user; tulis/hapus: admin)</div>
+
+{% if error %}<div class="msg err">{{ error }}</div>{% endif %}
+{% if request.query_params.get('deleted') == 'True' %}<div class="msg ok">Dihapus.</div>{% endif %}
+{% if request.query_params.get('chown') == 'True' %}<div class="msg ok">Pemilik diubah.</div>
+{% elif request.query_params.get('chown') == 'False' %}<div class="msg err">Gagal mengubah pemilik.</div>{% endif %}
+{% if request.query_params.get('chmod') == 'True' %}<div class="msg ok">Mode diubah.</div>
+{% elif request.query_params.get('chmod') == 'False' %}<div class="msg err">Gagal mengubah mode.</div>{% endif %}
+
+<div class="card mb-4">
+    <form method="get" action="/files" class="flex gap-2">
+        <input name="path" value="{{ path }}" class="flex-1 !font-mono">
+        <button type="submit" class="btn">📂 Buka</button>
+        <a class="btn" href="/files">Root</a>
+    </form>
+</div>
+
+<div class="card !p-0 overflow-hidden">
+    <table>
+        <thead><tr><th>Nama</th><th>Mode</th><th>Pemilik</th><th>Ukuran</th><th>Diubah</th><th>Aksi</th></tr></thead>
+        <tbody>
+        <tr>
+            <td><a href="/files?path={{ path.rsplit('/', 1)[0] if '/' in path else '/' }}">⬆ ..</a></td>
+            <td colspan="5"></td>
+        </tr>
+        {% for e in entries %}
+            <tr>
+                <td>
+                    {% if e.dir %}
+                    <a href="/files?path={{ path }}/{{ e.name }}">📁 {{ e.name }}</a>
+                    {% else %}
+                    📄 {{ e.name }}
+                    {% endif %}
+                </td>
+                <td class="mono text-[10px] text-t3">{{ e.mode }} <span class="text-t2">{{ e.mode_num }}</span></td>
+                <td class="mono text-[10px] text-t3">{{ e.owner }}:{{ e.group }}</td>
+                <td>{{ e.size }}</td>
+                <td class="text-[11px] text-t3">{{ e.mtime }}</td>
+                <td class="whitespace-nowrap">
+                    <form method="post" action="/files/chown" class="flex gap-1 items-center"
+                          onsubmit="return confirm('Ganti pemilik {{ e.name }}?')">
+                        <input type="hidden" name="path" value="{{ path }}/{{ e.name }}">
+                        <select name="owner" class="!py-1 !px-1.5 !text-[11px] !font-mono" style="width:92px"
+                                title="user pemilik">
+                            {% for u in users %}<option value="{{ u }}" {{ 'selected' if u == e.owner }}>{{ u }}</option>{% endfor %}
+                        </select>
+                        <select name="group" class="!py-1 !px-1.5 !text-[11px] !font-mono" style="width:92px"
+                                title="group pemilik">
+                            {% for g in groups %}<option value="{{ g }}" {{ 'selected' if g == e.group }}>{{ g }}</option>{% endfor %}
+                        </select>
+                        {% if e.dir %}
+                        <label class="flex items-center gap-0.5 !mb-0 !text-[10px] !text-t3"><input type="checkbox" name="recursive" value="1"> -R</label>
+                        {% endif %}
+                        <button class="btn !py-1 !px-2" type="submit" data-tip="chown {{ e.name }}">chown</button>
+                    </form>
+                    <form method="post" action="/files/chmod" class="flex gap-1 items-center"
+                          onsubmit="return confirm('Ubah mode {{ e.name }}?')">
+                        <input type="hidden" name="path" value="{{ path }}/{{ e.name }}">
+                        <select name="mode" class="!py-1 !px-1.5 !text-[11px] !font-mono" style="width:76px"
+                                title="mode izin (oktal)">
+                            {% set cur = e.mode_num %}
+                            {% for m in ['0644','0664','0600','0750','0755','0775','0777'] %}
+                            <option value="{{ m }}" {{ 'selected' if m[-3:] == cur }}>{{ m }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if e.dir %}
+                        <label class="flex items-center gap-0.5 !mb-0 !text-[10px] !text-t3"><input type="checkbox" name="recursive" value="1"> -R</label>
+                        {% endif %}
+                        <button class="btn !py-1 !px-2" type="submit" data-tip="chmod {{ e.name }}">chmod</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="6" class="text-center text-t3 py-7">Kosong / tidak bisa dibaca.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

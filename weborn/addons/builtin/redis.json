@@ -1,0 +1,21 @@
+{
+  "id": "redis",
+  "name": "Redis",
+  "description": "In-memory data store / cache server",
+  "category": "database",
+  "type": "system",
+  "packages": ["redis-server"],
+  "systemd_unit": "redis-server",
+  "bin": "redis-server",
+  "ports": [6379],
+  "icon": "🧠",
+  "config": {
+    "path": "/etc/redis/redis.conf",
+    "template": "redis.conf.j2"
+  },
+  "fields": [
+    {"name": "port", "label": "Port", "default": "6379"},
+    {"name": "maxmemory", "label": "Maxmemory", "default": "256mb"},
+    {"name": "appendonly", "label": "Append Only (AOF)", "default": "yes"}
+  ]
+}

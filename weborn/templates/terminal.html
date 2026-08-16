@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Terminal - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">💻 Terminal Web</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Jalankan perintah shell di server (hanya admin)</div>
+
+<div class="card">
+    <form method="post" action="/terminal/run"
+          onsubmit="event.preventDefault(); weborn.formPost(this.action, this, 'Menjalankan perintah', false)">
+        <div class="field">
+            <label>Perintah</label>
+            <input name="cmd" placeholder="contoh: uptime && free -h" required>
+        </div>
+        <button type="submit" class="btn primary">▶ Jalankan</button>
+    </form>
+    <pre id="term-out" class="output mt-3.5"></pre>
+</div>
+{% endblock %}

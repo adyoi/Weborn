@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Backup - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">💾 Backup &amp; Restore</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Arsipkan /var/www + konfigurasi + database panel ke data/backups</div>
+
+{% if request.query_params.get('msg') %}<div class="msg ok">{{ request.query_params.get('msg') }}</div>{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start">
+    <div class="card">
+        <h3 class="text-sm mb-3.5">➕ Buat Backup</h3>
+        <form method="post" action="/backup/create">
+            <div class="field">
+                <label><input type="checkbox" name="include_www" value="1" checked> Sertakan /var/www (situs)</label>
+            </div>
+            <div class="field">
+                <label><input type="checkbox" name="include_db" value="1" checked> Sertakan database panel</label>
+            </div>
+            <button type="submit" class="btn primary w-full justify-center">Buat Backup Sekarang</button>
+        </form>
+        <small class="text-t3 block mt-2.5">
+            Arsip disimpan di <code class="mono">data/backups/</code>. Untuk situs besar,
+            buat jadwal otomatis lewat <a href="/cron" class="text-accent">Cron Jobs</a>.
+        </small>
+    </div>
+
+    <div class="card !p-0 overflow-hidden">
+        <table>
+            <thead><tr><th>Arsip</th><th>Ukuran</th><th>Dibuat</th><th></th></tr></thead>
+            <tbody>
+            {% for b in backups %}
+                <tr>
+                    <td class="mono"><b>{{ b.name }}</b></td>
+                    <td>{{ '%.1f MB'|format(b.size / 1024 / 1024) }}</td>
+                    <td>{{ b.created }}</td>
+                    <td class="whitespace-nowrap text-right">
+                        <form method="post" action="/backup/{{ b.name }}/restore" style="display:inline">
+                            <input type="hidden" name="restore_www" value="1">
+                            <button class="btn !py-1 !px-2.5" data-tip="Restore /var/www">↩ Restore</button>
+                        </form>
+                        <a class="btn !py-1 !px-2.5" href="/backup/download/{{ b.name }}">⬇</a>
+                        <form method="post" action="/backup/{{ b.name }}/delete" style="display:inline"
+                              onsubmit="return confirm('Hapus backup {{ b.name }}?')">
+                            <button class="btn danger !py-1 !px-2.5" data-tip="Hapus backup">🗑</button>
+                        </form>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="4" class="text-center text-t3 py-7">Belum ada backup.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

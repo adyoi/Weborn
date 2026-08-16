@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Database - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">🗄️ Database (MySQL/MariaDB)</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Kelola database MySQL/MariaDB — install lewat Addon Store (paket "mysql")</div>
+
+{% if request.query_params.get('msg') %}<div class="msg ok">{{ request.query_params.get('msg') }}</div>{% endif %}
+
+{% if not has_mysql %}
+<div class="msg err">
+    MySQL/MariaDB belum terpasang. Install dulu via
+    <a href="/addons" class="text-accent">Addon Store</a> (addon <b>mysql</b>), lalu buka halaman ini lagi.
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start">
+    <div class="card">
+        <h3 class="text-sm mb-3.5">➕ Buat Database</h3>
+        <form method="post" action="/database/create">
+            <div class="field">
+                <label>Nama Database</label>
+                <input name="name" placeholder="nama_proyek" required
+                       pattern="[a-zA-Z0-9_]+" title="huruf, angka, underscore saja">
+            </div>
+            <button type="submit" class="btn primary w-full justify-center">Buat</button>
+        </form>
+        <small class="text-t3 block mt-2.5">
+            Karakter set utf8mb4. Untuk kredensial, buat user MySQL via terminal:
+            <code class="mono">mysql -uroot</code> lalu
+            <code class="mono">CREATE USER 'nama'@'localhost' IDENTIFIED BY 'pass'; GRANT ALL ON nama_proyek.* TO 'nama'@'localhost';</code>
+        </small>
+    </div>
+
+    <div class="card !p-0 overflow-hidden">
+        <table>
+            <thead><tr><th>Database</th><th></th></tr></thead>
+            <tbody>
+            {% for db in dbs %}
+                <tr>
+                    <td class="mono"><b>{{ db }}</b></td>
+                    <td class="text-right">
+                        <form method="post" action="/database/{{ db }}/drop" style="display:inline"
+                              onsubmit="return confirm('Hapus database {{ db }}? Data hilang permanen.')">
+                            <button class="btn danger !py-1 !px-2.5" data-tip="Hapus database">🗑</button>
+                        </form>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="2" class="text-center text-t3 py-7">Belum ada database.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

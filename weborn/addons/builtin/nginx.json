@@ -1,0 +1,22 @@
+{
+  "id": "nginx",
+  "name": "Nginx",
+  "description": "Web server & reverse proxy berkinerja tinggi (default Weborn)",
+  "category": "web-server",
+  "type": "system",
+  "packages": ["nginx"],
+  "systemd_unit": "nginx",
+  "bin": "nginx",
+  "ports": [80, 443],
+  "icon": "🌐",
+  "config": {
+    "path": "/etc/nginx/nginx.conf",
+    "template": "nginx.conf.j2"
+  },
+  "fields": [
+    {"name": "worker_processes", "label": "Worker Processes", "default": "auto"},
+    {"name": "worker_connections", "label": "Worker Connections", "default": "1024"},
+    {"name": "keepalive_timeout", "label": "Keepalive Timeout (s)", "default": "65"},
+    {"name": "gzip", "label": "GZIP", "default": "on"}
+  ]
+}

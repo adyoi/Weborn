@@ -1,0 +1,21 @@
+{
+  "id": "ssh",
+  "name": "OpenSSH",
+  "description": "Remote access server",
+  "category": "remote-access",
+  "type": "system",
+  "packages": ["openssh-server"],
+  "systemd_unit": "ssh",
+  "bin": "sshd",
+  "ports": [22],
+  "icon": "🔐",
+  "config": {
+    "path": "/etc/ssh/sshd_config",
+    "template": "sshd_config.j2"
+  },
+  "fields": [
+    {"name": "port", "label": "Port", "default": "22"},
+    {"name": "permit_root_login", "label": "PermitRootLogin", "default": "prohibit-password"},
+    {"name": "password_authentication", "label": "PasswordAuthentication", "default": "yes"}
+  ]
+}

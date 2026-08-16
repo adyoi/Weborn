@@ -1,0 +1,12 @@
+{
+  "id": "nodejs",
+  "name": "Node.js",
+  "description": "JavaScript runtime untuk aplikasi modern",
+  "category": "runtime",
+  "type": "runtime",
+  "packages": ["nodejs", "npm"],
+  "bin": "node",
+  "icon": "🟢",
+  "config": {},
+  "fields": []
+}

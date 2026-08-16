@@ -1,0 +1,14 @@
+# {{ addon.name }} - di-generate oleh Weborn Control Panel
+ServerTokens {{ values.get('server_tokens', 'Prod') }}
+KeepAlive {{ values.get('keepalive', 'On') }}
+MaxKeepAliveRequests 100
+
+<Directory />
+    Options FollowSymLinks
+    AllowOverride All
+    Require all denied
+</Directory>
+
+IncludeOptional mods-enabled/*.load
+IncludeOptional mods-enabled/*.conf
+IncludeOptional sites-enabled/*.conf

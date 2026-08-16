@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Web Server - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">Web Server</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Kelola server web (nginx) dari panel</div>
+
+<div class="card mb-4">
+    <div class="flex gap-2 flex-wrap items-center">
+        <span class="badge {{ 'ok' if nginx.active else 'warn' }}">{{ 'ACTIVE' if nginx.active else nginx.state|upper }}</span>
+        <span class="badge info">{% if nginx.installed %}{% if nginx.version and nginx.version != '—' %}v{{ nginx.version }}{% else %}terpasang{% endif %}{% else %}<span class="lamp err"></span>Belum terpasang{% endif %}</span>
+        {% if nginx.installed %}
+            <button class="btn" data-tip="Jalankan nginx" onclick="weborn.simplePost('/web-server/nginx/start','Menjalankan nginx',true)">▶ Start</button>
+            <button class="btn" data-tip="Restart nginx" onclick="weborn.simplePost('/web-server/nginx/restart','Merestart nginx',true)">🔄 Restart</button>
+            <button class="btn" data-tip="Hentikan nginx" onclick="weborn.simplePost('/web-server/nginx/stop','Menghentikan nginx',true)">⏹ Stop</button>
+            <button class="btn" data-tip="Reload konfigurasi tanpa downtime" onclick="weborn.simplePost('/web-server/nginx/reload','Reload nginx',false)">♻ Reload</button>
+            <button class="btn" data-tip="Uji validitas konfigurasi (nginx -t)" onclick="weborn.simplePost('/web-server/nginx/test','Uji konfigurasi nginx',false)">✔ Test</button>
+        {% else %}
+            <button class="btn primary" data-tip="Install nginx ke server"
+                    onclick="weborn.streamPost('/addons/nginx/install/stream','Menginstall nginx',true)">📥 Install Nginx</button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <h3 class="text-sm mb-2.5">📄 Konfigurasi situs (data/configs/nginx)</h3>
+    {% if configs %}
+    <ul class="mono list-none text-[12.5px] leading-[2]">
+        {% for c in configs %}<li>• {{ c }}</li>{% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-t3 text-[13px]">Belum ada konfigurasi. Tambahkan domain/proxy untuk meng-generate file conf.</p>
+    {% endif %}
+</div>
+{% endblock %}

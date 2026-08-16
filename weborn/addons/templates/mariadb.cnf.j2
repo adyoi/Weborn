@@ -1,0 +1,5 @@
+# {{ addon.name }} - di-generate oleh Weborn Control Panel
+[mysqld]
+port = {{ values.get('port', '3306') }}
+bind-address = {{ values.get('bind_address', '127.0.0.1') }}
+max_connections = {{ values.get('max_connections', '100') }}

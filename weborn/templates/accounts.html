@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Akun - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">Akun &amp; Hak Akses</div>
+<div class="page-sub text-t3 text-[13px] mb-5">
+    Akun OS setara privilege server (root / admin / user / service) sehingga langsung
+    bisa dipakai untuk SSH, FTP, Telnet, dll.
+</div>
+
+{% if msg %}<div class="msg {{ 'ok' if 'Gagal' not in msg else 'err' }}">{{ msg|replace('%20', ' ') }}</div>{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.8fr] items-start">
+    <div class="card">
+        <h3 class="text-sm mb-3.5">➕ Buat Akun</h3>
+        <form method="post" action="/accounts/create">
+            <div class="field">
+                <label>Username</label>
+                <input name="username" placeholder="joko" required>
+            </div>
+            <div class="field">
+                <label>Password</label>
+                <input name="password" type="password" required>
+            </div>
+            <div class="field">
+                <label>Level Privilege</label>
+                <select name="privilege">
+                    <option value="user">User (reguler)</option>
+                    <option value="admin">Admin (sudo/wheel)</option>
+                    <option value="service">Service (www-data, nologin)</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Shell</label>
+                <select name="shell">
+                    <option value="/bin/bash">/bin/bash</option>
+                    <option value="/usr/sbin/nologin">/usr/sbin/nologin</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Izinkan Akses</label>
+                {% for key, label in services.items() %}
+                <label class="!text-[12.5px]"><input type="checkbox" name="services" value="{{ key }}"> {{ label }}</label>
+                {% endfor %}
+            </div>
+            <button type="submit" class="btn primary w-full justify-center">Buat Akun</button>
+        </form>
+    </div>
+
+    <div class="card !p-0 overflow-hidden">
+        <table>
+            <thead><tr><th>User</th><th>UID</th><th>Privilege</th><th>Shell</th><th>Home</th><th>Layanan</th><th>Aksi</th></tr></thead>
+            <tbody>
+            {% for a in accounts %}
+                <tr>
+                    <td><b>{{ a.username }}</b></td>
+                    <td class="mono">{{ a.uid }}</td>
+                    <td>
+                        <span class="badge {{ 'err' if a.privilege == 'root' else ('warn' if a.privilege == 'admin' else 'info') }}">
+                            {{ a.privilege }}
+                        </span>
+                        {% if a.locked %}<span class="badge err">LOCKED</span>{% endif %}
+                    </td>
+                    <td class="mono text-[11px]">{{ a.shell }}</td>
+                    <td class="mono text-[11px]">{{ a.home }}</td>
+                    <td>
+                        {% for s in a.services %}<span class="badge info">{{ s }}</span> {% else %}<span class="text-t3">—</span>{% endfor %}
+                    </td>
+                    <td class="whitespace-nowrap">
+                        <form method="post" action="/accounts/{{ a.username }}/lock" style="display:inline">
+                            <button class="btn !py-1 !px-2.5" data-tip="Kunci {{ a.username }}">🔒</button>
+                        </form>
+                        <form method="post" action="/accounts/{{ a.username }}/unlock" style="display:inline">
+                            <button class="btn !py-1 !px-2.5" data-tip="Buka kunci {{ a.username }}">🔓</button>
+                        </form>
+                        <form method="post" action="/accounts/{{ a.username }}/delete" style="display:inline"
+                              onsubmit="return confirm('Hapus {{ a.username }}?')">
+                            <button class="btn danger !py-1 !px-2.5" data-tip="Hapus {{ a.username }}">🗑</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

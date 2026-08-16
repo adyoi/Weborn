@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="system">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Weborn Control Panel{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/tailwind.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="flex min-h-screen">
+    <aside class="sidebar bg-pane border-r border-line px-3.5 py-5 flex flex-col gap-3.5 sticky top-0 h-screen overflow-y-auto w-60 shrink-0">
+        <div class="logo flex items-center gap-2.5 px-2 pb-3 border-b border-line">
+            <div class="hex">🐝</div>
+            <div><b class="text-lg tracking-wide">WEBORN</b><small class="text-t3 text-[11px] block">CONTROL PANEL</small></div>
+        </div>
+
+        <nav>
+            <div class="menu-group mt-1">
+                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Utama</h4>
+                <a href="/" class="menu-link {{ 'menu-active' if active == 'dashboard' else '' }}">📊 Dashboard</a>
+                <a href="/addons" class="menu-link {{ 'menu-active' if active == 'addons' else '' }}">🧩 Addon Store</a>
+                <a href="/apps" class="menu-link {{ 'menu-active' if active == 'apps' else '' }}">📦 Aplikasi</a>
+                <a href="/web-server" class="menu-link {{ 'menu-active' if active == 'web-server' else '' }}">🌐 Web Server</a>
+                <a href="/domains" class="menu-link {{ 'menu-active' if active == 'domains' else '' }}">🏷️ Domain</a>
+                <a href="/reverse-proxy" class="menu-link {{ 'menu-active' if active == 'proxy' else '' }}">🔄 Reverse Proxy</a>
+                <a href="/cdn" class="menu-link {{ 'menu-active' if active == 'cdn' else '' }}">☁️ CDN</a>
+            </div>
+
+            <div class="menu-group mt-1">
+                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Server</h4>
+                <a href="/services" class="menu-link {{ 'menu-active' if active == 'services' else '' }}">⚙️ Layanan (systemd)</a>
+                <a href="/processes" class="menu-link {{ 'menu-active' if active == 'processes' else '' }}">🧠 Proses</a>
+                <a href="/network" class="menu-link {{ 'menu-active' if active == 'network' else '' }}">🌍 Network</a>
+                <a href="/logs" class="menu-link {{ 'menu-active' if active == 'logs' else '' }}">📄 Log Server</a>
+                <a href="/packages" class="menu-link {{ 'menu-active' if active == 'packages' else '' }}">📦 Paket Terinstall</a>
+                <a href="/cron" class="menu-link {{ 'menu-active' if active == 'cron' else '' }}">⏰ Cron Jobs</a>
+                <a href="/database" class="menu-link {{ 'menu-active' if active == 'database' else '' }}">🗄️ Database</a>
+                <a href="/backup" class="menu-link {{ 'menu-active' if active == 'backup' else '' }}">💾 Backup &amp; Restore</a>
+            </div>
+
+            <div class="menu-group mt-1">
+                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Keamanan</h4>
+                <a href="/security" class="menu-link {{ 'menu-active' if active == 'security' else '' }}">🛡️ SIEM &amp; Keamanan</a>
+                <a href="/dns" class="menu-link {{ 'menu-active' if active == 'dns' else '' }}">🌐 DNS</a>
+            </div>
+
+            <div class="menu-group mt-1">
+                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Akses</h4>
+                <a href="/accounts" class="menu-link {{ 'menu-active' if active == 'accounts' else '' }}">👤 Akun</a>
+                <a href="/files" class="menu-link {{ 'menu-active' if active == 'files' else '' }}">📁 File Explorer</a>
+                <a href="/terminal" class="menu-link {{ 'menu-active' if active == 'terminal' else '' }}">💻 Terminal</a>
+            </div>
+
+            <div class="menu-group mt-1">
+                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Pengaturan</h4>
+                <a href="/settings" class="menu-link {{ 'menu-active' if active == 'settings' else '' }}">⚙️ Config Server</a>
+                <a href="/ai" class="menu-link {{ 'menu-active' if active == 'ai' else '' }}">🤖 AI Agent</a>
+            </div>
+        </nav>
+
+        <div class="theme-row flex gap-2 mt-auto">
+            <button id="theme-toggle" class="btn flex-1 justify-center" onclick="weborn.cycleTheme()"
+                    data-tip="Tema: Sistem / Terang / Gelap">🌓</button>
+            <form method="post" action="/logout" class="flex-2">
+                <button class="btn danger justify-center w-full" type="submit">⏻ Logout</button>
+            </form>
+        </div>
+    </aside>
+
+    <main class="main flex-1 px-7 py-6 max-w-[1200px]">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<div id="progress-overlay" class="overlay">
+    <div class="progress-card w-[480px] max-w-full bg-pane border border-line rounded-2xl p-7 shadow-glow-purple">
+        <div id="progress-spinner" class="spinner"></div>
+        <h3 id="progress-title" class="text-base my-3 mb-3.5">Memproses…</h3>
+        <div class="progress-track">
+            <div id="progress-fill" class="progress-fill"></div>
+        </div>
+        <div id="progress-step" class="progress-step mt-2.5 text-t2 text-[12.5px]"></div>
+        <pre id="progress-output" class="output hidden mt-3"></pre>
+        <div class="text-right mt-3.5">
+            <button id="progress-close" class="btn primary hidden" onclick="weborn.hideProgress()">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/panel.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

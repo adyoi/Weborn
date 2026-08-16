@@ -1,0 +1,20 @@
+{
+  "id": "exim",
+  "name": "Exim",
+  "description": "Mail Transfer Agent (pengiriman email)",
+  "category": "mail",
+  "type": "system",
+  "packages": ["exim4"],
+  "systemd_unit": "exim4",
+  "bin": "exim",
+  "ports": [25, 465, 587],
+  "icon": "✉️",
+  "config": {
+    "path": "/etc/exim4/exim4.conf.template",
+    "template": "exim.conf.j2"
+  },
+  "fields": [
+    {"name": "dc_eximconfig_configtype", "label": "Config Type", "default": "internet"},
+    {"name": "dc_other_hostnames", "label": "Hostnames", "default": ""}
+  ]
+}

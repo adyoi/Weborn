@@ -1,0 +1,19 @@
+{
+  "id": "certbot",
+  "name": "Certbot",
+  "description": "Sertifikat TLS gratis Let's Encrypt untuk domain (integrasi nginx)",
+  "category": "security",
+  "type": "system",
+  "packages": ["certbot", "python3-certbot-nginx"],
+  "bin": "certbot",
+  "ports": [443],
+  "icon": "🔒",
+  "config": {
+    "path": "/etc/letsencrypt/cli.ini",
+    "template": "cli.ini.j2"
+  },
+  "fields": [
+    {"name": "email", "label": "Email akun Let's Encrypt", "default": "admin@example.com"},
+    {"name": "auto_renew", "label": "Perpanjang otomatis", "default": "on"}
+  ]
+}

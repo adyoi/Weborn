@@ -1,0 +1,21 @@
+{
+  "id": "weborn-engine",
+  "name": "Weborn Engine",
+  "description": "Webserver mandiri (asgi uvicorn/gunicorn + sync): serve statis, reverse proxy ke app (Node/PHP/Python), dan mount GUI panel di /panel",
+  "category": "web-server",
+  "type": "builtin",
+  "bin": "python",
+  "ports": [8000, 8080, 8443],
+  "icon": "🐝",
+  "config": {
+    "template": "weborn-engine.conf.j2"
+  },
+  "fields": [
+    {"name": "mode", "label": "Mode", "default": "asgi", "options": ["asgi", "sync"]},
+    {"name": "port", "label": "Port", "default": "8080"},
+    {"name": "root", "label": "Root Directory", "default": "/var/www"},
+    {"name": "panel", "label": "Mount GUI /panel", "default": "on"},
+    {"name": "gzip", "label": "GZIP", "default": "on"},
+    {"name": "security_headers", "label": "Security Headers", "default": "on"}
+  ]
+}

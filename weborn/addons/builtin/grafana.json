@@ -1,0 +1,19 @@
+{
+  "id": "grafana",
+  "name": "Grafana",
+  "description": "Monitoring & visualisasi dashboard (plugin)",
+  "category": "monitoring",
+  "type": "plugin",
+  "packages": ["grafana/grafana"],
+  "bin": "grafana-server",
+  "ports": [3000],
+  "icon": "📊",
+  "config": {
+    "path": "/etc/grafana/grafana.ini",
+    "template": "grafana.ini.j2"
+  },
+  "fields": [
+    {"name": "http_port", "label": "HTTP Port", "default": "3000"},
+    {"name": "admin_password", "label": "Admin Password", "default": "admin"}
+  ]
+}

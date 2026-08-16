@@ -1,0 +1,47 @@
+/* ============================================================
+   Weborn — tema (CSS variables) & override.
+   Styling utama via Tailwind: weborn/static/css/tailwind.css
+   Sumber: weborn/static/css/tailwind.src.css (npm run css:build)
+   ============================================================ */
+
+:root {
+    --bg-0: #05070f;
+    --bg-1: #0a0f1e;
+    --bg-2: #111a33;
+    --panel: rgba(17, 26, 51, 0.55);
+    --panel-border: rgba(64, 96, 160, 0.25);
+    --text-1: #e6edff;
+    --text-2: #8ea3c7;
+    --text-3: #5b6d92;
+    --accent: #22d3ee;
+    --accent-2: #a855f7;
+    --ok: #34d399;
+    --warn: #fbbf24;
+    --err: #f87171;
+    --radius: 14px;
+    --glow-cyan: 0 0 18px rgba(34, 211, 238, 0.35);
+    --glow-purple: 0 0 18px rgba(168, 85, 247, 0.35);
+}
+
+html[data-theme="light"] {
+    --bg-0: #eef2f9;
+    --bg-1: #ffffff;
+    --bg-2: #e4eaf5;
+    --panel: rgba(255, 255, 255, 0.75);
+    --panel-border: rgba(20, 40, 80, 0.16);
+    --text-1: #0e1a30;
+    --text-2: #3d4f6e;
+    --text-3: #66789a;
+    --accent: #0d9bb4;
+    --accent-2: #8b3ef0;
+    --ok: #10b981;
+    --warn: #d97706;
+    --err: #dc2626;
+    --glow-cyan: 0 0 18px rgba(13, 155, 180, 0.28);
+    --glow-purple: 0 0 18px rgba(139, 62, 240, 0.28);
+}
+
+/* aksesibilitas */
+@media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+}

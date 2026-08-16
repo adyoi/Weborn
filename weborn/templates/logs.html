@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Log Server &amp; Aplikasi - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">📄 Log Server &amp; Aplikasi</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Lihat error log sistem, layanan, dan aplikasi</div>
+
+<div class="flex gap-2 flex-wrap mb-4">
+    {% for key, (_, label) in sources.items() %}
+    <a class="btn {{ 'primary' if source == key else '' }}" href="/logs?source={{ key }}">{{ label }}</a>
+    {% endfor %}
+</div>
+
+<div class="card">
+    <h3 class="text-sm mb-2.5">{{ sources[source][1] if source in sources else 'Log' }}</h3>
+    {% if not ok %}<div class="msg err">Sumber log belum tersedia di sistem ini (fallback: dry-run / file belum ada).</div>{% endif %}
+    <pre class="output max-h-[70vh]">{{ output }}</pre>
+</div>
+{% endblock %}

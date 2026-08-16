@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Aplikasi - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">📦 Aplikasi</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Environment bare-metal terisolasi per app: user, direktori, port, .env &amp; unit systemd sendiri</div>
+
+{% if request.query_params.get('created') %}<div class="msg ok">Aplikasi dibuat. Mulai dari halaman ini atau di systemd.</div>{% endif %}
+
+<div class="card mb-5">
+    <h3 class="text-sm mb-3">➕ Buat Aplikasi</h3>
+    <form method="post" action="/apps/create" class="grid grid-cols-1 md:grid-cols-[1.4fr_1fr_1.4fr_.7fr_auto] items-end gap-2.5">
+        <div class="field"><label>Nama aplikasi</label>
+            <input name="name" placeholder="contoh: myblog" required></div>
+        <div class="field"><label>Bahasa (runtime)</label>
+            <select name="language" id="app-language" required>
+                {% for key, r in runtimes.items() %}
+                <option value="{{ key }}">{{ r.label }}</option>
+                {% endfor %}
+            </select></div>
+        <div class="field"><label>Framework</label>
+            <select name="framework" id="app-framework">
+                <option value="">— Starter dasar —</option>
+                {% for key, fs in frameworks.items() %}
+                <optgroup label="{{ runtimes[key].label }}">
+                    {% for f in fs %}<option value="{{ f.id }}" data-lang="{{ key }}">{{ f.label }}</option>{% endfor %}
+                </optgroup>
+                {% endfor %}
+            </select></div>
+        <div class="field"><label>Port (auto jika kosong)</label>
+            <input name="port" type="number" min="8000" max="8999" placeholder="auto"></div>
+        <button type="submit" class="btn primary">Buat</button>
+    </form>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+    {% for a in apps %}
+    <div class="card">
+        <div class="flex items-center gap-2 mb-2.5">
+            <strong>{{ a.name }}</strong>
+            <span class="badge info">{{ a.language_label }}</span>
+            {% if a.framework %}<span class="badge">{{ a.framework }}</span>{% endif %}
+            {% if a.status == 'running' %}<span class="badge ok">🟢 RUNNING</span>
+            {% elif a.status == 'error' %}<span class="badge err">🔴 ERROR</span>
+            {% else %}<span class="badge warn">⚪ STOPPED</span>{% endif %}
+        </div>
+        <table class="mb-3">
+            <tbody>
+                <tr><td class="mono w-[110px] text-[11px]">Port</td><td class="mono">{{ a.port }}</td></tr>
+                <tr><td class="mono text-[11px]">User OS</td><td class="mono">{{ a.user }}</td></tr>
+                <tr><td class="mono text-[11px]">Direktori</td><td class="mono text-[11px]">{{ a.home_dir }}</td></tr>
+                <tr><td class="mono text-[11px]">Perintah</td><td class="mono text-[11px]">{{ a.command }}</td></tr>
+                <tr><td class="mono text-[11px]">Unit</td><td class="mono text-[11px]">{{ a.unit }}</td></tr>
+            </tbody>
+        </table>
+        <div class="flex gap-1.5 flex-wrap">
+            <button class="btn !py-1.5 !px-2.5" data-tip="Mulai {{ a.name }}" onclick="weborn.simplePost('/apps/{{ a.id }}/start','Menjalankan {{ a.name }}',true)">▶ Start</button>
+            <button class="btn !py-1.5 !px-2.5" data-tip="Stop {{ a.name }}" onclick="weborn.simplePost('/apps/{{ a.id }}/stop','Menghentikan {{ a.name }}',true)">⏹ Stop</button>
+            <button class="btn !py-1.5 !px-2.5" data-tip="Restart {{ a.name }}" onclick="weborn.simplePost('/apps/{{ a.id }}/restart','Merestart {{ a.name }}',true)">🔄</button>
+            <button class="btn danger !py-1.5 !px-2.5 ml-auto" data-tip="Hapus app + user + direktori"
+                    onclick="if(confirm('Hapus {{ a.name }} beserta user, dir & unit systemd?'))weborn.simplePost('/apps/{{ a.id }}/delete','Menghapus {{ a.name }}',true)">🗑</button>
+        </div>
+    </div>
+    {% else %}
+    <div class="card col-span-full text-center text-t3">
+        Belum ada aplikasi. Buat satu di atas.
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+(function(){
+  var lang = document.getElementById('app-language');
+  var fw = document.getElementById('app-framework');
+  function filterFrameworks(){
+    var cur = lang.value;
+    Array.prototype.forEach.call(fw.options, function(o){
+      var hide = o.dataset.lang && o.dataset.lang !== cur;
+      o.style.display = hide ? 'none' : '';
+      if (hide && o.selected) o.selected = false;
+    });
+    var first = fw.querySelector('option[data-lang="'+cur+'"]');
+    if (first && !fw.value) first.selected = true;
+  }
+  lang.addEventListener('change', filterFrameworks);
+  filterFrameworks();
+})();
+</script>
+{% endblock %}

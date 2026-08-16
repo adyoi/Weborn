@@ -1,0 +1,19 @@
+{
+  "id": "php",
+  "name": "PHP",
+  "description": "Language runtime untuk Laravel, WordPress, dan aplikasi PHP",
+  "category": "runtime",
+  "type": "runtime",
+  "packages": ["php-fpm", "php-mysql", "php-pgsql", "php-curl", "php-mbstring"],
+  "bin": "php",
+  "icon": "🐘",
+  "config": {
+    "path": "/etc/php/php.ini",
+    "template": "php.ini.j2"
+  },
+  "fields": [
+    {"name": "memory_limit", "label": "Memory Limit", "default": "256M"},
+    {"name": "max_execution_time", "label": "Max Execution Time", "default": "30"},
+    {"name": "upload_max_filesize", "label": "Upload Max Filesize", "default": "64M"}
+  ]
+}

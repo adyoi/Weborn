@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Addon Store - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">Addon Store</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Install, konfigurasi, update, dan jalankan semua layanan &amp; plugin dari satu tempat</div>
+
+<div class="flex gap-2 flex-wrap mb-5">
+    <a class="btn {{ 'primary' if not current_category else '' }}" href="/addons">Semua</a>
+    {% for c in categories %}
+    <a class="btn {{ 'primary' if current_category == c else '' }}" href="/addons?category={{ c }}">{{ c }}</a>
+    {% endfor %}
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+    {% for a in addons %}
+    {% set st = statuses[a.id] %}
+    <div class="card">
+        <div class="flex justify-between items-start">
+            <span class="text-[30px] leading-none">{{ a.icon }}</span>
+            {% if st.installed %}
+                <span class="badge {{ 'ok' if st.active else 'warn' }}">{{ 'ACTIVE' if st.active else st.state|upper }}</span>
+            {% else %}
+                <span class="badge err">NOT INSTALLED</span>
+            {% endif %}
+        </div>
+        <h3 class="text-[15px] mt-1">{{ a.name }}</h3>
+        <p class="text-t2 text-[12.5px] leading-[1.6] mb-2">{{ a.description }}</p>
+        <div class="meta text-t3 text-[11px]"><span class="lamp {{ 'ok' if st.active else ('warn' if st.installed else 'err') }}"></span>{% if st.installed and st.version and st.version != '—' %}v{{ st.version }} •{% endif %} {{ a.type }} • ports: {{ a.ports|join(', ') if a.ports else '—' }}</div>
+        <div class="actions mt-2">
+            {% if st.installed %}
+                <a class="btn" data-tip="Buka halaman kelola &amp; konfigurasi" href="/addons/{{ a.id }}">⚙️ Kelola</a>
+                <button class="btn" data-tip="Jalankan layanan {{ a.name }}" onclick="weborn.simplePost('/addons/{{ a.id }}/start','Menjalankan {{ a.name }}',true)">▶ Start</button>
+                <button class="btn" data-tip="Restart layanan {{ a.name }}" onclick="weborn.simplePost('/addons/{{ a.id }}/restart','Merestart {{ a.name }}',true)">🔄 Restart</button>
+                <button class="btn" data-tip="Hentikan layanan {{ a.name }}" onclick="weborn.simplePost('/addons/{{ a.id }}/stop','Menghentikan {{ a.name }}',true)">⏹ Stop</button>
+                <button class="btn" data-tip="Perbarui {{ a.name }} ke versi terbaru" onclick="weborn.streamPost('/addons/{{ a.id }}/update/stream','Mengupdate {{ a.name }}',true)">⬆ Update</button>
+                <button class="btn danger" data-tip="Hapus {{ a.name }} dari server"
+                        onclick="if(confirm('Hapus {{ a.name }}?'))weborn.streamPost('/addons/{{ a.id }}/uninstall/stream','Menghapus {{ a.name }}',true)">🗑 Uninstall</button>
+            {% else %}
+                <button class="btn primary" data-tip="Install {{ a.name }} ke server"
+                        onclick="weborn.streamPost('/addons/{{ a.id }}/install/stream','Menginstall {{ a.name }}',true)">📥 Install</button>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="card mt-6">
+    <h3 class="text-sm mb-2">➕ Install Addon 3rd Party</h3>
+    <p class="text-t2 text-[12.5px] leading-[1.6]">
+        Drop manifest <span class="mono">.json</span> ke folder
+        <span class="mono">data/addons/</span> lalu muat ulang halaman ini.
+        Addon otomatis terdaftar dengan lifecycle install → config → update → run yang sama.
+    </p>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{
+  "id": "mysql",
+  "name": "MySQL / MariaDB",
+  "description": "Database relasional populer (phpMyAdmin-ready)",
+  "category": "database",
+  "type": "system",
+  "packages": ["mariadb-server"],
+  "systemd_unit": "mariadb",
+  "bin": "mysql",
+  "ports": [3306],
+  "icon": "🗄️",
+  "config": {
+    "path": "/etc/mysql/mariadb.conf.d/50-server.cnf",
+    "template": "mariadb.cnf.j2"
+  },
+  "fields": [
+    {"name": "port", "label": "Port", "default": "3306"},
+    {"name": "max_connections", "label": "Max Connections", "default": "100"},
+    {"name": "bind_address", "label": "Bind Address", "default": "127.0.0.1"}
+  ]
+}

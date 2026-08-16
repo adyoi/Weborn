@@ -1,0 +1,23 @@
+# {{ addon.name }} - di-generate oleh Weborn Control Panel
+user {{ values.get('worker_processes', 'auto') }};
+worker_processes {{ values.get('worker_processes', 'auto') }};
+pid /run/nginx.pid;
+
+events {
+    worker_connections {{ values.get('worker_connections', '1024') }};
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    sendfile on;
+    keepalive_timeout {{ values.get('keepalive_timeout', '65') }};
+    gzip {{ values.get('gzip', 'on') }};
+
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" "$http_user_agent"';
+    access_log /var/log/nginx/access.log main;
+    error_log /var/log/nginx/error.log warn;
+
+    include /etc/nginx/conf.d/*.conf;
+}

@@ -1,0 +1,11 @@
+# {{ addon.name }} - di-generate oleh Weborn Control Panel
+# Automasi HTTPS via Let's Encrypt
+{
+    admin {{ values.get('email', '') }}
+}
+
+{{ values.get('server_block', 'example.com') }} {
+    encode gzip
+    root * /var/www/{{ values.get('server_block', 'example.com') }}
+    file_server
+}

@@ -1,0 +1,21 @@
+{
+  "id": "ftp",
+  "name": "vsftpd",
+  "description": "FTP server (transfer berkas)",
+  "category": "remote-access",
+  "type": "system",
+  "packages": ["vsftpd"],
+  "systemd_unit": "vsftpd",
+  "bin": "vsftpd",
+  "ports": [20, 21],
+  "icon": "📁",
+  "config": {
+    "path": "/etc/vsftpd.conf",
+    "template": "vsftpd.conf.j2"
+  },
+  "fields": [
+    {"name": "anonymous_enable", "label": "Anonymous Enable", "default": "NO"},
+    {"name": "local_enable", "label": "Local Enable", "default": "YES"},
+    {"name": "write_enable", "label": "Write Enable", "default": "YES"}
+  ]
+}

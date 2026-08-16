@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="system">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - Weborn</title>
+    <link rel="stylesheet" href="/static/css/tailwind.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="min-h-screen grid place-items-center p-5">
+    <div class="w-[380px] p-8 bg-glass border border-line rounded-[18px] backdrop-blur shadow-glow-purple">
+        <div class="flex justify-end mb-[-14px]">
+            <button id="theme-toggle" class="btn" onclick="weborn.cycleTheme()" data-tip="Tema: Sistem / Terang / Gelap">🌓</button>
+        </div>
+        <div class="flex justify-center pb-3.5">
+            <div class="hex big">🐝</div>
+        </div>
+        <h1 class="text-center text-xl mb-1">Weborn</h1>
+        <div class="text-center text-t3 text-xs mb-5">Control Panel • Server Manager</div>
+        {% if error %}
+            <div class="msg err">{{ error }}</div>
+        {% endif %}
+        <form method="post" action="/login">
+            <div class="field">
+                <label>Username</label>
+                <input name="username" value="admin" required>
+            </div>
+            <div class="field">
+                <label>Password</label>
+                <input name="password" type="password" value="weborn" required>
+            </div>
+            <button type="submit" class="btn primary w-full justify-center !py-[11px]">
+                Masuk
+            </button>
+        </form>
+        <div class="text-[11.5px] text-t3 text-center mt-3.5">default: admin / weborn</div>
+    </div>
+</div>
+<script src="/static/js/panel.js"></script>
+</body>
+</html>

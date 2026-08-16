@@ -1,2 +1,6 @@
-# Tidak ada dependensi eksternal
-# Hanya menggunakan modul standar Python
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+itsdangerous
+psutil

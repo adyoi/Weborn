@@ -1,0 +1,20 @@
+{
+  "id": "dovecot",
+  "name": "Dovecot",
+  "description": "IMAP/POP3 mail server",
+  "category": "mail",
+  "type": "system",
+  "packages": ["dovecot-imapd", "dovecot-pop3d"],
+  "systemd_unit": "dovecot",
+  "bin": "dovecot",
+  "ports": [110, 143, 993, 995],
+  "icon": "📨",
+  "config": {
+    "path": "/etc/dovecot/dovecot.conf",
+    "template": "dovecot.conf.j2"
+  },
+  "fields": [
+    {"name": "protocols", "label": "Protocols", "default": "imap pop3 lmtp"},
+    {"name": "mail_location", "label": "Mail Location", "default": "maildir:~/Maildir"}
+  ]
+}

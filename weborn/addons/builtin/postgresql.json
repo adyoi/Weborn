@@ -1,0 +1,20 @@
+{
+  "id": "postgresql",
+  "name": "PostgreSQL",
+  "description": "Database relasional tingkat enterprise",
+  "category": "database",
+  "type": "system",
+  "packages": ["postgresql"],
+  "systemd_unit": "postgresql",
+  "bin": "psql",
+  "ports": [5432],
+  "icon": "🐘",
+  "config": {
+    "path": "/etc/postgresql/main/postgresql.conf",
+    "template": "postgresql.conf.j2"
+  },
+  "fields": [
+    {"name": "port", "label": "Port", "default": "5432"},
+    {"name": "max_connections", "label": "Max Connections", "default": "100"}
+  ]
+}

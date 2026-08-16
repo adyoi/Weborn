@@ -54,7 +54,7 @@ Opsi Lanjutan
 | --port	| Port server (default: 8000)	| --port 8080 |
 | --directory	| Direktori yang dilayani (default: current)	| --directory /var/www |
 | --access-log	| File log akses	| --access-log access.log |
-| --error-log	File | log error	| --error-log errors.log
+| --error-log	| File log error	| --error-log errors.log |
 | --ssl-cert	| File sertifikat SSL	| --ssl-cert server.crt |
 | --ssl-key	| File kunci privat SSL	| --ssl-key server.key |
 
@@ -66,6 +66,8 @@ python server.py --port 443 --ssl-cert ssl/server.crt --ssl-key ssl/server.key
 
 ## Contoh Konfigurasi .htaccess
 
+Weborn memuat `.htaccess` dari direktori yang diminta hingga ke root situs (warisan ala Apache). Aturan pada direktori yang lebih dalam menimpa aturan induk, sedangkan aturan `Redirect`, `RedirectMatch`, dan `RewriteRule` dari semua level digabungkan dan dievaluasi dari induk ke anak. File dapat disimpan dalam encoding UTF-8 (dengan atau tanpa BOM).
+
 1. Autentikasi Dasar
 
 protected/.htaccess:
@@ -75,6 +77,8 @@ AuthName "Restricted Area"
 AuthUserFile /path/to/.htpasswd
 Require valid-user
 ```
+
+`AuthUserFile` relatif akan di-resolve terhadap lokasi file `.htaccess` tersebut.
 
 2. Pengalihan
 
@@ -94,6 +98,8 @@ ErrorDocument 404 /errors/404.html
 ErrorDocument 500 "Sorry, an error occurred"
 ```
 
+Halaman error internal (path dimulai `/`) disajikan dengan kode status asli (mis. 404), sedangkan URL eksternal menghasilkan pengalihan.
+
 4. Kontrol Akses IP
 ```text
 Allow from 192.168.1.0/24
@@ -103,8 +109,10 @@ Deny from all
 5. Penulisan Ulang URL
 ```text
 RewriteEngine On
-RewriteRule ^product/(\d+)$ product.php?id=$1 [L]
+RewriteRule ^/product/(\d+)$ /product.php?id=$1 [L]
 ```
+
+Catatan: pola `RewriteRule` dicocokkan terhadap path permintaan lengkap (termasuk `/` di awal), dan penanda `$1` pada substitusi mereferensikan grup tangkapan regex. Rewrite tanpa flag `[R]` melakukan rewrite internal (file hasil disajikan dengan path baru); flag `[R]` atau `[R=301]` menghasilkan pengalihan HTTP.
 
 ## Membuat Sertifikat SSL
 

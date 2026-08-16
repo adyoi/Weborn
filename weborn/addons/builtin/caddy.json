@@ -1,0 +1,20 @@
+{
+  "id": "caddy",
+  "name": "Caddy",
+  "description": "Web server otomatis HTTPS (Let's Encrypt) & reverse proxy sederhana",
+  "category": "web-server",
+  "type": "system",
+  "packages": ["caddy"],
+  "systemd_unit": "caddy",
+  "bin": "caddy",
+  "ports": [80, 443],
+  "icon": "🚀",
+  "config": {
+    "path": "/etc/caddy/Caddyfile",
+    "template": "caddy.Caddyfile.j2"
+  },
+  "fields": [
+    {"name": "email", "label": "Email Let's Encrypt", "default": ""},
+    {"name": "server_block", "label": "Blok Server (domain)", "default": "example.com"}
+  ]
+}

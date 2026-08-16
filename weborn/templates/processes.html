@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Proses - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">⚙️ Manajemen Proses</div>
+<div class="page-sub text-t3 text-[13px] mb-5">{{ total }} proses terdeteksi (tampil 200 teratas berdasar CPU)</div>
+
+<div class="card !p-0 overflow-hidden">
+    <table>
+        <thead><tr><th>PID</th><th>User</th><th>Nama</th><th>CPU %</th><th>MEM %</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for p in processes %}
+            <tr>
+                <td class="mono">{{ p.pid }}</td>
+                <td class="mono text-[11px]">{{ p.user }}</td>
+                <td>{{ p.name }}</td>
+                <td>{{ p.cpu }}</td>
+                <td>{{ p.mem }}</td>
+                <td><span class="badge info">{{ p.status }}</span></td>
+                <td>
+                    {% if p.pid not in (1, 2) %}
+                    <button class="btn danger !py-1 !px-2" data-tip="Kill PID {{ p.pid }}"
+                            onclick="if(confirm('Kill {{ p.name }} ({{ p.pid }})?'))weborn.simplePost('/processes/{{ p.pid }}/kill','Menghentikan {{ p.name }}',true)">✖</button>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

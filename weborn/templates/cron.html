@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Cron - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">⏰ Cron Jobs</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Jadwal tugas otomatis (ditulis ke /etc/cron.d/weborn)</div>
+
+{% if request.query_params.get('msg') %}<div class="msg ok">{{ request.query_params.get('msg') }}</div>{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start">
+    <div class="card">
+        <h3 class="text-sm mb-3.5">➕ Tambah Cron</h3>
+        <form method="post" action="/cron/add">
+            <div class="field">
+                <label>Nama</label>
+                <input name="name" placeholder="backup harian" required>
+            </div>
+            <div class="field">
+                <label>Jadwal (5 kolom cron)</label>
+                <input name="schedule" placeholder="0 3 * * *" required>
+                <small class="text-t3">menit jam hari_tanggal bulan hari_minggu — atau @reboot / @daily</small>
+            </div>
+            <div class="field">
+                <label>User OS</label>
+                <input name="user" value="root">
+            </div>
+            <div class="field">
+                <label>Perintah</label>
+                <input name="command" placeholder="bash /var/www/backup.sh" required>
+            </div>
+            <button type="submit" class="btn primary w-full justify-center">Tambah</button>
+        </form>
+    </div>
+
+    <div>
+        <div class="card !p-0 overflow-hidden">
+            <table>
+                <thead><tr><th>Nama</th><th>Jadwal</th><th>User</th><th>Perintah</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                {% for c in crons %}
+                    <tr>
+                        <td>{{ c.name }}</td>
+                        <td class="mono text-[11px]">{{ c.schedule }}</td>
+                        <td class="mono">{{ c.user }}</td>
+                        <td class="mono text-[11px] max-w-[220px] truncate">{{ c.command }}</td>
+                        <td><span class="badge {{ 'ok' if c.enabled else 'err' }}">{{ 'AKTIF' if c.enabled else 'NONAKTIF' }}</span></td>
+                        <td class="whitespace-nowrap">
+                            <form method="post" action="/cron/{{ c.id }}/toggle" style="display:inline">
+                                <button class="btn !py-1 !px-2">{{ '⏸' if c.enabled else '▶' }}</button>
+                            </form>
+                            <form method="post" action="/cron/{{ c.id }}/delete" style="display:inline"
+                                  onsubmit="return confirm('Hapus cron?')">
+                                <button class="btn danger !py-1 !px-2" data-tip="Hapus cron">🗑</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="6" class="text-center text-t3 py-7">Belum ada cron job.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card mt-4">
+            <h3 class="text-sm mb-2.5">🗂 File /etc/cron.d/weborn</h3>
+            <pre class="output">{{ cron_file }}</pre>
+        </div>
+    </div>
+</div>
+{% endblock %}
