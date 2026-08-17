@@ -7,7 +7,7 @@
 <div class="card mb-4">
     <div class="flex gap-2 flex-wrap items-center">
         <span class="badge {{ 'ok' if status.active else 'warn' }}">{{ 'ACTIVE' if status.active else status.state|upper }}</span>
-        <span class="badge info">{% if status.installed %}v{{ status.version }}{% else %}<span class="lamp err"></span>Belum terpasang{% endif %}</span>
+        <span class="badge info">{% if status.installed %}{% if status.version and status.version != '—' %}v{{ status.version }}{% else %}terpasang{% endif %}{% else %}<span class="lamp err"></span>Belum terpasang{% endif %}</span>
         <span class="badge info">{{ addon.type }}</span>
         <span class="badge info">unit: {{ addon.unit }}</span>
         {% if addon.ports %}<span class="badge info">ports: {{ addon.ports|join(', ') }}</span>{% endif %}
