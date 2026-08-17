@@ -37,21 +37,24 @@ Client (Browser)
 
 ## What's New
 
-- **Gunicorn as Process Manager** — All Python apps (WSGI/ASGI) run through Gunicorn for stable process management with async I/O
-- **Browser Navigation Guard** — Prevents accidental page reload/close during running processes
+- **Gunicorn as Process Manager** — All Python apps (WSGI/ASGI) run through Gunicorn for stable process management
+- **Browser Navigation Guard** — Prevents accidental page reload/close during running processes; fails gracefully on error
 - **Mail Server Stack** — Postfix + Dovecot + Rspamd + OpenDKIM + Roundcube with automated setup wizard
-- **Web Server Management** — Nginx, PHP-FPM, Redis/Memcached control pages
+- **Web Server Management** — Nginx, PHP-FPM, Redis/Memcached control pages with start/stop/restart
 - **Process Monitor** — Real-time Gunicorn worker status (PID, CPU%, MEM%, uptime)
 - **Admin Setup Creates Linux User** — Setup wizard creates panel account + Linux OS user with sudo/SSH
 - **Interactive WebSocket Terminal** — Real PTY shell via xterm.js
-- **Addon Store with 35 Addons** — 7 categories × 5 addons each
+- **Addon Store with 39 Addons** — 7 categories, install/config/update/uninstall lifecycle
+- **Panel User Management** — Change password, toggle active/inactive, login log tracking
+- **Friendly Error Messages** — Maps common errors (permission denied, disk full, timeout) to readable messages
 
 ## Key Features
 
 ### 🏠 Dashboard & System
 - Real-time system monitoring (CPU, RAM, Disk)
-- Service status overview
-- OS information and package management
+- Application stats (total, running, stopped)
+- Panel user count
+- Installed services with start/stop/restart table
 
 ### 📦 Application Management
 - Create isolated apps with dedicated user, directory, and socket
@@ -88,9 +91,10 @@ Client (Browser)
 - Automated setup wizard with DNS record generation
 
 ### 🔒 Security
-- **UFW** — Firewall rule management
-- **Fail2Ban** — Intrusion prevention
+- **UFW** — Firewall rule management (Allow/Block ports)
+- **Fail2Ban** — Intrusion prevention (Ban/Unban IPs)
 - **ClamAV** — Antivirus scanning (system + mail)
+- **Certbot** — Let's Encrypt SSL certificates
 - **Backup** — System backup and restore
 
 ### 📊 Monitoring
@@ -102,20 +106,34 @@ Client (Browser)
 ### 💻 Remote Access
 - WebSocket terminal (PTY-based)
 - File explorer with edit/chown/chmod
-- SSH user management
-- OS user management
+- SSH / SFTP / RDP / VNC / NFS user management
+- OS user management with lock/unlock
+
+### 🧩 Addon Store (39 Addons)
+
+| Category | Addons |
+|----------|--------|
+| **Web Server** | Nginx, Apache, Caddy, Lighttpd |
+| **Database** | MySQL/MariaDB, PostgreSQL, Redis, MongoDB, Memcached |
+| **Mail** | Dovecot, Postfix, Exim, SpamAssassin, Roundcube |
+| **Remote Access** | OpenSSH, OpenVPN, FTP |
+| **Security** | Fail2Ban, ClamAV, Certbot, AIDE, Lynis, UFW |
+| **Runtime** | Python 3, PHP, Node.js, Golang, Ruby, Git, Docker, Supervisor |
+| **Monitoring** | Cockpit, Glances, Grafana, Netdata, Prometheus, Htop, Logrotate |
+
+Each addon supports: **Install → Config → Update → Start/Stop/Restart → Uninstall**
 
 ## Menu Structure
 
 | Group | Items |
 |-------|-------|
-| **Beranda** | Dashboard, Aplikasi, Addon Store |
+| **Beranda** | Dashboard, Addon Store |
 | **Web Server** | Domain & DNS, Nginx, PHP-FPM, Cache, Reverse Proxy |
 | **Database** | MariaDB, PostgreSQL, MongoDB, Redis, Memcached |
 | **Mail Server** | Overview, Mailbox, Mail DNS, Webmail, Spam & DKIM |
-| **Weborn** | WSGI Apps, ASGI Apps, Process Monitor |
+| **Weborn** | Aplikasi, ASGI Apps, Process Monitor |
 | **Monitoring** | Logs, Proses, Network, Paket, Cron |
-| **Access & Security** | Terminal, File Explorer, Users, Services, Firewall, Fail2Ban, ClamAV, Backup, Settings |
+| **Access & Security** | Terminal, File Explorer, OS Users, Panel Users, Services, Firewall, Fail2Ban, ClamAV, Backup, Settings |
 
 ## Tech Stack
 

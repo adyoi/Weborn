@@ -38,7 +38,6 @@ def _stream_install(manager: AddonManager, addon_id: str, op: str) -> StreamingR
 
 @router.get("/addons", response_class=HTMLResponse)
 async def addons_page(request: Request, category: str | None = None,
-                      installed: str | None = None,
                       user: dict = Depends(require_user)):
     if hasattr(user, "headers"):
         return user
@@ -47,17 +46,12 @@ async def addons_page(request: Request, category: str | None = None,
     statuses = {}
     for a in addons:
         statuses[a.id] = await manager.status(a)
-    if installed == "1":
-        addons = [a for a in addons if statuses[a.id].get("installed")]
-    elif installed == "0":
-        addons = [a for a in addons if not statuses[a.id].get("installed")]
     return render(request, "addons.html", {
         "user": user,
         "addons": addons,
         "statuses": statuses,
         "categories": manager.categories(),
         "current_category": category,
-        "current_installed": installed,
         "active": "addons",
     })
 

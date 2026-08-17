@@ -234,12 +234,14 @@
     },
 
     // ── SSE streaming POST ──
-    async streamPost(url, title, reload) {
+    async streamPost(url, title, reload, formData) {
       showProgress(title);
       let stepCount = 0;
       let outputBuf = '';
       try {
-        const res = await fetch(url, { method: 'POST', headers: { 'Accept': 'text/event-stream' } });
+        const opts = { method: 'POST', headers: { 'Accept': 'text/event-stream' } };
+        if (formData) opts.body = formData;
+        const res = await fetch(url, opts);
         if (!res.ok || !res.body) throw new Error('HTTP ' + res.status);
         const reader = res.body.getReader();
         const dec = new TextDecoder();

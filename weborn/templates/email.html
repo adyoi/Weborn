@@ -109,7 +109,7 @@ function mailSetup() {
     if (!domain) { weborn.toast('Pilih domain', 'err'); return; }
     var fd = new FormData();
     fd.append('domain', domain);
-    weborn.streamPost('/email/setup', 'Setup Mail Server untuk ' + domain, false);
+    weborn.streamPost('/email/setup', 'Setup Mail Server untuk ' + domain, false, fd);
 }
 </script>
 {% endblock %}

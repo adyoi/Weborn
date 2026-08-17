@@ -88,7 +88,7 @@ class LocalExecutor(Executor):
         # Prepend sudo untuk perintah yang butuh root
         privileged = {"apt-get", "apt", "systemctl", "ufw", "certbot",
                       "fail2ban-client", "freshclam", "clamscan", "useradd",
-                      "userdel", "chpasswd", "chown", "ln", "nginx", "ufw"}
+                      "userdel", "chpasswd", "chown", "ln", "nginx"}
         if cmd and cmd[0] in privileged:
             cmd = ("sudo", "-n", "-S", *cmd)  # -n = no password prompt, -S = read from stdin
 

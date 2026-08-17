@@ -118,12 +118,9 @@ async def apps_logs_stream(app_id: int, user: dict = Depends(require_admin)):
     async def gen():
         ex = get_executor()
         if ex.mode in ("local", "wsl"):
-            proc = await ex.run_raw("journalctl", "-u", app["unit"], "-f", "--no-pager", "-n", "100")
-            while True:
-                line = await proc.stdout.readline()
-                if not line:
-                    break
-                yield line.decode("utf-8", errors="replace")
+            result = await ex.run("bash", "-c",
+                                  f"journalctl -u {app['unit']} --no-pager -n 100 2>/dev/null || echo 'no logs'")
+            yield result.stdout or result.stderr or "no logs"
         else:
             yield "[dry-run] journal logs simulasi\n"
     return StreamingResponse(gen(), media_type="text/plain")

@@ -50,8 +50,8 @@
                     {% else %}
                     <span class="px-2 py-0.5 rounded bg-red-500/20 text-red-400 text-[11px] font-mono">● {{ app.gunicorn_status }}</span>
                     {% endif %}
-                    <button onclick="weborn.action('/apps/{{ app.id }}/restart','POST').then(()=>location.reload())"
-                            class="btn text-[11px]">Restart</button>
+                    <button onclick="weborn.simplePost('/apps/{{ app.id }}/restart','Restart {{ app.name }}',true)"
+                            class="btn sm">🔄 Restart</button>
                 </div>
             </div>
 

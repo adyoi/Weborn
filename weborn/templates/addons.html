@@ -9,23 +9,21 @@
 </div>
 
 {# ── Filters ── #}
-<div class="flex gap-1.5 flex-wrap mb-4">
-    <a class="btn sm {{ 'primary' if not current_category and not current_installed else '' }}" href="/addons">Semua</a>
+<div class="flex gap-1 flex-wrap mb-4">
+    <a class="btn sm {{ 'primary' if not current_category else '' }}" href="/addons">Semua</a>
     {% for c in categories %}
-    <a class="btn sm {{ 'primary' if current_category == c and not current_installed else '' }}" href="/addons?category={{ c }}">{{ c }}</a>
+    <a class="btn sm {{ 'primary' if current_category == c else '' }}" href="/addons?category={{ c }}">{{ c }}</a>
     {% endfor %}
-    <span class="border-r border-line mx-1"></span>
-    <a class="btn sm {{ 'primary' if current_installed == '1' else '' }}" href="/addons?installed=1">✅ Installed</a>
-    <a class="btn sm {{ 'primary' if current_installed == '0' else '' }}" href="/addons?installed=0">📥 Belum Install</a>
 </div>
 
 {# ── Status Legend ── #}
 <div class="card mb-3 !py-2 !px-3">
-    <div class="flex gap-4 flex-wrap text-[10px] text-t3">
-        <span><span class="st active text-[9px]">active</span> = Layanan berjalan</span>
-        <span><span class="st inactive text-[9px]">inactive</span> = Terpasang, belum jalan</span>
+    <div class="flex gap-3 flex-wrap text-[10px] text-t3">
+        <span><span class="st active text-[9px]">active</span> = Berjalan</span>
+        <span><span class="st inactive text-[9px]">inactive</span> = Terpasang, berhenti</span>
         <span><span class="st failed text-[9px]">failed</span> = Error (cek log)</span>
-        <span><span class="st inactive text-[9px]">unknown</span> = Runtime/plugin tanpa systemd (normal)</span>
+        <span><span class="st inactive text-[9px]">unknown</span> = Runtime tanpa systemd (normal)</span>
+        <span><span class="st failed text-[9px]">not installed</span> = Belum terpasang</span>
     </div>
 </div>
 
@@ -52,17 +50,15 @@
             {% if st.installed and st.version and st.version != '—' %} • v{{ st.version[:20] }}{% endif %}
         </div>
 
-        {# ── Status Info for UNKNOWN ── #}
         {% if st.installed and not st.active and st.state == 'unknown' %}
         <div class="bg-black/10 rounded p-1.5 text-[9px] text-t3 mb-2">
-            ℹ️ Runtime/plugin — tidak punya systemd unit, status diabaikan
+            ℹ️ Runtime/plugin — tidak punya systemd unit
         </div>
         {% endif %}
 
-        {# ── Status Info for FAILED ── #}
         {% if st.state == 'failed' %}
         <div class="bg-red-500/10 rounded p-1.5 text-[9px] text-red-400 mb-2">
-            ⚠️ Service error — cek log atau restart untuk perbaiki
+            ⚠️ Service error — cek log atau restart
         </div>
         {% endif %}
 
@@ -95,7 +91,6 @@
     <p class="text-t2 text-[11px] leading-[1.5]">
         Drop manifest <code class="mono text-[10px]">.json</code> ke
         <code class="mono text-[10px]">data/addons/</code> lalu muat ulang halaman.
-        Addon otomatis terdaftar dengan lifecycle install → config → update → run.
     </p>
 </div>
 {% endblock %}

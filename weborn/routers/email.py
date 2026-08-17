@@ -298,18 +298,21 @@ async def email_account_create(username: str = Form(...),
                                user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    import shlex
     ex = get_executor()
     full_email = f"{username}@{domain}"
+    safe_user = shlex.quote(username)
+    safe_pass = shlex.quote(f"{username}:{password}")
     if ex.mode in ("local", "wsl"):
         await ex.run("bash", "-c",
-                     f"useradd -m -s /usr/sbin/nologin {username} 2>/dev/null || true")
+                     f"useradd -m -s /usr/sbin/nologin {safe_user} 2>/dev/null || true")
         await ex.run("bash", "-c",
-                     f"echo '{username}:{password}' | chpasswd 2>/dev/null || true")
+                     f"echo {safe_pass} | chpasswd 2>/dev/null || true")
         home = f"/home/{username}"
         await ex.run("bash", "-c",
                      f"mkdir -p {home}/Maildir/{{cur,new,tmp}} 2>/dev/null || true")
         await ex.run("bash", "-c",
-                     f"chown -R {username}:{username} {home}/Maildir 2>/dev/null || true")
+                     f"chown -R {safe_user}:{safe_user} {home}/Maildir 2>/dev/null || true")
     return RedirectResponse(f"/email/accounts?domain={domain}&msg=Akun%20{full_email}%20dibuat",
                             status_code=303)
 
@@ -334,9 +337,11 @@ async def email_account_password(username: str = Form(...),
                                  user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    import shlex
     ex = get_executor()
+    safe_pass = shlex.quote(f"{username}:{password}")
     if ex.mode in ("local", "wsl"):
-        await ex.run("bash", "-c", f"echo '{username}:{password}' | chpasswd")
+        await ex.run("bash", "-c", f"echo {safe_pass} | chpasswd")
     return RedirectResponse(f"/email/accounts?domain={domain}&msg=Password%20diperbarui",
                             status_code=303)
 

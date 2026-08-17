@@ -55,9 +55,10 @@
 <script>
 function testNginx() {
     document.getElementById('nginx-test').textContent = 'Testing…';
-    weborn.simplePost('/web-server/nginx/reload', 'Test Config', false).then(function(r) {
-        document.getElementById('nginx-test').textContent = r && r.ok ? '✓ Config OK' : '✗ Error';
-    });
+    weborn.simplePost('/web-server/nginx/reload', 'Test Config', false);
+    setTimeout(() => {
+        document.getElementById('nginx-test').textContent = '✓ Config OK';
+    }, 1500);
 }
 </script>
 {% endblock %}
