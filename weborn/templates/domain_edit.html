@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Edit Domain - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">✏️ Edit Domain</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Perbarui pengaturan untuk <b>{{ domain.name }}</b></div>
+
+{% if request.query_params.get('msg') %}<div class="msg err">{{ request.query_params.get('msg')|replace('%20', ' ') }}</div>{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start">
+    <div class="card">
+        <h3 class="text-sm mb-3.5">⚙️ Pengaturan Domain</h3>
+        <form method="post" action="/domains/{{ domain.id }}/edit">
+            <div class="field">
+                <label>Nama Domain</label>
+                <input value="{{ domain.name }}" disabled>
+            </div>
+            <div class="field">
+                <label>Document Root</label>
+                <input name="document_root" value="{{ domain.document_root }}">
+            </div>
+            <div class="field">
+                <label>Jenis Aplikasi</label>
+                <select name="app_type">
+                    {% for key, t in app_types.items() %}
+                    <option value="{{ key }}" {{ 'selected' if key == domain.app_type }}>{{ t.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label>App Port (django/fastapi)</label>
+                <input name="app_port" type="number" value="{{ domain.app_port or 8000 }}">
+            </div>
+            <div class="flex gap-2 mt-3">
+                <button type="submit" class="btn primary">💾 Simpan</button>
+                <a href="/domains" class="btn">← Batal</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3 class="text-sm mb-3.5">ℹ️ Info Domain</h3>
+        <table class="text-[13px]">
+            <tr><td class="text-t3 pr-3 py-1">Domain</td><td><b>{{ domain.name }}</b></td></tr>
+            <tr><td class="text-t3 pr-3 py-1">SSL</td><td>{{ '🔒 Aktif' if domain.ssl else '❌ Belum' }}</td></tr>
+            <tr><td class="text-t3 pr-3 py-1">Status</td><td>{{ '✅ Enabled' if domain.enabled else '⛔ Disabled' }}</td></tr>
+            <tr><td class="text-t3 pr-3 py-1">Dibuat</td><td>{{ domain.created_at[:10] }}</td></tr>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -52,6 +52,7 @@
                         {% else %}<span class="badge err">DISABLED</span>{% endif %}
                     </td>
                     <td class="whitespace-nowrap">
+                        <a href="/domains/{{ d.id }}/edit" class="btn !py-1 !px-2.5" data-tip="Edit {{ d.name }}">✏️</a>
                         {% if not d.ssl %}
                         <form method="post" action="/domains/{{ d.id }}/ssl" style="display:inline"
                               onsubmit="return confirm('Terbitkan SSL Let\'s Encrypt untuk {{ d.name }}?')">

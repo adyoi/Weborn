@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Edit Aplikasi - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">✏️ Edit Aplikasi</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Perbarui pengaturan untuk <b>{{ app.name }}</b></div>
+
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start">
+    <div class="card">
+        <h3 class="text-sm mb-3.5">⚙️ Pengaturan Aplikasi</h3>
+        <form method="post" action="/apps/{{ app.id }}/edit">
+            <div class="field">
+                <label>Nama</label>
+                <input value="{{ app.name }}" disabled>
+            </div>
+            <div class="field">
+                <label>Bahasa</label>
+                <input value="{{ runtimes.get(app.language, {}).get('label', app.language) }}" disabled>
+            </div>
+            <div class="field">
+                <label>Framework</label>
+                <input value="{{ app.framework or '—' }}" disabled>
+            </div>
+            <div class="field">
+                <label>Port</label>
+                <input value="{{ app.port }}" disabled>
+            </div>
+            <div class="field">
+                <label>Perintah Start</label>
+                <input name="command" value="{{ app.command }}">
+            </div>
+            <div class="flex gap-2 mt-3">
+                <button type="submit" class="btn primary">💾 Simpan</button>
+                <a href="/apps" class="btn">← Batal</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3 class="text-sm mb-3.5">ℹ️ Info Aplikasi</h3>
+        <table class="text-[13px]">
+            <tr><td class="text-t3 pr-3 py-1">User OS</td><td class="mono">{{ app.user }}</td></tr>
+            <tr><td class="text-t3 pr-3 py-1">Direktori</td><td class="mono text-[11px]">{{ app.home_dir }}</td></tr>
+            <tr><td class="text-t3 pr-3 py-1">Unit Systemd</td><td class="mono text-[11px]">{{ app.unit }}</td></tr>
+            <tr><td class="text-t3 pr-3 py-1">Status</td>
+                <td>{% if app.status == 'running' %}<span class="badge ok">🟢 RUNNING</span>
+                    {% elif app.status == 'error' %}<span class="badge err">🔴 ERROR</span>
+                    {% else %}<span class="badge warn">⚪ STOPPED</span>{% endif %}</td></tr>
+            <tr><td class="text-t3 pr-3 py-1">Env File</td><td class="mono text-[11px]">{{ app.env_file }}</td></tr>
+            <tr><td class="text-t3 pr-3 py-1">Dibuat</td><td>{{ app.created_at[:10] }}</td></tr>
+        </table>
+    </div>
+</div>
+{% endblock %}

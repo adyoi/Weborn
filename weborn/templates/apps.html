@@ -5,6 +5,7 @@
 <div class="page-sub text-t3 text-[13px] mb-5">Environment bare-metal terisolasi per app: user, direktori, port, .env &amp; unit systemd sendiri. Semua app diinstall di <code>/var/www/{name}</code></div>
 
 {% if request.query_params.get('created') %}<div class="msg ok">Aplikasi dibuat. Mulai dari halaman ini atau di systemd.</div>{% endif %}
+{% if request.query_params.get('msg') %}<div class="msg ok">{{ request.query_params.get('msg')|replace('%20', ' ') }}</div>{% endif %}
 
 <div class="card mb-5">
     <h3 class="text-sm mb-3">➕ Buat Aplikasi</h3>
@@ -53,6 +54,7 @@
             </tbody>
         </table>
         <div class="flex gap-1.5 flex-wrap">
+            <a href="/apps/{{ a.id }}/edit" class="btn !py-1.5 !px-2.5" data-tip="Edit {{ a.name }}">✏️</a>
             <button class="btn !py-1.5 !px-2.5" data-tip="Mulai {{ a.name }}" onclick="weborn.simplePost('/apps/{{ a.id }}/start','Menjalankan {{ a.name }}',true)">▶ Start</button>
             <button class="btn !py-1.5 !px-2.5" data-tip="Stop {{ a.name }}" onclick="weborn.simplePost('/apps/{{ a.id }}/stop','Menghentikan {{ a.name }}',true)">⏹ Stop</button>
             <button class="btn !py-1.5 !px-2.5" data-tip="Restart {{ a.name }}" onclick="weborn.simplePost('/apps/{{ a.id }}/restart','Merestart {{ a.name }}',true)">🔄</button>

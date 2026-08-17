@@ -5,6 +5,7 @@ from starlette.responses import JSONResponse
 
 from ..auth import require_admin, require_user
 from ..config import FRAMEWORKS, RUNTIMES
+from ..db import get_app, set_app_status
 from ..executors import get_executor
 from ..managers.apps import AppManager
 from ..ui import render
@@ -24,6 +25,38 @@ async def apps_page(request: Request, user: dict = Depends(require_user)):
         "frameworks": FRAMEWORKS,
         "active": "apps",
     })
+
+
+@router.get("/apps/{app_id}/edit", response_class=HTMLResponse)
+async def apps_edit_page(request: Request, app_id: int,
+                         user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    app = get_app(app_id)
+    if not app:
+        return RedirectResponse("/apps?msg=App%20tidak%20ditemukan", status_code=303)
+    return render(request, "app_edit.html", {
+        "user": user,
+        "app": app,
+        "runtimes": RUNTIMES,
+        "active": "apps",
+    })
+
+
+@router.post("/apps/{app_id}/edit")
+async def apps_edit(request: Request, app_id: int,
+                    command: str = Form(...),
+                    user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    app = get_app(app_id)
+    if not app:
+        return RedirectResponse("/apps?msg=App%20tidak%20ditemukan", status_code=303)
+    from ..db import get_conn
+    with get_conn() as conn:
+        conn.execute("UPDATE apps SET command = ? WHERE id = ?", (command, app_id))
+        conn.commit()
+    return RedirectResponse("/apps?msg=App%20diperbarui", status_code=303)
 
 
 @router.post("/apps/create")

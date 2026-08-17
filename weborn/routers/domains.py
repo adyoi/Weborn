@@ -97,6 +97,56 @@ async def domains_add(request: Request, name: str = Form(...),
                             status_code=303)
 
 
+@router.get("/domains/{domain_id}/edit", response_class=HTMLResponse)
+async def domains_edit_page(request: Request, domain_id: int,
+                            user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM domains WHERE id = ?", (domain_id,)).fetchone()
+    if not row:
+        return RedirectResponse("/domains?msg=Domain%20tidak%20ditemukan", status_code=303)
+    return render(request, "domain_edit.html", {
+        "user": user,
+        "domain": dict(row),
+        "app_types": APP_TYPES,
+        "active": "domains",
+    })
+
+
+@router.post("/domains/{domain_id}/edit")
+async def domains_edit(request: Request, domain_id: int,
+                       document_root: str = Form("/var/www"),
+                       app_type: str = Form("static"),
+                       app_port: str = Form("8000"),
+                       user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    if app_type not in APP_TYPES:
+        return RedirectResponse("/domains?msg=Tipe%20aplikasi%20tidak%20dikenal", status_code=303)
+    try:
+        port_int = int((app_port or "8000").strip())
+    except ValueError:
+        return RedirectResponse(f"/domains/{domain_id}/edit?msg=Port%20harus%20angka",
+                                status_code=303)
+    proxy_target = None
+    if app_type in ("django", "fastapi", "nodejs", "laravel"):
+        proxy_target = f"http://127.0.0.1:{port_int}"
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM domains WHERE id = ?", (domain_id,)).fetchone()
+        if not row:
+            return RedirectResponse("/domains?msg=Domain%20tidak%20ditemukan", status_code=303)
+        conn.execute(
+            "UPDATE domains SET document_root=?, app_type=?, app_port=?, proxy_target=? WHERE id=?",
+            (document_root, app_type, port_int, proxy_target, domain_id))
+        conn.commit()
+        name = row["name"]
+    nginx = NginxManager(get_executor())
+    nginx.apply_domain(name, document_root, proxy_target, bool(row["ssl"]))
+    await nginx._deploy(name)
+    return RedirectResponse("/domains?msg=Domain%20diperbarui", status_code=303)
+
+
 @router.post("/domains/{domain_id}/delete")
 async def domains_delete(domain_id: int, user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):

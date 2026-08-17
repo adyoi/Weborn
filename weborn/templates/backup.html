@@ -36,7 +36,8 @@
                     <td class="whitespace-nowrap text-right">
                         <form method="post" action="/backup/{{ b.name }}/restore" style="display:inline">
                             <input type="hidden" name="restore_www" value="1">
-                            <button class="btn !py-1 !px-2.5" data-tip="Restore /var/www">↩ Restore</button>
+                            <input type="hidden" name="restore_db" value="1">
+                            <button class="btn !py-1 !px-2.5" data-tip="Restore /var/www + DB">↩ Restore</button>
                         </form>
                         <a class="btn !py-1 !px-2.5" href="/backup/download/{{ b.name }}">⬇</a>
                         <form method="post" action="/backup/{{ b.name }}/delete" style="display:inline"
