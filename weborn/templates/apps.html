@@ -2,7 +2,7 @@
 {% block title %}Aplikasi - Weborn{% endblock %}
 {% block content %}
 <div class="page-title text-[22px] font-bold mb-1">📦 Aplikasi</div>
-<div class="page-sub text-t3 text-[13px] mb-5">Environment bare-metal terisolasi per app: user, direktori, port, .env &amp; unit systemd sendiri</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Environment bare-metal terisolasi per app: user, direktori, port, .env &amp; unit systemd sendiri. Semua app diinstall di <code>/var/www/{name}</code></div>
 
 {% if request.query_params.get('created') %}<div class="msg ok">Aplikasi dibuat. Mulai dari halaman ini atau di systemd.</div>{% endif %}
 

@@ -119,7 +119,10 @@ class AppManager:
             if "busy" in r.stdout:
                 return {"ok": False, "error": f"port {port} sedang aktif dipakai OS"}
 
+        # Pastikan home di dalam WEB_ROOT (keamanan path)
         home = f"{WEB_ROOT}/{slug}"
+        if not home.startswith(WEB_ROOT):
+            return {"ok": False, "error": "path tidak valid"}
         os_user = f"weborn-{slug}"[:32]
         unit = f"weborn-{slug}.service"
         env_file = f"{home}/.env"

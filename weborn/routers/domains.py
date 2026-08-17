@@ -1,4 +1,5 @@
 """Manajemen domain & subdomain."""
+import socket
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -12,6 +13,18 @@ from ..managers.nginx import NginxManager
 from ..ui import render
 
 router = APIRouter()
+
+
+def _get_server_ip() -> str:
+    """Dapatkan IP publik server."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
 
 
 def _list_domains():
@@ -64,10 +77,24 @@ async def domains_add(request: Request, name: str = Form(...),
             conn.commit()
     except Exception:
         return RedirectResponse("/domains?msg=Domain%20sudah%20ada", status_code=303)
+    # Auto-create DNS records
+    server_ip = _get_server_ip()
+    now = datetime.now().isoformat()
+    with get_conn() as conn:
+        # A record untuk domain utama
+        conn.execute(
+            "INSERT INTO dns_records(name, type, value, ttl, created_at) VALUES (?,?,?,?,?)",
+            (name, "A", server_ip, 300, now))
+        # CNAME untuk www
+        conn.execute(
+            "INSERT INTO dns_records(name, type, value, ttl, created_at) VALUES (?,?,?,?,?)",
+            (f"www.{name}", "CNAME", name, 300, now))
+        conn.commit()
     nginx = NginxManager(get_executor())
     nginx.apply_domain(name, document_root, proxy_target, bool(ssl))
     await nginx._deploy(name)
-    return RedirectResponse("/domains?msg=Domain%20ditambahkan", status_code=303)
+    return RedirectResponse("/domains?msg=Domain%20ditambahkan%20+%20DNS%20records%20dibuat",
+                            status_code=303)
 
 
 @router.post("/domains/{domain_id}/delete")

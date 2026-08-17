@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Akun Panel - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">👤 Akun Panel</div>
+<div class="page-sub text-t3 text-[13px] mb-5">
+    Akun Weborn panel (login ke control panel ini). Bukan akun OS Linux.
+</div>
+
+{% if msg %}<div class="msg {{ 'ok' if 'Gagal' not in msg and 'salah' not in msg else 'err' }}">{{ msg|replace('%20', ' ') }}</div>{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] items-start">
+    <div class="card">
+        <h3 class="text-sm mb-3.5">➕ Tambah Akun Panel</h3>
+        <form method="post" action="/panel-accounts/create">
+            <div class="field">
+                <label>Username</label>
+                <input name="username" required minlength="3">
+            </div>
+            <div class="field">
+                <label>Password</label>
+                <input name="password" type="password" required minlength="6">
+            </div>
+            <div class="field">
+                <label>Role</label>
+                <select name="role">
+                    <option value="user">User (view only)</option>
+                    <option value="admin">Admin (full access)</option>
+                </select>
+            </div>
+            <button type="submit" class="btn primary w-full justify-center">Buat Akun</button>
+        </form>
+    </div>
+
+    <div class="card !p-0 overflow-hidden">
+        <table>
+            <thead><tr><th>Username</th><th>Role</th><th>Dibuat</th><th>Aksi</th></tr></thead>
+            <tbody>
+            {% for a in accounts %}
+                <tr>
+                    <td><b>{{ a.username }}</b></td>
+                    <td>
+                        <span class="badge {{ 'err' if a.role == 'admin' else 'info' }}">{{ a.role }}</span>
+                    </td>
+                    <td class="mono text-[11px]">{{ a.created_at[:10] }}</td>
+                    <td class="whitespace-nowrap">
+                        <form method="post" action="/panel-accounts/{{ a.id }}/delete" style="display:inline"
+                              onsubmit="return confirm('Hapus akun panel {{ a.username }}?')">
+                            <button class="btn danger !py-1 !px-2.5" data-tip="Hapus {{ a.username }}">🗑</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

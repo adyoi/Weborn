@@ -4,6 +4,7 @@ Membedakan dua jenis penyimpanan:
 - DB ini = metadata panel (user, sesi, domain, app, konfigurasi)
 - Managed DB (postgres/mysql) = layanan yang dikelola lewat managers/db.py
 """
+
 import hashlib
 import hmac
 import secrets
@@ -91,9 +92,6 @@ CREATE TABLE IF NOT EXISTS crons (
 );
 """
 
-DEFAULT_ADMIN = "admin"
-DEFAULT_PASSWORD = "weborn"
-
 
 def get_conn():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -145,16 +143,17 @@ def delete_session(token: str):
         conn.execute("DELETE FROM sessions WHERE token = ?", (token,))
 
 
+def has_panel_users() -> bool:
+    """Cek apakah sudah ada user panel (untuk setup wizard)."""
+    with get_conn() as conn:
+        row = conn.execute("SELECT 1 FROM users LIMIT 1").fetchone()
+    return row is not None
+
+
 def init_db():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     with get_conn() as conn:
         conn.executescript(SCHEMA)
-        user = conn.execute("SELECT id FROM users WHERE username = ?", (DEFAULT_ADMIN,)).fetchone()
-        if not user:
-            conn.execute(
-                "INSERT INTO users(username, password_hash, role, created_at) VALUES (?, ?, 'admin', ?)",
-                (DEFAULT_ADMIN, hash_password(DEFAULT_PASSWORD), datetime.now().isoformat()),
-            )
         conn.execute(
             "INSERT OR IGNORE INTO settings(key, value) VALUES ('secret_key', ?)",
             (secrets.token_urlsafe(48),),
@@ -195,6 +194,29 @@ def create_panel_user(username: str, password: str, role: str = "user") -> bool:
             "INSERT INTO users(username, password_hash, role, created_at) VALUES (?, ?, ?, ?)",
             (username, hash_password(password), role, datetime.now().isoformat()),
         )
+        conn.commit()
+    return True
+
+
+def list_panel_users() -> list[dict]:
+    with get_conn() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT id, username, role, created_at FROM users ORDER BY id").fetchall()]
+
+
+def update_panel_user(user_id: int, password: str, role: str) -> bool:
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE users SET password_hash = ?, role = ? WHERE id = ?",
+            (hash_password(password), role, user_id),
+        )
+        conn.commit()
+    return True
+
+
+def delete_panel_user(user_id: int) -> bool:
+    with get_conn() as conn:
+        conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()
     return True
 
