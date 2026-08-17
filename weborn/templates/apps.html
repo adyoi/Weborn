@@ -1,74 +1,75 @@
 {% extends "base.html" %}
 {% block title %}Aplikasi — Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">📦 Aplikasi</div>
-<div class="page-sub text-t3 text-[13px] mb-5">
-    Arsitektur: Nginx → Gunicorn (WSGI/ASGI) / PHP-FPM / Node → App.
-    App diinstall di <code>/var/www/{name}</code>, socket di <code>/run/gunicorn/{name}.sock</code>
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <h1 class="text-xl font-bold">📦 Aplikasi</h1>
+        <div class="text-t3 text-xs mt-0.5">Nginx → Gunicorn (WSGI/ASGI) / PHP-FPM / Node → App</div>
+    </div>
+    <div class="flex gap-2">
+        <a href="/apps/monitor" class="btn sm">🧠 Monitor</a>
+    </div>
 </div>
 
-{% if request.query_params.get('created') %}<div class="msg ok">Aplikasi dibuat. Nginx config otomatis. <a href="/apps/monitor" class="text-accent underline">Lihat di Monitor →</a></div>{% endif %}
+{% if request.query_params.get('created') %}<div class="msg ok">Aplikasi dibuat. Nginx config otomatis.</div>{% endif %}
 {% if request.query_params.get('msg') %}<div class="msg ok">{{ request.query_params.get('msg')|replace('%20', ' ') }}</div>{% endif %}
 
-<div class="card mb-5">
-    <h3 class="text-sm mb-3">➕ Buat Aplikasi</h3>
-    <form method="post" action="/apps/create" class="grid grid-cols-1 md:grid-cols-[1.4fr_1fr_1.4fr_.7fr_auto] items-end gap-2.5">
-        <div class="field"><label>Nama aplikasi</label>
-            <input name="name" placeholder="contoh: myblog" required></div>
-        <div class="field"><label>Bahasa (runtime)</label>
-            <select name="language" id="app-language" required>
+<div class="card mb-4">
+    <h3 class="text-xs font-bold mb-2">➕ Buat Aplikasi</h3>
+    <form method="post" action="/apps/create" class="grid grid-cols-1 md:grid-cols-[1.4fr_1fr_1.4fr_.7fr_auto] items-end gap-2">
+        <div class="field"><label class="text-[11px]">Nama</label>
+            <input name="name" placeholder="myblog" required class="sm"></div>
+        <div class="field"><label class="text-[11px]">Runtime</label>
+            <select name="language" id="app-language" required class="sm">
                 {% for key, r in runtimes.items() %}
                 <option value="{{ key }}">{{ r.label }}</option>
                 {% endfor %}
             </select></div>
-        <div class="field"><label>Framework</label>
-            <select name="framework" id="app-framework">
-                <option value="">— Starter dasar —</option>
+        <div class="field"><label class="text-[11px]">Framework</label>
+            <select name="framework" id="app-framework" class="sm">
+                <option value="">— dasar —</option>
                 {% for key, fs in frameworks.items() %}
                 <optgroup label="{{ runtimes[key].label }}">
                     {% for f in fs %}<option value="{{ f.id }}" data-lang="{{ key }}">{{ f.label }}</option>{% endfor %}
                 </optgroup>
                 {% endfor %}
             </select></div>
-        <div class="field"><label>Port (auto jika kosong)</label>
-            <input name="port" type="number" min="8000" max="8999" placeholder="auto"></div>
-        <button type="submit" class="btn primary">Buat</button>
+        <div class="field"><label class="text-[11px]">Port</label>
+            <input name="port" type="number" min="8000" max="8999" placeholder="auto" class="sm"></div>
+        <button type="submit" class="btn primary sm">Buat</button>
     </form>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
     {% for a in apps %}
     <div class="card">
-        <div class="flex items-center gap-2 mb-2.5">
-            <strong>{{ a.name }}</strong>
-            <span class="badge info">{{ a.language_label }}</span>
-            {% if a.framework %}<span class="badge">{{ a.framework }}</span>{% endif %}
-            <span class="badge">{{ a.app_type }}</span>
-            {% if a.status == 'running' %}<span class="badge ok">🟢 RUNNING</span>
-            {% elif a.status == 'error' %}<span class="badge err">🔴 ERROR</span>
-            {% else %}<span class="badge warn">⚪ STOPPED</span>{% endif %}
+        <div class="flex items-center gap-1.5 mb-2 flex-wrap">
+            <strong class="text-xs">{{ a.name }}</strong>
+            <span class="badge info text-[9px]">{{ a.language_label }}</span>
+            {% if a.framework %}<span class="badge text-[9px]">{{ a.framework }}</span>{% endif %}
+            <span class="st {{ 'active' if a.status == 'running' else ('failed' if a.status == 'error' else 'inactive') }}">
+                {{ a.status }}
+            </span>
         </div>
-        <table class="mb-3">
-            <tbody>
-                <tr><td class="mono w-[110px] text-[11px]">Process Mgr</td><td class="mono text-[11px]">{{ a.process_manager }}</td></tr>
-                <tr><td class="mono text-[11px]">Socket</td><td class="mono text-[11px]">/run/gunicorn/{{ a.name }}.sock</td></tr>
-                <tr><td class="mono text-[11px]">User OS</td><td class="mono text-[11px]">{{ a.user }}</td></tr>
-                <tr><td class="mono text-[11px]">Direktori</td><td class="mono text-[11px]">{{ a.home_dir }}</td></tr>
-                <tr><td class="mono text-[11px]">Unit</td><td class="mono text-[11px]">{{ a.unit }}</td></tr>
-            </tbody>
-        </table>
-        <div class="flex gap-1.5 flex-wrap">
-            <a href="/apps/{{ a.id }}/edit" class="btn !py-1.5 !px-2.5" data-tip="Edit {{ a.name }}">✏️</a>
-            <a href="/apps/{{ a.id }}/logs" class="btn !py-1.5 !px-2.5" data-tip="Log {{ a.name }}">📄</a>
-            <button class="btn !py-1.5 !px-2.5" data-tip="Mulai {{ a.name }}" onclick="weborn.simplePost('/apps/{{ a.id }}/start','Menjalankan {{ a.name }}',true)">▶</button>
-            <button class="btn !py-1.5 !px-2.5" data-tip="Stop {{ a.name }}" onclick="weborn.simplePost('/apps/{{ a.id }}/stop','Menghentikan {{ a.name }}',true)">⏹</button>
-            <button class="btn !py-1.5 !px-2.5" data-tip="Restart {{ a.name }}" onclick="weborn.simplePost('/apps/{{ a.id }}/restart','Merestart {{ a.name }}',true)">🔄</button>
-            <button class="btn danger !py-1.5 !px-2.5 ml-auto" data-tip="Hapus app + user + direktori"
-                    onclick="if(confirm('Hapus {{ a.name }} beserta user, dir & unit systemd?'))weborn.simplePost('/apps/{{ a.id }}/delete','Menghapus {{ a.name }}',true)">🗑</button>
+        <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] mb-2">
+            <div class="text-t3">Process Mgr</div><div class="mono">{{ a.process_manager }}</div>
+            <div class="text-t3">Socket</div><div class="mono text-[9px]">/run/gunicorn/{{ a.name }}.sock</div>
+            <div class="text-t3">User OS</div><div class="mono">{{ a.user }}</div>
+            <div class="text-t3">Directory</div><div class="mono text-[9px]">{{ a.home_dir }}</div>
+            <div class="text-t3">Systemd</div><div class="mono text-[9px]">{{ a.unit }}</div>
+        </div>
+        <div class="flex gap-1 flex-wrap border-t border-line pt-2">
+            <a href="/apps/{{ a.id }}/edit" class="btn sm" title="Edit">✏️</a>
+            <a href="/apps/{{ a.id }}/logs" class="btn sm" title="Logs">📄</a>
+            <button class="btn sm" title="Start" onclick="weborn.simplePost('/apps/{{ a.id }}/start','Start {{ a.name }}',true)">▶</button>
+            <button class="btn sm" title="Stop" onclick="weborn.simplePost('/apps/{{ a.id }}/stop','Stop {{ a.name }}',true)">⏹</button>
+            <button class="btn sm" title="Restart" onclick="weborn.simplePost('/apps/{{ a.id }}/restart','Restart {{ a.name }}',true)">🔄</button>
+            <button class="btn danger sm ml-auto" title="Hapus"
+                    onclick="if(confirm('Hapus {{ a.name }} beserta user, dir & unit?'))weborn.simplePost('/apps/{{ a.id }}/delete','Hapus {{ a.name }}',true)">🗑</button>
         </div>
     </div>
     {% else %}
-    <div class="card col-span-full text-center text-t3">
+    <div class="card col-span-full text-center text-t3 text-[12px] py-6">
         Belum ada aplikasi. Buat satu di atas.
     </div>
     {% endfor %}
@@ -85,8 +86,6 @@
       o.style.display = hide ? 'none' : '';
       if (hide && o.selected) o.selected = false;
     });
-    var first = fw.querySelector('option[data-lang="'+cur+'"]');
-    if (first && !fw.value) first.selected = true;
   }
   lang.addEventListener('change', filterFrameworks);
   filterFrameworks();

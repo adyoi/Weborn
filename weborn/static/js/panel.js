@@ -149,6 +149,31 @@
       (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  // Friendly error mapper
+  const ERROR_MAP = [
+    [/permission denied/i, 'Akses ditolak — jalankan sebagai root/sudo'],
+    [/command not found/i, 'Perintah tidak ditemukan — install dulu package terkait'],
+    [/no such file or directory/i, 'File atau direktori tidak ditemukan'],
+    [/connection refused/i, 'Koneksi ditolak — service mungkin belum jalan'],
+    [/unit .* not found/i, 'Service systemd tidak ditemukan'],
+    [/could not resolve/i, 'DNS tidak bisa resolve — cek /etc/resolv.conf'],
+    [/address already in use/i, 'Port sudah dipakai proses lain'],
+    [/access denied/i, 'Akses ditolak oleh sistem'],
+    [/timeout/i, 'Operasi timeout — server tidak merespon'],
+    [/disk.*full|no space left/i, 'Disk penuh — tidak ada ruang tersisa'],
+  ];
+
+  function friendlyError(raw) {
+    if (!raw) return 'Terjadi kesalahan tidak diketahui';
+    for (const [re, msg] of ERROR_MAP) {
+      if (re.test(raw)) return msg;
+    }
+    // Truncate very long errors
+    const lines = String(raw).split('\n').filter(l => l.trim());
+    if (lines.length > 8) return lines.slice(0, 5).join('\n') + '\n… (' + (lines.length - 5) + ' more lines)';
+    return raw;
+  }
+
   window.weborn = {
     showProgress, setProgress, setStep, setOutput, appendOutput, showClose, hideProgress,
     initTheme, cycleTheme,
@@ -162,7 +187,7 @@
         let data;
         try { data = await res.json(); } catch (e) { data = { output: await res.text() }; }
         if (data.ok === false || data.error) {
-          setOutput(data.error || data.output || JSON.stringify(data, null, 2));
+          setOutput(friendlyError(data.error || data.output || JSON.stringify(data, null, 2)));
           setStep('Gagal ✗');
           showClose(false);
           return;
@@ -172,7 +197,7 @@
         showClose(true);
         if (reload) setTimeout(() => location.reload(), 900);
       } catch (e) {
-        setOutput('Gagal: ' + e.message);
+        setOutput(friendlyError(e.message));
         setStep('Gagal ✗');
         showClose(false);
       }
@@ -192,7 +217,7 @@
         }
         const data = await res.json();
         if (data.ok === false || data.error) {
-          setOutput(data.error || data.output || JSON.stringify(data, null, 2));
+          setOutput(friendlyError(data.error || data.output || JSON.stringify(data, null, 2)));
           setStep('Gagal ✗');
           showClose(false);
           return;
@@ -202,7 +227,7 @@
         showClose(true);
         if (reload) setTimeout(() => location.reload(), 900);
       } catch (e) {
-        setOutput('Gagal: ' + e.message);
+        setOutput(friendlyError(e.message));
         setStep('Gagal ✗');
         showClose(false);
       }
@@ -232,7 +257,7 @@
         if (buf.trim()) handleEvent(buf);
       } catch (e) {
         setStep('Gagal ✗');
-        setOutput(outputBuf || 'Gagal: ' + e.message);
+        setOutput(friendlyError(outputBuf || e.message));
         showClose(false);
       }
 
@@ -255,7 +280,7 @@
           if (reload) setTimeout(() => location.reload(), 900);
         } else if (name === 'error') {
           setStep('Gagal ✗');
-          setOutput(d.output || d.error || 'Operasi gagal');
+          setOutput(friendlyError(d.output || d.error || 'Operasi gagal'));
           showClose(false);
         }
       }

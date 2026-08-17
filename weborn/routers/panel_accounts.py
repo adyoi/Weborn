@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from ..auth import require_admin, require_user
-from ..db import (create_panel_user, delete_panel_user, list_panel_users,
-                  update_panel_user)
+from ..db import (create_panel_user, delete_panel_user, get_login_logs,
+                  list_panel_users, toggle_panel_user_active, update_panel_user)
 from ..ui import render
 
 router = APIRouter()
@@ -15,9 +15,12 @@ async def panel_accounts_page(request: Request, msg: str = "",
                               user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    accounts = list_panel_users()
+    logs = get_login_logs(50)
     return render(request, "panel_accounts.html", {
         "user": user,
-        "accounts": list_panel_users(),
+        "accounts": accounts,
+        "logs": logs,
         "msg": msg,
         "active": "panel-accounts",
     })
@@ -60,6 +63,15 @@ async def panel_accounts_password(
                                 status_code=303)
     update_panel_user(user_id, password, role)
     return RedirectResponse("/panel-accounts?msg=Password%20diperbarui", status_code=303)
+
+
+@router.post("/panel-accounts/{user_id}/toggle")
+async def panel_accounts_toggle(user_id: int, user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    toggle_panel_user_active(user_id)
+    return RedirectResponse("/panel-accounts?msg=Akun%20diaktifkan/dinonaktifkan",
+                            status_code=303)
 
 
 @router.post("/panel-accounts/{user_id}/delete")

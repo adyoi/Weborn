@@ -1,57 +1,131 @@
 {% extends "base.html" %}
-{% block title %}Akun Panel - Weborn{% endblock %}
+{% block title %}Panel Users — Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">👤 Akun Panel</div>
-<div class="page-sub text-t3 text-[13px] mb-5">
-    Akun Weborn panel (login ke control panel ini). Bukan akun OS Linux.
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <h1 class="text-xl font-bold">🔑 Panel Users</h1>
+        <div class="text-t3 text-xs mt-0.5">Akun Weborn panel (login ke control panel ini)</div>
+    </div>
 </div>
 
 {% if msg %}<div class="msg {{ 'ok' if 'Gagal' not in msg and 'salah' not in msg else 'err' }}">{{ msg|replace('%20', ' ') }}</div>{% endif %}
 
-<div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] items-start">
+<div class="grid grid-cols-1 lg:grid-cols-[340px_1fr] items-start gap-4">
+    {# ── Create Form ── #}
     <div class="card">
-        <h3 class="text-sm mb-3.5">➕ Tambah Akun Panel</h3>
+        <h3 class="text-xs font-bold mb-2">➕ Tambah Akun Panel</h3>
         <form method="post" action="/panel-accounts/create">
             <div class="field">
-                <label>Username</label>
-                <input name="username" required minlength="3">
+                <label class="text-[11px]">Username</label>
+                <input name="username" required minlength="3" class="sm" placeholder="joko">
             </div>
             <div class="field">
-                <label>Password</label>
-                <input name="password" type="password" required minlength="6">
+                <label class="text-[11px]">Password</label>
+                <input name="password" type="password" required minlength="6" class="sm">
             </div>
             <div class="field">
-                <label>Role</label>
-                <select name="role">
+                <label class="text-[11px]">Role</label>
+                <select name="role" class="sm">
                     <option value="user">User (view only)</option>
                     <option value="admin">Admin (full access)</option>
                 </select>
             </div>
-            <button type="submit" class="btn primary w-full justify-center">Buat Akun</button>
+            <button type="submit" class="btn primary sm w-full justify-center">Buat Akun</button>
         </form>
     </div>
 
-    <div class="card !p-0 overflow-hidden">
-        <table>
-            <thead><tr><th>Username</th><th>Role</th><th>Dibuat</th><th>Aksi</th></tr></thead>
-            <tbody>
-            {% for a in accounts %}
-                <tr>
-                    <td><b>{{ a.username }}</b></td>
-                    <td>
-                        <span class="badge {{ 'err' if a.role == 'admin' else 'info' }}">{{ a.role }}</span>
-                    </td>
-                    <td class="mono text-[11px]">{{ a.created_at[:10] }}</td>
-                    <td class="whitespace-nowrap">
-                        <form method="post" action="/panel-accounts/{{ a.id }}/delete" style="display:inline"
-                              onsubmit="return confirm('Hapus akun panel {{ a.username }}?')">
-                            <button class="btn danger !py-1 !px-2.5" data-tip="Hapus {{ a.username }}">🗑</button>
-                        </form>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+    {# ── Accounts Table + Login Logs ── #}
+    <div class="space-y-4">
+        <div class="card !p-0 overflow-auto">
+            <table>
+                <thead><tr><th>Username</th><th>Role</th><th>Status</th><th>Dibuat</th><th>Aksi</th></tr></thead>
+                <tbody>
+                {% for a in accounts %}
+                    <tr>
+                        <td><b class="text-xs">{{ a.username }}</b></td>
+                        <td><span class="badge {{ 'err' if a.role == 'admin' else 'info' }}">{{ a.role }}</span></td>
+                        <td>
+                            {% if a.get('is_active', 1) %}
+                            <span class="st active">active</span>
+                            {% else %}
+                            <span class="st inactive">inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="mono text-[10px]">{{ a.created_at[:10] }}</td>
+                        <td class="whitespace-nowrap">
+                            {# Change Password Modal Trigger #}
+                            <button onclick="openPassModal({{ a.id }},'{{ a.username }}')" class="btn sm" data-tip="Ganti password">🔑</button>
+                            {# Toggle Active #}
+                            <form method="post" action="/panel-accounts/{{ a.id }}/toggle" style="display:inline">
+                                <button class="btn sm" data-tip="{{ 'Nonaktifkan' if a.get('is_active', 1) else 'Aktifkan' }}">
+                                    {{ '🟢' if a.get('is_active', 1) else '🔴' }}
+                                </button>
+                            </form>
+                            {# Delete #}
+                            <form method="post" action="/panel-accounts/{{ a.id }}/delete" style="display:inline"
+                                  onsubmit="return confirm('Hapus akun panel {{ a.username }}?')">
+                                <button class="btn danger sm" data-tip="Hapus {{ a.username }}">🗑</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {# ── Login Log ── #}
+        <div class="card">
+            <h3 class="text-xs font-bold mb-2">📄 Login Log (50 terakhir)</h3>
+            {% if logs %}
+            <div class="max-h-48 overflow-auto">
+                <table class="text-[10px]">
+                    <thead><tr><th>Waktu</th><th>Username</th><th>IP</th><th>Status</th></tr></thead>
+                    <tbody>
+                    {% for l in logs %}
+                    <tr>
+                        <td class="mono">{{ l.created_at[:16] }}</td>
+                        <td>{{ l.username }}</td>
+                        <td class="mono">{{ l.ip or '—' }}</td>
+                        <td><span class="badge {{ 'ok' if l.success else 'err' }}">{{ '✓ OK' if l.success else '✗ FAIL' }}</span></td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-t3 text-[11px]">Belum ada log login</div>
+            {% endif %}
+        </div>
     </div>
 </div>
+
+{# ── Change Password Modal ── #}
+<div id="pass-modal" class="overlay hidden">
+    <div class="progress-card w-[380px] bg-pane border border-line rounded-2xl p-5 shadow-glow-purple">
+        <h3 class="text-sm font-bold mb-3">🔑 Ganti Password</h3>
+        <form id="pass-form" method="post">
+            <input type="hidden" name="role" value="admin">
+            <div class="field">
+                <label class="text-[11px]">Username</label>
+                <input id="pass-user" class="sm" readonly>
+            </div>
+            <div class="field">
+                <label class="text-[11px]">Password Baru</label>
+                <input name="password" type="password" required minlength="6" class="sm">
+            </div>
+            <div class="flex gap-2 justify-end">
+                <button type="button" class="btn sm" onclick="document.getElementById('pass-modal').classList.add('hidden')">Batal</button>
+                <button type="submit" class="btn primary sm">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openPassModal(id, username) {
+    document.getElementById('pass-form').action = '/panel-accounts/' + id + '/password';
+    document.getElementById('pass-user').value = username;
+    document.getElementById('pass-modal').classList.remove('hidden');
+}
+</script>
 {% endblock %}

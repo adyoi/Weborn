@@ -10,9 +10,16 @@ def login(request: Request, username: str, password: str) -> bool:
     with db.get_conn() as conn:
         row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
     if not row or not db.verify_password(password, row["password_hash"]):
+        ip = request.client.host if request.client else ""
+        db.log_login(0, username, ip, False)
+        return False
+    row_dict = dict(row)
+    if not row_dict.get("is_active", 1):
         return False
     token = db.create_session(row["id"])
     request.session[SESSION_COOKIE] = token
+    ip = request.client.host if request.client else ""
+    db.log_login(row["id"], username, ip, True)
     return True
 
 

@@ -58,6 +58,15 @@ CREATE TABLE IF NOT EXISTS settings (
     value TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS login_logs (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER NOT NULL,
+    username   TEXT NOT NULL,
+    ip         TEXT NOT NULL DEFAULT '',
+    success    INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS dns_records (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     name       TEXT NOT NULL,
@@ -167,6 +176,10 @@ def init_db():
             conn.execute("ALTER TABLE domains ADD COLUMN parent INTEGER REFERENCES domains(id)")
         if "kind" not in cols:
             conn.execute("ALTER TABLE domains ADD COLUMN kind TEXT NOT NULL DEFAULT 'domain'")
+        # migration: add is_active to users
+        ucols = {r[1] for r in conn.execute("PRAGMA table_info(users)").fetchall()}
+        if "is_active" not in ucols:
+            conn.execute("ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1")
         conn.commit()
 
 
@@ -209,8 +222,11 @@ def create_panel_user(username: str, password: str, role: str = "user") -> bool:
 
 def list_panel_users() -> list[dict]:
     with get_conn() as conn:
-        return [dict(r) for r in conn.execute(
-            "SELECT id, username, role, created_at FROM users ORDER BY id").fetchall()]
+        rows = [dict(r) for r in conn.execute(
+            "SELECT id, username, role, created_at, is_active FROM users ORDER BY id").fetchall()]
+    for r in rows:
+        r.setdefault("is_active", 1)
+    return rows
 
 
 def update_panel_user(user_id: int, password: str, role: str) -> bool:
@@ -226,6 +242,32 @@ def update_panel_user(user_id: int, password: str, role: str) -> bool:
 def delete_panel_user(user_id: int) -> bool:
     with get_conn() as conn:
         conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
+    return True
+
+
+def log_login(user_id: int, username: str, ip: str, success: bool):
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO login_logs(user_id, username, ip, success, created_at) VALUES (?,?,?,?,?)",
+            (user_id, username, ip, 1 if success else 0, datetime.now().isoformat()),
+        )
+        conn.commit()
+
+
+def get_login_logs(limit: int = 50) -> list[dict]:
+    with get_conn() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT * FROM login_logs ORDER BY id DESC LIMIT ?", (limit,)).fetchall()]
+
+
+def toggle_panel_user_active(user_id: int) -> bool:
+    with get_conn() as conn:
+        row = conn.execute("SELECT is_active FROM users WHERE id = ?", (user_id,)).fetchone()
+        if not row:
+            return False
+        new_val = 0 if row["is_active"] else 1
+        conn.execute("UPDATE users SET is_active = ? WHERE id = ?", (new_val, user_id))
         conn.commit()
     return True
 

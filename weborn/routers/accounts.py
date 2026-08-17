@@ -9,7 +9,10 @@ from ..managers.accounts import AccountManager, PRIVILEGE_LEVELS
 from ..ui import render
 
 router = APIRouter()
-SERVICE_NAMES = {"ssh": "SSH", "ftp": "FTP", "telnet": "Telnet"}
+SERVICE_NAMES = {
+    "ssh": "SSH", "sftp": "SFTP", "rdp": "RDP",
+    "vnc": "VNC", "nfs": "NFS", "ftp": "FTP", "telnet": "Telnet",
+}
 
 
 @router.get("/accounts", response_class=HTMLResponse)
