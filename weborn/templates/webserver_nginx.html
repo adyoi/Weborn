@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Nginx — Weborn{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-5">
+    <h1 class="text-xl font-bold">🌐 Nginx Web Server</h1>
+    <div class="flex gap-2">
+        {% if nginx_status == 'active' %}
+        <span class="px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs font-mono">● running</span>
+        {% else %}
+        <span class="px-2 py-1 rounded bg-red-500/20 text-red-400 text-xs font-mono">● {{ nginx_status }}</span>
+        {% endif %}
+        <button onclick="weborn.action('/web-server/nginx/restart','POST')" class="btn primary text-xs">Restart</button>
+        <button onclick="weborn.action('/web-server/nginx/reload','POST')" class="btn text-xs">Reload Config</button>
+    </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4 mb-6">
+    <div class="card p-4">
+        <div class="text-t3 text-xs mb-1">Version</div>
+        <div class="font-mono text-sm">{{ nginx_version or '—' }}</div>
+    </div>
+    <div class="card p-4">
+        <div class="text-t3 text-xs mb-1">Config Test</div>
+        <div id="nginx-test" class="font-mono text-sm">—</div>
+        <button onclick="testNginx()" class="btn text-xs mt-2">Test Config</button>
+    </div>
+</div>
+
+<div class="card p-5 mb-6">
+    <h2 class="font-bold text-sm mb-3">Active Sites</h2>
+    {% if sites %}
+    <div class="space-y-1">
+        {% for site in sites %}
+        <div class="flex items-center justify-between p-2 bg-pane2 rounded text-sm">
+            <span class="font-mono">{{ site }}</span>
+            <span class="text-t3 text-xs">
+                {% for app in apps %}
+                {% if app.app_type in ['laravel', 'php'] %}→ PHP-FPM
+                {% elif app.process_manager == 'gunicorn' %}→ Gunicorn
+                {% endif %}
+                {% endfor %}
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-t3 text-sm">Belum ada site config</div>
+    {% endif %}
+</div>
+
+<div class="card p-5">
+    <h2 class="font-bold text-sm mb-3">Data Flow</h2>
+    <div class="bg-pane2 rounded p-4 font-mono text-xs leading-relaxed">
+        <div class="text-t3 mb-2">Arsitektur Weborn:</div>
+        <div>Client (Browser)</div>
+        <div class="text-t3 pl-2">↓</div>
+        <div><span class="text-blue-400">Nginx</span> (Port 80/443) — Reverse Proxy + Static</div>
+        <div class="text-t3 pl-2">├─ static files → direct serve</div>
+        <div class="text-t3 pl-2">├─ PHP/Laravel → <span class="text-purple-400">PHP-FPM</span> (socket)</div>
+        <div class="text-t3 pl-2">├─ Python WSGI → <span class="text-green-400">Gunicorn</span> (sync workers) → socket</div>
+        <div class="text-t3 pl-2">├─ Python ASGI → <span class="text-green-400">Gunicorn</span> + <span class="text-yellow-400">UvicornWorker</span> → socket</div>
+        <div class="text-t3 pl-2">└─ Node.js → <span class="text-orange-400">reverse proxy port</span></div>
+        <div class="text-t3 pl-2">↓</div>
+        <div><span class="text-green-400">Gunicorn</span> — Process Manager</div>
+        <div class="text-t3 pl-2">├─ WSGI: sync workers → Django/Flask app</div>
+        <div class="text-t3 pl-2">└─ ASGI: uvicorn workers → FastAPI app</div>
+    </div>
+</div>
+
+<script>
+function testNginx() {
+    weborn.action('/web-server/nginx/reload', 'POST').then(r => {
+        document.getElementById('nginx-test').textContent = r.ok ? '✓ Config OK' : '✗ Config Error';
+    });
+}
+</script>
+{% endblock %}

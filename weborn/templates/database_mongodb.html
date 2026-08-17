@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}MongoDB - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">🍃 MongoDB</div>
+<div class="page-sub text-t3 text-[13px] mb-5">NoSQL document database — port default 27017</div>
+
+{% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
+
+{% if not installed %}
+<div class="msg err">MongoDB belum terpasang. Install via <a href="/addons/mongodb" class="text-accent">Addon Store</a>.</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="card">
+        <h3 class="text-sm mb-3 font-bold">📦 Databases</h3>
+        <table>
+            <thead><tr><th>Nama</th></tr></thead>
+            <tbody>
+            {% for db in dbs %}
+            <tr><td class="mono text-[13px]">{{ db }}</td></tr>
+            {% else %}
+            <tr><td class="text-t3 text-center py-4">Belum ada database</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3 class="text-sm mb-3 font-bold">ℹ️ Info Koneksi</h3>
+        <div class="text-[13px] space-y-1">
+            <div><span class="text-t3">Host:</span> <code class="mono">127.0.0.1</code></div>
+            <div><span class="text-t3">Port:</span> <code class="mono">27017</code></div>
+            <div><span class="text-t3">Shell:</span> <code class="mono">mongosh</code></div>
+            <div><span class="text-t3">Config:</span> <code class="mono">/etc/mongod.conf</code></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

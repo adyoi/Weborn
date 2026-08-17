@@ -45,8 +45,28 @@ class Executor:
         return await self.run("cat", path)
 
     async def write_file(self, path: str, content: str) -> ExecResult:
-        script = f"cat > {shlex.quote(path)} <<'WEBORN_EOF'\n{content}\nWEBORN_EOF"
-        return await self.run("sh", "-c", script)
+        """Write content to a file via sudo (needs root for system paths)."""
+        import base64
+        b64 = base64.b64encode(content.encode("utf-8")).decode()
+        cmd = ("sudo", "-n", "-S", "bash", "-c",
+               f"echo '{b64}' | base64 -d > {shlex.quote(path)}")
+        cmdline = " ".join(shlex.quote(c) for c in cmd)
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await proc.communicate(input=b"")
+        result = ExecResult(
+            ok=proc.returncode == 0,
+            returncode=proc.returncode,
+            stdout=stdout.decode(errors="replace"),
+            stderr=stderr.decode(errors="replace"),
+            cmd=cmdline,
+        )
+        self._audit(cmdline, result)
+        return result
 
     def _audit(self, cmd: str, result: ExecResult):
         LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -59,19 +79,28 @@ class Executor:
 
 
 class LocalExecutor(Executor):
-    """Menjalankan perintah langsung (linux production)."""
+    """Menjalankan perintah langsung (linux production) dengan sudo."""
 
     def __init__(self, mode: str = "local"):
         super().__init__(mode)
 
     async def run(self, *cmd: str) -> ExecResult:
+        # Prepend sudo untuk perintah yang butuh root
+        privileged = {"apt-get", "apt", "systemctl", "ufw", "certbot",
+                      "fail2ban-client", "freshclam", "clamscan", "useradd",
+                      "userdel", "chpasswd", "chown", "ln", "nginx", "ufw"}
+        if cmd and cmd[0] in privileged:
+            cmd = ("sudo", "-n", "-S", *cmd)  # -n = no password prompt, -S = read from stdin
+
         cmdline = " ".join(shlex.quote(c) for c in cmd)
         proc = await asyncio.create_subprocess_exec(
             *cmd,
+            stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        stdout, stderr = await proc.communicate()
+        # Pipe empty string to stdin in case sudo asks for password
+        stdout, stderr = await proc.communicate(input=b"")
         result = ExecResult(
             ok=proc.returncode == 0,
             returncode=proc.returncode,

@@ -1,18 +1,35 @@
 {% extends "base.html" %}
-{% block title %}Domain - Weborn{% endblock %}
+{% block title %}Domain & Subdomain - Weborn{% endblock %}
 {% block content %}
 <div class="page-title text-[22px] font-bold mb-1">Domain &amp; Subdomain</div>
-<div class="page-sub text-t3 text-[13px] mb-5">Hosting multi-aplikasi: /var/www/&lt;domain&gt;, Django/FastAPI via uvicorn, Laravel via Apache</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Hosting multi-aplikasi, subdomain, path-based routing & SSL</div>
 
 {% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
 
 <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start">
     <div class="card">
-        <h3 class="text-sm mb-3.5">➕ Tambah Domain</h3>
+        <h3 class="text-sm mb-3.5">➕ Tambah Domain / Subdomain</h3>
         <form method="post" action="/domains/add">
             <div class="field">
-                <label>Nama Domain</label>
+                <label>Nama</label>
                 <input name="name" placeholder="example.com" required>
+            </div>
+            <div class="field">
+                <label>Jenis</label>
+                <select name="kind" id="domain-kind" onchange="
+                    document.getElementById('parent-field').style.display =
+                        this.value==='subdomain' ? 'block' : 'none'">
+                    <option value="domain">Domain</option>
+                    <option value="subdomain">Subdomain</option>
+                </select>
+            </div>
+            <div class="field hidden" id="parent-field">
+                <label>Subdomain dari</label>
+                <select name="parent_id">
+                    {% for d in domains if d.kind == 'domain' %}
+                    <option value="{{ d.id }}">{{ d.name }}</option>
+                    {% endfor %}
+                </select>
             </div>
             <div class="field">
                 <label>Document Root</label>
@@ -43,7 +60,12 @@
             <tbody>
             {% for d in domains %}
                 <tr>
-                    <td><b>{{ d.name }}</b></td>
+                    <td>
+                        {% if d.kind == 'subdomain' %}
+                        <span class="text-t3 ml-4">└─</span>
+                        {% endif %}
+                        <b>{{ d.name }}</b>
+                    </td>
                     <td>{{ app_types[d.app_type].label if d.app_type in app_types else d.app_type }}</td>
                     <td class="mono text-[11px]">{{ d.document_root }}</td>
                     <td>{{ '🔒' if d.ssl else '—' }}</td>
@@ -56,15 +78,15 @@
                         {% if not d.ssl %}
                         <form method="post" action="/domains/{{ d.id }}/ssl" style="display:inline"
                               onsubmit="return confirm('Terbitkan SSL Let\'s Encrypt untuk {{ d.name }}?')">
-                            <button class="btn !py-1 !px-2.5" data-tip="Pasang SSL (Let's Encrypt)">🔒</button>
+                            <button class="btn !py-1 !px-2.5" data-tip="Pasang SSL">🔒</button>
                         </form>
                         {% endif %}
                         <form method="post" action="/domains/{{ d.id }}/toggle" style="display:inline">
-                            <button class="btn !py-1 !px-2.5" data-tip="{{ 'Nonaktifkan' if d.enabled else 'Aktifkan' }} {{ d.name }}">{{ '⏸' if d.enabled else '▶' }}</button>
+                            <button class="btn !py-1 !px-2.5">{{ '⏸' if d.enabled else '▶' }}</button>
                         </form>
                         <form method="post" action="/domains/{{ d.id }}/delete" style="display:inline"
                               onsubmit="return confirm('Hapus {{ d.name }}?')">
-                            <button class="btn danger !py-1 !px-2.5" data-tip="Hapus {{ d.name }}">🗑</button>
+                            <button class="btn danger !py-1 !px-2.5">🗑</button>
                         </form>
                     </td>
                 </tr>

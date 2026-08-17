@@ -12,100 +12,119 @@
   <img alt="GitHub Actions" src="https://github.com/adyoi/Weborn/workflows/CI/badge.svg" />
 </p>
 
-Weborn is a self‑hosted control panel for running, securing, and managing server‑side services from one clean dashboard. It provides a unified interface for application deployment, domain management, database administration, monitoring, security hardening, and system operations.
+Weborn is a self-hosted control panel for running, securing, and managing server-side services from one clean dashboard. It provides a unified interface for application deployment, domain management, database administration, monitoring, security hardening, and system operations.
 
-## What's New (2026‑08‑17)
+## Architecture
 
-- **Admin Setup Creates Linux User** — Setup wizard now creates both panel account and Linux OS user with sudo/SSH access
-- **Interactive WebSocket Terminal** — Real PTY shell via xterm.js, not just a form-based command runner
-- **App Access Links** — Direct browser links after app installation (`http://localhost:{port}`)
-- **App Log Streaming** — Real-time log monitoring via WebSocket for each application
-- **WSGI/ASGI Runtime Support** — Gunicorn (WSGI) and Uvicorn (ASGI) app types
+```
+Client (Browser)
+  │
+  ├─ Nginx (Port 80/443) — Reverse Proxy + Static File Server
+  │   ├─ Static files → direct serve
+  │   ├─ PHP/Laravel → PHP-FPM (unix socket)
+  │   ├─ Python WSGI → Gunicorn (sync workers) → Django/Flask
+  │   ├─ Python ASGI → Gunicorn + UvicornWorker → FastAPI
+  │   └─ Node.js → reverse proxy port
+  │
+  ├─ Gunicorn — Process Manager
+  │   ├─ WSGI: gunicorn main:app -w 4 --bind unix:/run/gunicorn/{name}.sock
+  │   └─ ASGI: gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind unix:/run/gunicorn/{name}.sock
+  │
+  └─ Weborn Panel (Port 2025) — Control Panel UI
+      ├─ WSGI mode: Nginx → Gunicorn → FastAPI app
+      └─ ASGI mode: Nginx → Gunicorn (uvicorn workers) → FastAPI app
+```
+
+## What's New
+
+- **Gunicorn as Process Manager** — All Python apps (WSGI/ASGI) run through Gunicorn for stable process management with async I/O
+- **Browser Navigation Guard** — Prevents accidental page reload/close during running processes
+- **Mail Server Stack** — Postfix + Dovecot + Rspamd + OpenDKIM + Roundcube with automated setup wizard
+- **Web Server Management** — Nginx, PHP-FPM, Redis/Memcached control pages
+- **Process Monitor** — Real-time Gunicorn worker status (PID, CPU%, MEM%, uptime)
+- **Admin Setup Creates Linux User** — Setup wizard creates panel account + Linux OS user with sudo/SSH
+- **Interactive WebSocket Terminal** — Real PTY shell via xterm.js
 - **Addon Store with 35 Addons** — 7 categories × 5 addons each
-- **Restructured Menu** — 10 organized groups for better navigation
-- **Domain & App Edit Routes** — Full CRUD for domains and applications
-- **Proper 404 Pages** — Custom error pages instead of JSON responses
-- **Backup DB Restore** — Database checkbox included in backup restore
-- **WORKFLOW.md** — Complete admin workflow documentation
-
-## Why Weborn?
-
-Weborn is built for system administrators and developers who want a single pane of glass for server management. Instead of juggling multiple tools for deployments, DNS, databases, monitoring, and security — Weborn brings everything together in one clean, modern interface.
 
 ## Key Features
 
 ### 🏠 Dashboard & System
 - Real-time system monitoring (CPU, RAM, Disk)
-- Service status overview (Nginx, Apache, MySQL, PostgreSQL, etc.)
+- Service status overview
 - OS information and package management
 
 ### 📦 Application Management
-- Create isolated apps with dedicated user, directory, and port
-- Support for Node.js, Python, PHP, Ruby, Go, and Rust
-- Framework presets: Express, FastAPI, Django, Flask, Laravel, Next.js, and more
-- WSGI (Gunicorn) and ASGI (Uvicorn) runtime modes
+- Create isolated apps with dedicated user, directory, and socket
+- **WSGI (Gunicorn sync workers)** — Django, Flask
+- **ASGI (Gunicorn + UvicornWorker)** — FastAPI, Starlette
+- **PHP (PHP-FPM)** — Laravel, WordPress
+- **Node.js (direct process)** — Express, Next.js, Fastify
+- **Static (Nginx direct)** — HTML/CSS/JS sites
+- Framework presets with auto-generated Nginx configs
 - Real-time log streaming via WebSocket
-- Direct browser access links
 
-### 🌐 Web Hosting
-- Domain management with Nginx config generation
+### 🌐 Web Server
+- **Nginx** — Reverse proxy, static files, site config management
+- **PHP-FPM** — FastCGI Process Manager for PHP apps
+- **Cache** — Redis (object cache + sessions) and Memcached
 - SSL/TLS via Let's Encrypt (Certbot)
-- Reverse proxy and CDN support
-- DNS record management (A, CNAME, MX, TXT, NS)
+- Reverse proxy support
 
 ### 🗄️ Database Management
-- MySQL/MariaDB administration
-- PostgreSQL support via addons
-- Redis, MongoDB, Memcached management
+- **MariaDB/MySQL** — User management, database CRUD
+- **PostgreSQL** — Full management
+- **MongoDB** — NoSQL management
+- **Redis** — Cache & session store
+- **Memcached** — Lightweight cache
 
-### 📧 Mail Services
-- Postfix (MTA)
-- Dovecot (IMAP/POP3)
-- Exim mail transfer
-- Roundcube webmail
-- SpamAssassin filtering
+### 📧 Mail Server
+- **Postfix** (SMTP) — Port 25/587/465
+- **Dovecot** (IMAP/POP3) — Port 143/993/110/995
+- **Rspamd** — Modern anti-spam with ML scoring
+- **SpamAssassin** — Legacy spam filter (alternative)
+- **OpenDKIM** — DKIM signing for email authentication
+- **SPF/DMARC** — DNS-based email authentication
+- **Roundcube** — Web-based email client
+- Automated setup wizard with DNS record generation
 
 ### 🔒 Security
-- Fail2Ban intrusion prevention
-- ClamAV antivirus scanning
-- AIDE file integrity checking
-- Lynis security auditing
-- UFW firewall management
+- **UFW** — Firewall rule management
+- **Fail2Ban** — Intrusion prevention
+- **ClamAV** — Antivirus scanning (system + mail)
+- **Backup** — System backup and restore
 
 ### 📊 Monitoring
-- Grafana dashboards
-- Prometheus metrics
-- Netdata real-time monitoring
-- Glances system overview
 - Centralized log viewer
-
-### 🛠️ Addon Store
-- 35 built-in addons across 7 categories
-- One-click install/update/uninstall
-- Configuration templates with live preview
-- Third-party addon support (JSON manifests)
-- Streaming SSE progress for operations
-
-### 💻 Remote Access
-- SSH user management
-- OpenVPN server
-- Cockpit web console
-- FTP server (vsftpd)
-- WebSocket terminal (PTY-based)
-
-### ⚙️ System Administration
-- Systemd service management
 - Process viewer (psutil)
 - Cron job scheduling
+- Network monitoring
+
+### 💻 Remote Access
+- WebSocket terminal (PTY-based)
 - File explorer with edit/chown/chmod
-- Config file editor
-- Package management
+- SSH user management
+- OS user management
+
+## Menu Structure
+
+| Group | Items |
+|-------|-------|
+| **Beranda** | Dashboard, Aplikasi, Addon Store |
+| **Web Server** | Domain & DNS, Nginx, PHP-FPM, Cache, Reverse Proxy |
+| **Database** | MariaDB, PostgreSQL, MongoDB, Redis, Memcached |
+| **Mail Server** | Overview, Mailbox, Mail DNS, Webmail, Spam & DKIM |
+| **Weborn** | WSGI Apps, ASGI Apps, Process Monitor |
+| **Monitoring** | Logs, Proses, Network, Paket, Cron |
+| **Access & Security** | Terminal, File Explorer, Users, Services, Firewall, Fail2Ban, ClamAV, Backup, Settings |
 
 ## Tech Stack
 
 - **Backend:** Python 3.10+, FastAPI, SQLite, Jinja2
 - **Frontend:** Tailwind CSS, xterm.js, WebSocket
-- **System:** systemd, Nginx, Let's Encrypt, psutil
+- **Process Manager:** Gunicorn (WSGI) + UvicornWorker (ASGI)
+- **Web Server:** Nginx (reverse proxy)
+- **Mail:** Postfix + Dovecot + Rspamd + OpenDKIM + Roundcube
+- **System:** systemd, psutil
 - **Executor Modes:** Local (Linux), WSL, Dry-run (Windows dev)
 
 ## Requirements
@@ -118,29 +137,29 @@ Weborn is built for system administrators and developers who want a single pane 
 ## Quick Start
 
 ```bash
-# 1️⃣ Clone the repository
+# 1 Clone the repository
 git clone https://github.com/adyoi/Weborn.git
 cd Weborn
 
-# 2️⃣ Create and activate a virtual environment
+# 2 Create and activate a virtual environment
 python -m venv .venv
 # Linux/macOS
 source .venv/bin/activate
 # Windows
 .venv\Scripts\activate
 
-# 3️⃣ Install dependencies
+# 3 Install dependencies
 pip install -r requirements.txt
 
-# 4️⃣ (Optional) Build Tailwind CSS assets
+# 4 (Optional) Build Tailwind CSS assets
 npm install
 npm run css:build
 
-# 5️⃣ Run the dashboard
-# • Development / dry-run (works on Windows)
+# 5 Run the dashboard
+# Development / dry-run (works on Windows)
 python run.py --reload --host 127.0.0.1 --port 2025
 
-# • Full system execution on Linux/WSL (requires sudo)
+# Full system execution on Linux/WSL (requires sudo)
 sudo python run.py --local --host 0.0.0.0 --port 2025
 ```
 
@@ -160,19 +179,55 @@ http://127.0.0.1:2025
    - Linux OS user with sudo/SSH access
 5. Login with your new credentials
 
-## Frontend Build
+## App Deployment Flow
 
-Weborn includes Tailwind CSS for the dashboard UI. Rebuild the generated CSS with:
+When you create an app through the panel:
+
+```
+1. Panel creates OS user (weborn-{name})
+2. Panel creates directory (/var/www/{name})
+3. Panel writes starter file (main.py, server.js, etc.)
+4. Panel installs dependencies (pip install, npm install)
+5. Panel writes .env config
+6. Panel writes systemd unit (weborn-{name}.service)
+7. Panel generates Nginx site config
+8. Panel enables & starts the service
+```
+
+For Python apps, Gunicorn is the process manager:
+
+```bash
+# WSGI (Django/Flask)
+gunicorn main:app -w 4 --bind unix:/run/gunicorn/{name}.sock
+
+# ASGI (FastAPI)
+gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind unix:/run/gunicorn/{name}.sock
+```
+
+## Executor Modes
+
+| Mode | Description |
+|------|-------------|
+| `local` | Direct execution on Linux (requires root) |
+| `wsl` | Execute via WSL distro (Debian default) |
+| `dry-run` | Simulate commands without execution (Windows dev) |
+
+Auto-detection: Linux → `local`, Windows → `dry-run`
+
+Set via environment variable:
+```bash
+export WEBORN_EXECUTOR_MODE=local
+# or
+export WEBORN_EXECUTOR_MODE=wsl
+export WEBORN_WSL_DISTRO=Debian
+```
+
+## Frontend Build
 
 ```bash
 npm install
-npm run css:build
-```
-
-Watch for changes while developing:
-
-```bash
-npm run css:watch
+npm run css:build     # Build CSS
+npm run css:watch     # Watch for changes
 ```
 
 ## Installer
@@ -183,45 +238,14 @@ On Debian/Ubuntu, install Weborn with:
 sudo bash install.sh
 ```
 
-- Installs the service under `/opt/weborn`.
-- Creates the required `data/backups` directory.
-- Adds a systemd unit (`weborn.service`) and reloads the daemon.
+- Installs the service under `/opt/weborn`
+- Creates the required `data/backups` directory
+- Adds a systemd unit (`weborn.service`) and reloads the daemon
 
-To remove the installation:
+To remove:
 
 ```bash
 sudo bash uninstall.sh
-```
-
-## Menu Structure
-
-| Group | Items |
-|-------|-------|
-| **Beranda** | Dashboard, Aplikasi, Addon Store |
-| **Web Server** | Server, Domain, Proxy, CDN, DNS |
-| **Database** | MySQL, PostgreSQL, Redis, MongoDB, Memcached |
-| **Mail** | Postfix, Dovecot, Exim, Roundcube, SpamAssassin |
-| **Monitoring** | Logs, Grafana, Prometheus, Netdata, Glances |
-| **Remote Access** | Akun OS, SSH, OpenVPN, Cockpit, FTP |
-| **Runtime** | Node.js, Python, PHP, Ruby, Go |
-| **Security** | Security, Fail2Ban, ClamAV, AIDE, Lynis |
-| **System** | Systemd, Proses, Cron, Files, Terminal |
-| **Config** | Settings, Akun Panel, Paket, Network, Backup |
-
-## Executor Modes
-
-| Mode | Description |
-|------|-------------|
-| `local` | Direct execution on Linux (requires root) |
-| `wsl` | Execute via WSL distro (Debian default) |
-| `dry-run` | Simulate commands without execution (Windows dev) |
-
-Set via environment variable:
-```bash
-export WEBORN_EXECUTOR_MODE=local
-# or
-export WEBORN_EXECUTOR_MODE=wsl
-export WEBORN_WSL_DISTRO=Debian
 ```
 
 ## Security Note
@@ -235,17 +259,11 @@ Weborn creates Linux users with sudo privileges during setup. In production:
 
 ## Contributing
 
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b my-feature`).
-3. Make your changes and ensure the code follows existing style (PEP 8).
-4. Commit with a clear message.
-5. Open a Pull Request against the `main` branch.
-
-## Dashboard Preview
-
-<p align="center">
-  <img src="assets/weborn-screenshot.png" alt="Weborn dashboard preview" width="1200" />
-</p>
+1. Fork the repository
+2. Create a feature branch (`git checkout -b my-feature`)
+3. Make your changes and ensure the code follows existing style (PEP 8)
+4. Commit with a clear message
+5. Open a Pull Request against the `main` branch
 
 ## License
 

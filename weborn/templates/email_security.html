@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Spam & DKIM — Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">🛡️ Spam & DKIM Security</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Rspamd + SpamAssassin + OpenDKIM — SPF, DKIM, DMARC untuk autentikasi email</div>
+
+{% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {# ─── Rspamd ─── #}
+    <div class="card">
+        <h3 class="text-sm font-bold mb-2">🚦 Rspamd (Anti-Spam)</h3>
+        <div class="text-[13px] mb-2">
+            Status: {% if rspamd_active %}<span class="badge ok">● Running</span>
+            {% elif rspamd_installed %}<span class="badge warn">○ Stopped</span>
+            {% else %}<span class="badge err">✕ Not Installed</span>{% endif %}
+        </div>
+        <div class="text-[12px] text-t3 mb-3">
+            Modern anti-spam dengan machine learning. Integrasi langsung dengan Postfix via milter.
+            Menggantikan SpamAssassin untuk performa lebih baik.
+        </div>
+        {% if rspamd_installed %}
+        <div class="flex gap-2">
+            {% if not rspamd_active %}
+            <button class="btn primary flex-1" onclick="weborn.action('/email/security/service/rspamd/start','POST')">▶ Start</button>
+            {% else %}
+            <button class="btn danger flex-1" onclick="weborn.action('/email/security/service/rspamd/stop','POST')">⏹ Stop</button>
+            {% endif %}
+            <button class="btn" onclick="weborn.action('/email/security/service/rspamd/restart','POST')">🔄</button>
+        </div>
+        {% endif %}
+    </div>
+
+    {# ─── SpamAssassin ─── #}
+    <div class="card">
+        <h3 class="text-sm font-bold mb-2">🚧 SpamAssassin (Legacy)</h3>
+        <div class="text-[13px] mb-2">
+            Status: {% if spamassassin_active %}<span class="badge ok">● Running</span>
+            {% elif spamassassin_installed %}<span class="badge warn">○ Stopped</span>
+            {% else %}<span class="badge err">✕ Not Installed</span>{% endif %}
+        </div>
+        <div class="text-[12px] text-t3 mb-3">
+            Heuristic spam filter. Alternatif ke Rspamd. Skor threshold: 5.0
+        </div>
+        {% if spamassassin_installed %}
+        <div class="flex gap-2">
+            {% if not spamassassin_active %}
+            <button class="btn primary flex-1" onclick="weborn.action('/email/security/service/spamassassin/start','POST')">▶ Start</button>
+            {% else %}
+            <button class="btn danger flex-1" onclick="weborn.action('/email/security/service/spamassassin/stop','POST')">⏹ Stop</button>
+            {% endif %}
+            <button class="btn" onclick="weborn.action('/email/security/service/spamassassin/restart','POST')">🔄</button>
+        </div>
+        {% endif %}
+    </div>
+
+    {# ─── OpenDKIM ─── #}
+    <div class="card">
+        <h3 class="text-sm font-bold mb-2">🔑 OpenDKIM</h3>
+        <div class="text-[13px] mb-2">
+            Status: {% if opendkim_active %}<span class="badge ok">● Running</span>
+            {% elif opendkim_installed %}<span class="badge warn">○ Stopped</span>
+            {% else %}<span class="badge err">✕ Not Installed</span>{% endif %}
+        </div>
+        <div class="text-[12px] text-t3 mb-3">
+            DomainKeys Identified Mail. Tanda tangan kriptografis untuk email.
+            Dipasang otomatis saat setup mail server.
+        </div>
+        {% if opendkim_installed %}
+        <div class="flex gap-2">
+            {% if not opendkim_active %}
+            <button class="btn primary flex-1" onclick="weborn.action('/email/security/service/opendkim/start','POST')">▶ Start</button>
+            {% else %}
+            <button class="btn danger flex-1" onclick="weborn.action('/email/security/service/opendkim/stop','POST')">⏹ Stop</button>
+            {% endif %}
+            <button class="btn" onclick="weborn.action('/email/security/service/opendkim/restart','POST')">🔄</button>
+        </div>
+        {% endif %}
+    </div>
+
+    {# ─── ClamAV for Mail ─── #}
+    <div class="card">
+        <h3 class="text-sm font-bold mb-2">🦠 ClamAV (Mail Scanner)</h3>
+        <div class="text-[13px] mb-2">
+            Status: {% if clamav_active %}<span class="badge ok">● Running</span>
+            {% elif clamav_installed %}<span class="badge warn">○ Stopped</span>
+            {% else %}<span class="badge err">✕ Not Installed</span>{% endif %}
+        </div>
+        <div class="text-[12px] text-t3 mb-3">
+            Antivirus untuk scan lampiran email. Integrasi via Rspamd atau clamav-milter.
+        </div>
+        {% if clamav_installed %}
+        <div class="flex gap-2">
+            {% if not clamav_active %}
+            <button class="btn primary flex-1" onclick="weborn.action('/email/security/service/clamav/start','POST')">▶ Start</button>
+            {% else %}
+            <button class="btn danger flex-1" onclick="weborn.action('/email/security/service/clamav/stop','POST')">⏹ Stop</button>
+            {% endif %}
+            <button class="btn" onclick="weborn.action('/email/security/service/clamav/restart','POST')">🔄</button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# ─── Email Auth Summary ─── #}
+<div class="card p-5 mt-5">
+    <h2 class="font-bold text-sm mb-3">Email Authentication Stack</h2>
+    <div class="bg-pane2 rounded p-4 font-mono text-xs leading-relaxed">
+        <div class="text-t3 mb-2">Autentikasi Email (apa yang dipasang):</div>
+        <div>├─ <span class="text-green-400">SPF</span> — Sender Policy Framework (DNS TXT record)</div>
+        <div>│   └─ Memverifikasi IP pengirim diizinkan mengirim email untuk domain</div>
+        <div>├─ <span class="text-blue-400">DKIM</span> — DomainKeys Identified Mail (OpenDKIM)</div>
+        <div>│   └─ Tanda tangan kriptografis pada header email</div>
+        <div>│   └─ Key: /var/lib/opendkim/keys/{domain}/weborn.key</div>
+        <div>├─ <span class="text-purple-400">DMARC</span> — Domain-based Message Authentication</div>
+        <div>│   └─ Policy: apa yang dilakukan jika SPF/DKIM gagal</div>
+        <div>│   └─ Record: _dmarc.{domain} TXT "v=DMARC1; p=quarantine; rua=mailto:admin@{domain}"</div>
+        <div>└─ <span class="text-yellow-400">Rspamd</span> — Anti-spam dengan ML scoring</div>
+        <div class="text-t3 mt-2">DNS records otomatis: /email/dns</div>
+    </div>
+</div>
+
+{% if not rspamd_installed and not spamassassin_installed %}
+<form method="post" action="/email/security/install" class="mt-4">
+    <button class="btn primary w-full justify-center"
+            onclick="return confirm('Pasang Rspamd + SpamAssassin + OpenDKIM + ClamAV?')">
+        📥 Install Spam & DKIM Security Stack
+    </button>
+</form>
+{% endif %}
+{% endblock %}

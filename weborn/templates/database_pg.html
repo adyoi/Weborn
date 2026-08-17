@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}MySQL / MariaDB - Weborn{% endblock %}
+{% block title %}PostgreSQL - Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">🗄️ MySQL / MariaDB</div>
-<div class="page-sub text-t3 text-[13px] mb-5">Kelola database, users, dan privileges MySQL</div>
+<div class="page-title text-[22px] font-bold mb-1">🐘 PostgreSQL</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Kelola database PostgreSQL — port default 5432</div>
 
 {% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
 
 {% if not installed %}
-<div class="msg err">MySQL belum terpasang. Install dulu via <a href="/addons/mysql" class="text-accent">Addon Store</a>.</div>
+<div class="msg err">PostgreSQL belum terpasang. Install via <a href="/addons/postgresql" class="text-accent">Addon Store</a> (addon <b>postgresql</b>).</div>
 {% endif %}
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -15,7 +15,7 @@
     {# ─── Databases ─── #}
     <div class="card">
         <h3 class="text-sm mb-3 font-bold">📦 Databases</h3>
-        <form method="post" action="/database/create" class="flex gap-2 mb-3">
+        <form method="post" action="/database/pg/create" class="flex gap-2 mb-3">
             <input name="name" placeholder="nama_database" required class="flex-1"
                    pattern="[a-zA-Z0-9_]+" title="huruf, angka, underscore">
             <button type="submit" class="btn primary">+ Buat</button>
@@ -27,7 +27,7 @@
             <tr>
                 <td class="mono text-[13px]">{{ db }}</td>
                 <td class="text-right">
-                    <form method="post" action="/database/{{ db }}/drop" style="display:inline"
+                    <form method="post" action="/database/pg/{{ db }}/drop" style="display:inline"
                           onsubmit="return confirm('Hapus {{ db }}?')">
                         <button class="btn danger !py-0.5 !px-2 text-[11px]">🗑</button>
                     </form>
@@ -42,39 +42,40 @@
 
     {# ─── Users ─── #}
     <div class="card">
-        <h3 class="text-sm mb-3 font-bold">👤 Users & Privileges</h3>
-        <form method="post" action="/database/user/create" class="grid grid-cols-2 gap-2 mb-3">
+        <h3 class="text-sm mb-3 font-bold">👤 Users</h3>
+        <form method="post" action="/database/pg/user/create" class="grid grid-cols-2 gap-2 mb-3">
             <input name="username" placeholder="username" required class="text-[13px]">
             <input name="password" type="password" placeholder="password" required class="text-[13px]">
-            <input name="host" value="localhost" class="text-[13px]">
-            <div class="col-span-2 text-[11px] text-t3">Grant ke database:</div>
-            <div class="col-span-2 flex flex-wrap gap-1">
-                {% for db in dbs %}
-                <label class="text-[11px]"><input type="checkbox" name="privileges" value="{{ db }}"> {{ db }}</label>
-                {% endfor %}
-            </div>
             <button type="submit" class="btn primary col-span-2">+ Buat User</button>
         </form>
         <table>
-            <thead><tr><th>User</th><th>Host</th><th>Databases</th><th></th></tr></thead>
+            <thead><tr><th>User</th><th></th></tr></thead>
             <tbody>
             {% for u in users %}
             <tr>
-                <td class="mono text-[13px]">{{ u.user }}</td>
-                <td class="text-[11px] text-t3">{{ u.host }}</td>
-                <td class="text-[11px]">{{ user_dbs_map.get(u.user, [])|join(', ') or '—' }}</td>
+                <td class="mono text-[13px]">{{ u }}</td>
                 <td class="text-right">
-                    <form method="post" action="/database/user/{{ u.user }}/delete" style="display:inline"
-                          onsubmit="return confirm('Hapus user {{ u.user }}?')">
+                    <form method="post" action="/database/pg/user/{{ u }}/delete" style="display:inline"
+                          onsubmit="return confirm('Hapus user {{ u }}?')">
                         <button class="btn danger !py-0.5 !px-2 text-[11px]">🗑</button>
                     </form>
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="4" class="text-t3 text-center py-4">Belum ada user</td></tr>
+            <tr><td colspan="2" class="text-t3 text-center py-4">Belum ada user</td></tr>
             {% endfor %}
             </tbody>
         </table>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <h3 class="text-sm mb-2 font-bold">ℹ️ Info Koneksi</h3>
+    <div class="grid grid-cols-2 gap-2 text-[13px]">
+        <div><span class="text-t3">Host:</span> <code class="mono">127.0.0.1</code></div>
+        <div><span class="text-t3">Port:</span> <code class="mono">5432</code></div>
+        <div><span class="text-t3">Superuser:</span> <code class="mono">postgres</code></div>
+        <div><span class="text-t3">Config:</span> <code class="mono">/etc/postgresql/*/main/postgresql.conf</code></div>
     </div>
 </div>
 {% endblock %}

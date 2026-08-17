@@ -218,60 +218,6 @@ def _parse_bruteforce(text: str, limit: int = 10):
     return [{"ip": ip, "attempts": n, "last": last.get(ip, "")} for ip, n in top]
 
 
-@router.get("/security", response_class=HTMLResponse)
-async def security_page(request: Request, user: dict = Depends(require_user)):
-    if hasattr(user, "headers"):
-        return user
-    ex = get_executor()
-    bruteforce, ddos, logins, fw = [], [], [], []
-    if ex.mode in ("local", "wsl"):
-        r = await ex.run("bash", "-c", "tail -2000 /var/log/auth.log 2>/dev/null || journalctl -u ssh --no-pager -n 2000 2>/dev/null || true")
-        bruteforce = _parse_bruteforce(r.stdout)
-        r2 = await ex.run("bash", "-c", "ss -tn 2>/dev/null | awk 'NR>1{print $5}' | sed 's/:.*//' | sort | uniq -c | sort -rn | head -12")
-        for line in r2.stdout.splitlines():
-            parts = line.split()
-            if len(parts) == 2:
-                ddos.append({"ip": parts[1], "connections": int(parts[0])})
-        r3 = await ex.run("bash", "-c", "last -a -n 20 2>/dev/null | head -20 || true")
-        for line in r3.stdout.splitlines():
-            if line.strip() and "wtmp" not in line:
-                logins.append(line[:100])
-        r4 = await ex.run("bash", "-c", "ufw status 2>/dev/null | head -5 || true")
-        if r4.ok and r4.stdout.strip():
-            fw = r4.stdout.splitlines()
-    else:  # dry-run
-        bruteforce = [{"ip": "203.0.113.7", "attempts": 42, "last": "contoh (dry-run)"}]
-        ddos = [{"ip": "198.51.100.9", "connections": 800}]
-        logins = ["contoh (dry-run)"]
-    return render(request, "security.html", {"user": user, "bruteforce": bruteforce,
-                                             "ddos": ddos, "logins": logins, "fw": fw,
-                                             "active": "security"})
-
-
-@router.post("/security/firewall/allow")
-async def firewall_allow(port: str = Form(...), protocol: str = Form("tcp"),
-                         user: dict = Depends(require_admin)):
-    if hasattr(user, "headers"):
-        return user
-    p = port.strip()
-    if not p.isdigit() or not (1 <= int(p) <= 65535):
-        return RedirectResponse("/security?msg=Port%20tidak%20valid", status_code=303)
-    await get_executor().run("ufw", "allow", f"{int(p)}/{protocol}")
-    return RedirectResponse("/security?msg=Port%20diizinkan", status_code=303)
-
-
-@router.post("/security/firewall/deny")
-async def firewall_deny(port: str = Form(...), protocol: str = Form("tcp"),
-                        user: dict = Depends(require_admin)):
-    if hasattr(user, "headers"):
-        return user
-    p = port.strip()
-    if not p.isdigit() or not (1 <= int(p) <= 65535):
-        return RedirectResponse("/security?msg=Port%20tidak%20valid", status_code=303)
-    await get_executor().run("ufw", "deny", f"{int(p)}/{protocol}")
-    return RedirectResponse("/security?msg=Port%20ditolak", status_code=303)
-
-
 # ---------------------------------------------------------------- logs
 LOG_SOURCES = {
     "system": ("journalctl", "Log sistem (journalctl -xe)"),

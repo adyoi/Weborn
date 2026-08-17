@@ -1,10 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Aplikasi - Weborn{% endblock %}
+{% block title %}Aplikasi — Weborn{% endblock %}
 {% block content %}
 <div class="page-title text-[22px] font-bold mb-1">📦 Aplikasi</div>
-<div class="page-sub text-t3 text-[13px] mb-5">Environment bare-metal terisolasi per app: user, direktori, port, .env &amp; unit systemd sendiri. Semua app diinstall di <code>/var/www/{name}</code></div>
+<div class="page-sub text-t3 text-[13px] mb-5">
+    Arsitektur: Nginx → Gunicorn (WSGI/ASGI) / PHP-FPM / Node → App.
+    App diinstall di <code>/var/www/{name}</code>, socket di <code>/run/gunicorn/{name}.sock</code>
+</div>
 
-{% if request.query_params.get('created') %}<div class="msg ok">Aplikasi dibuat. <a href="http://localhost:{{ request.query_params.get('port', '8000') }}" target="_blank" class="text-accent underline">Buka di browser →</a></div>{% endif %}
+{% if request.query_params.get('created') %}<div class="msg ok">Aplikasi dibuat. Nginx config otomatis. <a href="/apps/monitor" class="text-accent underline">Lihat di Monitor →</a></div>{% endif %}
 {% if request.query_params.get('msg') %}<div class="msg ok">{{ request.query_params.get('msg')|replace('%20', ' ') }}</div>{% endif %}
 
 <div class="card mb-5">
@@ -40,25 +43,25 @@
             <strong>{{ a.name }}</strong>
             <span class="badge info">{{ a.language_label }}</span>
             {% if a.framework %}<span class="badge">{{ a.framework }}</span>{% endif %}
+            <span class="badge">{{ a.app_type }}</span>
             {% if a.status == 'running' %}<span class="badge ok">🟢 RUNNING</span>
             {% elif a.status == 'error' %}<span class="badge err">🔴 ERROR</span>
             {% else %}<span class="badge warn">⚪ STOPPED</span>{% endif %}
         </div>
         <table class="mb-3">
             <tbody>
-                <tr><td class="mono w-[110px] text-[11px]">Port</td><td class="mono">{{ a.port }}</td></tr>
-                <tr><td class="mono text-[11px]">User OS</td><td class="mono">{{ a.user }}</td></tr>
+                <tr><td class="mono w-[110px] text-[11px]">Process Mgr</td><td class="mono text-[11px]">{{ a.process_manager }}</td></tr>
+                <tr><td class="mono text-[11px]">Socket</td><td class="mono text-[11px]">/run/gunicorn/{{ a.name }}.sock</td></tr>
+                <tr><td class="mono text-[11px]">User OS</td><td class="mono text-[11px]">{{ a.user }}</td></tr>
                 <tr><td class="mono text-[11px]">Direktori</td><td class="mono text-[11px]">{{ a.home_dir }}</td></tr>
-                <tr><td class="mono text-[11px]">Perintah</td><td class="mono text-[11px]">{{ a.command }}</td></tr>
                 <tr><td class="mono text-[11px]">Unit</td><td class="mono text-[11px]">{{ a.unit }}</td></tr>
             </tbody>
         </table>
         <div class="flex gap-1.5 flex-wrap">
             <a href="/apps/{{ a.id }}/edit" class="btn !py-1.5 !px-2.5" data-tip="Edit {{ a.name }}">✏️</a>
             <a href="/apps/{{ a.id }}/logs" class="btn !py-1.5 !px-2.5" data-tip="Log {{ a.name }}">📄</a>
-            <a href="http://localhost:{{ a.port }}" target="_blank" class="btn !py-1.5 !px-2.5" data-tip="Buka {{ a.name }}">🔗</a>
-            <button class="btn !py-1.5 !px-2.5" data-tip="Mulai {{ a.name }}" onclick="weborn.simplePost('/apps/{{ a.id }}/start','Menjalankan {{ a.name }}',true)">▶ Start</button>
-            <button class="btn !py-1.5 !px-2.5" data-tip="Stop {{ a.name }}" onclick="weborn.simplePost('/apps/{{ a.id }}/stop','Menghentikan {{ a.name }}',true)">⏹ Stop</button>
+            <button class="btn !py-1.5 !px-2.5" data-tip="Mulai {{ a.name }}" onclick="weborn.simplePost('/apps/{{ a.id }}/start','Menjalankan {{ a.name }}',true)">▶</button>
+            <button class="btn !py-1.5 !px-2.5" data-tip="Stop {{ a.name }}" onclick="weborn.simplePost('/apps/{{ a.id }}/stop','Menghentikan {{ a.name }}',true)">⏹</button>
             <button class="btn !py-1.5 !px-2.5" data-tip="Restart {{ a.name }}" onclick="weborn.simplePost('/apps/{{ a.id }}/restart','Merestart {{ a.name }}',true)">🔄</button>
             <button class="btn danger !py-1.5 !px-2.5 ml-auto" data-tip="Hapus app + user + direktori"
                     onclick="if(confirm('Hapus {{ a.name }} beserta user, dir & unit systemd?'))weborn.simplePost('/apps/{{ a.id }}/delete','Menghapus {{ a.name }}',true)">🗑</button>

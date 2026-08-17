@@ -1,71 +1,68 @@
 """Manager aplikasi Weborn: environment bare-metal terisolasi per app.
 
+Arsitektur:
+  - WSGI/ASGI (Python): Gunicorn sebagai process manager
+    Nginx → Gunicorn (unix socket) → app
+    Command: gunicorn main:app -w N -k uvicorn.workers.UvicornWorker --bind unix:/run/gunicorn/<name>.sock
+
+  - PHP: Nginx → PHP-FPM (socket)
+
+  - Node.js: Nginx → Node process (reverse proxy port)
+
+  - Static: Nginx langsung serve file
+
 Setiap aplikasi mendapat:
 - user OS sendiri (weborn-<name>)
 - direktori sendiri (WEB_ROOT/<name>)
-- port unik (auto-alokasi 8000-8999, cek DB + port aktif)
+- socket/port unik
 - file .env sendiri
 - unit systemd sendiri (weborn-<name>.service)
-
-Fokus bahasa: Python (utama), Node.js & PHP (terkait web stack).
 """
 import re
 from datetime import datetime
 
-from ..config import FRAMEWORKS, RUNTIMES, WEB_ROOT
+from ..config import APP_TYPES, FRAMEWORKS, GUNICORN_SOCK_DIR, RUNTIMES, WEB_ROOT
 from ..db import add_app, delete_app, get_app, get_app_by_port, list_apps, set_app_status
 
-# Stub starter per framework (ditulis otomatis bila framework butuh file minimal
-# agar langsung bisa start; framework dengan scaffold (next/nuxt/django dst.)
-# memakai perintah pkg-nya sendiri).
+# Stub starter per framework
 STUBS = {
     "express": ("server.js",
         "const express = require('express');\n"
         "const app = express();\n"
-        "const port = process.env.PORT || 8000;\n"
         "app.get('/', (req, res) => res.json({ ok: true }));\n"
-        "app.listen(port, () => console.log('listening on ' + port));\n"),
+        "app.listen(process.env.PORT || 8000, () => console.log('listening'));\n"),
     "fastify": ("server.js",
         "const fastify = require('fastify')({ logger: true });\n"
-        "const port = process.env.PORT || 8000;\n"
         "fastify.get('/', async () => ({ ok: true }));\n"
-        "fastify.listen({ port, host: '0.0.0.0' });\n"),
+        "fastify.listen({ port: process.env.PORT || 8000, host: '0.0.0.0' });\n"),
     "fastapi": ("main.py",
         "from fastapi import FastAPI\n\n"
         "app = FastAPI(title='{name}')\n\n"
         "@app.get('/')\n"
         "def home():\n"
         "    return {'app': '{name}', 'ok': True}\n"),
-    "flask": ("app.py",
+    "flask": ("main.py",
         "from flask import Flask\n\n"
         "app = Flask(__name__)\n\n"
         "@app.route('/')\n"
         "def home():\n"
-        "    return {'app': '{name}', 'ok': True}\n\n"
-        "if __name__ == '__main__':\n"
-        "    app.run(host='0.0.0.0', port=int(__import__('os').environ.get('PORT', 8000)))\n"),
-    "tornado": ("main.py",
+        "    return {'app': '{name}', 'ok': True}\n"),
+    "django": ("main.py",
         "import os\n"
-        "from tornado.web import Application, RequestHandler\n\n"
-        "class Main(RequestHandler):\n"
-        "    def get(self):\n"
-        "        self.write({'app': '{name}', 'ok': True})\n\n"
-        "app = Application([(r'/', Main)])\n\n"
-        "if __name__ == '__main__':\n"
-        "    import tornado.ioloop\n"
-        "    app.listen(int(os.environ.get('PORT', 8000)))\n"
-        "    tornado.ioloop.IOLoop.current().start()\n"),
+        "import django\n"
+        "os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')\n"
+        "django.setup()\n"
+        "from django.core.wsgi import get_wsgi_application\n"
+        "app = get_wsgi_application()\n"),
 }
 
-# Stub default per bahasa (bila framework tak punya stub & tak di-scaffold).
 LANG_STUB = {
     "nodejs": ("server.js",
         "const http = require('http');\n"
-        "const port = process.env.PORT || 8000;\n"
         "http.createServer((req, res) => {\n"
         "  res.writeHead(200, {'Content-Type': 'application/json'});\n"
         "  res.end(JSON.stringify({ app: '{name}', ok: true }));\n"
-        "}).listen(port, '0.0.0.0');\n"),
+        "}).listen(process.env.PORT || 8000, '0.0.0.0');\n"),
     "php": ("public/index.php",
         "<?php header('Content-Type: application/json');\n"
         "echo json_encode(['app' => '{name}', 'ok' => true]);\n"),
@@ -77,16 +74,46 @@ def _slug(name: str) -> str:
     return s or "app"
 
 
+def _app_type_for(language: str, framework: str) -> str:
+    """Determine app type from language + framework."""
+    fw_lower = (framework or "").lower()
+    lang_lower = (language or "").lower()
+    if fw_lower in ("django", "flask"):
+        return fw_lower
+    if fw_lower == "fastapi" or (lang_lower == "python" and "fastapi" in fw_lower):
+        return "fastapi"
+    if fw_lower in ("laravel", "wordpress", "codeigniter", "symfony"):
+        return "laravel"
+    if fw_lower in ("express", "next", "nuxt", "fastify", "nest"):
+        return "nodejs"
+    if lang_lower == "php":
+        return "laravel"
+    if lang_lower == "python":
+        return "wsgi"
+    if lang_lower == "nodejs":
+        return "nodejs"
+    return "static"
+
+
 class AppManager:
     def __init__(self, ex):
         self.ex = ex
 
-    # ------------------------------------------------------------- port alloc
+    # ----------------------------------------------------------------- helpers
+    async def _ensure_dirs(self, name: str):
+        """Create log + socket dirs."""
+        await self.ex.run("bash", "-c",
+                          f"sudo mkdir -p {GUNICORN_SOCK_DIR} /var/log/gunicorn "
+                          f"/var/log/nginx /run/php /var/log/php-fpm")
+        await self.ex.run("bash", "-c", f"sudo mkdir -p /var/log/{name}")
+
+    # ---------------------------------------------------------------- port alloc
     async def alloc_port(self) -> int:
         used = {a["port"] for a in list_apps()}
         busy = set()
         if self.ex.mode in ("local", "wsl"):
-            r = await self.ex.run("bash", "-c", "ss -tln | awk 'NR>1{print $4}' | sed 's/.*://' | sort -u")
+            r = await self.ex.run("bash", "-c",
+                                  "ss -tln | awk 'NR>1{print $4}' | sed 's/.*://' | sort -u")
             for tok in r.stdout.split():
                 if tok.isdigit():
                     busy.add(int(tok))
@@ -101,12 +128,17 @@ class AppManager:
         lang = RUNTIMES.get(language)
         if not lang:
             return {"ok": False, "error": f"bahasa '{language}' tidak dikenal"}
+
         fw = None
         if framework:
             fw = next((f for f in FRAMEWORKS.get(language, []) if f["id"] == framework), None)
             if not fw:
                 return {"ok": False, "error": f"framework '{framework}' tidak dikenal"}
+
         slug = _slug(name)
+        app_type = _app_type_for(language, framework)
+        type_info = APP_TYPES.get(app_type, {})
+
         if not port:
             try:
                 port = await self.alloc_port()
@@ -114,74 +146,100 @@ class AppManager:
                 return {"ok": False, "error": str(e)}
         if get_app_by_port(port):
             return {"ok": False, "error": f"port {port} sudah dipakai app lain"}
-        if self.ex.mode in ("local", "wsl"):
-            r = await self.ex.run("bash", "-c", f"ss -tln | grep ':{port} ' >/dev/null 2>&1 && echo busy || echo free")
-            if "busy" in r.stdout:
-                return {"ok": False, "error": f"port {port} sedang aktif dipakai OS"}
 
-        # Pastikan home di dalam WEB_ROOT (keamanan path)
         home = f"{WEB_ROOT}/{slug}"
-        if not home.startswith(WEB_ROOT):
-            return {"ok": False, "error": "path tidak valid"}
         os_user = f"weborn-{slug}"[:32]
         unit = f"weborn-{slug}.service"
         env_file = f"{home}/.env"
+        sock = f"{GUNICORN_SOCK_DIR}/{slug}.sock"
+        log_dir = f"/var/log/{slug}"
 
-        start = (fw or {}).get("start") or lang["default"]["cmd"]
-        command = start.replace("{port}", str(port))
+        # ── Build command based on app_type ──
+        workers = type_info.get("workers_default", 4)
+        pm = type_info.get("process_manager", "direct")
 
-        # Stub starter bila framework butuh file minimal.
+        if pm == "gunicorn":
+            command = type_info["command"].format(
+                workers=workers, sock=sock, port=port, name=slug)
+        elif pm == "php-fpm":
+            command = None  # Nginx → PHP-FPM handles this
+            sock = None
+        elif pm == "direct":
+            command = (fw or {}).get("start") or type_info.get("command", "")
+            command = command.replace("{port}", str(port))
+        else:
+            command = None
+
+        # ── Stub starter file ──
         stub = None
         if fw and fw["id"] in STUBS:
             stub = STUBS[fw["id"]]
         elif not fw:
             stub = LANG_STUB.get(language)
-        stub_cmd = ""
-        if stub:
-            fname, content = stub
-            stub_cmd = (f"mkdir -p {home}/{lang['run_dir']} && "
-                        f"cat > {home}/{fname} <<'WEBORN_EOF'\n{content.replace('{name}', name)}\nWEBORN_EOF")
 
         steps, failed = [], None
         if self.ex.mode in ("local", "wsl"):
-            deps = (fw or {}).get("pkg")
+            await self._ensure_dirs(slug)
+
+            deps = (fw or {}).get("pkg") or ""
             if deps and language == "python":
-                # Debian 13 (PEP 668): pakai --break-system-packages
                 deps = deps.replace("pip install",
                                     "python3 -m pip install --break-system-packages")
+
             steps += [
-                ("mkdir", f"mkdir -p {home}/{lang['run_dir']}"),
-                ("user", f"id {os_user} >/dev/null 2>&1 || useradd -r -M -d {home} -s /bin/false {os_user}"),
+                ("mkdir", f"mkdir -p {home}/{lang.get('run_dir', '.')}"),
+                ("user", f"id {os_user} >/dev/null 2>&1 || "
+                         f"useradd -r -M -d {home} -s /bin/false {os_user}"),
             ]
-            if stub_cmd:
-                steps.append(("stub", stub_cmd))
+
+            if stub:
+                fname, content = stub
+                steps.append(("stub",
+                    f"mkdir -p {home}/{lang.get('run_dir', '.')} && "
+                    f"cat > {home}/{fname} <<'WEBORN_EOF'\n"
+                    f"{content.replace('{name}', name)}\nWEBORN_EOF"))
+
             if deps:
                 steps.append(("deps", f"cd {home} && {deps}"))
+
             steps += [
-                ("env", self._write_env(home, port)),
-                ("unit", self._write_unit(unit, os_user, home, command)),
-                ("chown", f"chown -R {os_user}:{os_user} {home}"),
-                ("start", f"systemctl enable --now {unit}"),
+                ("env", self._write_env(home, port, app_type, name)),
+                ("unit", self._write_unit(unit, os_user, home, command, app_type)),
             ]
+
+            if pm == "gunicorn":
+                steps += [
+                    ("glog", f"sudo mkdir -p {log_dir} && sudo chown {os_user}:{os_user} {log_dir}"),
+                ]
+            elif pm == "php-fpm":
+                steps += [
+                    ("fpm", f"sudo mkdir -p /etc/php/fpm/pool.d && "
+                            f"sudo chown www-data:www-data {home}/public 2>/dev/null || true"),
+                ]
+
+            steps += [
+                ("chown", f"sudo chown -R {os_user}:{os_user} {home}"),
+                ("start", f"sudo systemctl enable --now {unit}"),
+            ]
+
             for step, cmd in steps:
                 r = await self.ex.run("bash", "-c", cmd)
                 if not r.ok and failed is None:
-                    # deps (instal dependency) tidak mematikan pembuatan app
-                    if step not in ("deps",):
+                    if step not in ("deps", "stub"):
                         failed = step
-        else:  # dry-run: catat alur tanpa eksekusi
+        else:
             steps = [
-                ("mkdir", f"mkdir -p {home}/{lang['run_dir']}"),
+                ("mkdir", f"mkdir -p {home}"),
                 ("user", f"useradd -r -M -d {home} -s /bin/false {os_user}"),
-                ("stub", stub_cmd or "starter ditulis"),
-                ("env", f".env ditulis (PORT={port}, APP_DIR={home})"),
-                ("unit", f"unit {unit} ditulis"),
+                ("env", f".env written (PORT={port}, TYPE={app_type})"),
+                ("unit", f"unit {unit} written"),
                 ("start", f"systemctl enable --now {unit}"),
             ]
 
         add_app({
             "name": name, "language": language, "framework": framework or "",
-            "user": os_user, "home_dir": home, "port": port, "command": command,
+            "user": os_user, "home_dir": home, "port": port,
+            "command": command or f"Nginx → {pm}",
             "status": "running" if failed is None else "error",
             "env_file": env_file, "unit": unit,
             "created_at": datetime.now().isoformat(),
@@ -193,24 +251,45 @@ class AppManager:
             "unit": unit, "command": command, "env_file": env_file, "steps": steps,
         }
 
+    # ----------------------------------------------------------------- env/unit
     @staticmethod
-    def _write_env(home: str, port: int) -> str:
-        return (f"cat > {home}/.env <<'WEBORN_EOF'\n"
-                f"PORT={port}\nAPP_DIR={home}\n"
-                "WEBORN_EOF")
+    def _write_env(home: str, port: int, app_type: str, name: str) -> str:
+        slug = _slug(name)
+        sock = f"{GUNICORN_SOCK_DIR}/{slug}.sock"
+        lines = [
+            f"PORT={port}",
+            f"APP_DIR={home}",
+            f"APP_TYPE={app_type}",
+            f"GUNICORN_SOCK={sock}",
+        ]
+        return f"cat > {home}/.env <<'WEBORN_EOF'\n" + "\n".join(lines) + "\nWEBORN_EOF"
 
     @staticmethod
-    def _write_unit(unit: str, os_user: str, home: str, command: str) -> str:
-        return (f"cat > /etc/systemd/system/{unit} <<'WEBORN_EOF'\n"
-                "[Unit]\nDescription=Weborn app\nAfter=network.target\n\n"
-                "[Service]\n"
-                f"User={os_user}\nGroup={os_user}\n"
-                f"WorkingDirectory={home}\n"
-                f"EnvironmentFile={home}/.env\n"
-                f"ExecStart=/bin/bash -c 'cd {home} && {command}'\n"
-                "Restart=on-failure\n\n"
-                "[Install]\nWantedBy=multi-user.target\n"
-                "WEBORN_EOF")
+    def _write_unit(unit: str, os_user: str, home: str, command: str | None,
+                    app_type: str) -> str:
+        slug = _slug(unit.replace("weborn-", "").replace(".service", ""))
+        if command:
+            exec_line = f"ExecStart=/bin/bash -c 'cd {home} && {command}'"
+        else:
+            # PHP-FPM or static: unit just ensures directory perms
+            exec_line = f"ExecStart=/bin/true"
+        return (
+            f"cat > /etc/systemd/system/{unit} <<'WEBORN_EOF'\n"
+            "[Unit]\n"
+            f"Description=Weborn app ({app_type})\n"
+            "After=network.target\n\n"
+            "[Service]\n"
+            f"User={os_user}\n"
+            f"Group={os_user}\n"
+            f"WorkingDirectory={home}\n"
+            f"EnvironmentFile={home}/.env\n"
+            f"{exec_line}\n"
+            "Restart=on-failure\n"
+            "RestartSec=5\n\n"
+            "[Install]\n"
+            "WantedBy=multi-user.target\n"
+            "WEBORN_EOF"
+        )
 
     # ---------------------------------------------------------------- actions
     async def control(self, app_id: int, action: str) -> dict:
@@ -219,10 +298,11 @@ class AppManager:
             return {"ok": False, "error": "app tidak ditemukan"}
         if action in ("start", "stop", "restart"):
             if self.ex.mode in ("local", "wsl"):
-                r = await self.ex.systemctl(action, app["unit"])
+                r = await self.ex.run("bash", "-c",
+                                      f"sudo systemctl {action} {app['unit']}")
                 if r.ok:
                     set_app_status(app_id, "running" if action != "stop" else "stopped")
-                return {"ok": r.ok, "output": r.output}
+                return {"ok": r.ok, "output": r.stdout + r.stderr}
             set_app_status(app_id, "running" if action != "stop" else "stopped")
             return {"ok": True, "output": f"[dry-run] systemctl {action} {app['unit']}"}
         return {"ok": False, "error": "aksi tidak dikenal"}
@@ -233,10 +313,11 @@ class AppManager:
             return {"ok": False, "error": "app tidak ditemukan"}
         if self.ex.mode in ("local", "wsl"):
             steps = [
-                ("stop", f"systemctl disable --now {app['unit']} 2>/dev/null || true"),
-                ("rmunit", f"rm -f /etc/systemd/system/{app['unit']}"),
-                ("rmdir", f"rm -rf {app['home_dir']}"),
-                ("rmuser", f"userdel {app['user']} 2>/dev/null || true"),
+                ("stop", f"sudo systemctl disable --now {app['unit']} 2>/dev/null || true"),
+                ("rmunit", f"sudo rm -f /etc/systemd/system/{app['unit']}"),
+                ("sock", f"sudo rm -f {GUNICORN_SOCK_DIR}/{_slug(app['name'])}.sock"),
+                ("rmdir", f"sudo rm -rf {app['home_dir']}"),
+                ("rmuser", f"sudo userdel {app['user']} 2>/dev/null || true"),
             ]
             for _, cmd in steps:
                 await self.ex.run("bash", "-c", cmd)
@@ -246,5 +327,48 @@ class AppManager:
     def list(self) -> list[dict]:
         apps = list_apps()
         for a in apps:
-            a["language_label"] = RUNTIMES.get(a["language"], {}).get("label", a["language"])
+            lang_info = RUNTIMES.get(a["language"], {})
+            a["language_label"] = lang_info.get("label", a["language"])
+            a["app_type"] = _app_type_for(a["language"], a.get("framework", ""))
+            a["process_manager"] = APP_TYPES.get(a["app_type"], {}).get("process_manager", "direct")
         return apps
+
+    # -------------------------------------------------------------- status
+    async def get_gunicorn_status(self, name: str) -> dict:
+        """Get Gunicorn worker status for an app."""
+        slug = _slug(name)
+        unit = f"weborn-{slug}.service"
+        if self.ex.mode not in ("local", "wsl"):
+            return {"status": "dry-run", "workers": []}
+
+        # Get systemd status
+        r = await self.ex.run("bash", "-c",
+                              f"systemctl is-active {unit} 2>/dev/null || echo stopped")
+        status = r.stdout.strip()
+
+        # Get Gunicorn master PID
+        r2 = await self.ex.run("bash", "-c",
+                               f"systemctl show {unit} --property=MainPID --value 2>/dev/null")
+        master_pid = r2.stdout.strip()
+
+        # Get worker count from ps
+        workers = []
+        if master_pid and master_pid.isdigit() and int(master_pid) > 0:
+            r3 = await self.ex.run("bash", "-c",
+                                   f"ps --ppid {master_pid} -o pid,pcpu,pmem,etime,cmd --no-headers 2>/dev/null")
+            for line in r3.stdout.strip().splitlines():
+                parts = line.split(None, 4)
+                if len(parts) >= 5:
+                    workers.append({
+                        "pid": parts[0],
+                        "cpu": parts[1],
+                        "mem": parts[2],
+                        "uptime": parts[3],
+                        "cmd": parts[4],
+                    })
+
+        return {
+            "status": status,
+            "master_pid": master_pid,
+            "workers": workers,
+        }

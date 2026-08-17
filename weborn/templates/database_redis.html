@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Redis - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">🔴 Redis</div>
+<div class="page-sub text-t3 text-[13px] mb-5">In-memory data store — port default 6379</div>
+
+{% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
+
+{% if not installed %}
+<div class="msg err">Redis belum terpasang. Install via <a href="/addons/redis" class="text-accent">Addon Store</a>.</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="card">
+        <h3 class="text-sm mb-3 font-bold">📊 Server Info</h3>
+        <div class="bg-black/20 rounded-lg p-3 font-mono text-[12px] leading-relaxed">
+            {% for line in info %}
+            <div>{{ line }}</div>
+            {% else %}
+            <div class="text-t3">Belum ada info (Redis tidak aktif?)</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="text-sm mb-3 font-bold">⚙️ Quick Actions</h3>
+        <div class="flex flex-col gap-2">
+            <a href="/addons/redis" class="btn">⚙️ Kelola via Addon Store</a>
+            <div class="text-[13px] text-t3 mt-2">
+                <p class="mb-1"><b>Koneksi:</b></p>
+                <code class="mono text-[11px]">redis-cli -h 127.0.0.1 -p 6379</code>
+            </div>
+            <div class="text-[13px] text-t3">
+                <p class="mb-1"><b>Config:</b></p>
+                <code class="mono text-[11px]">/etc/redis/redis.conf</code>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

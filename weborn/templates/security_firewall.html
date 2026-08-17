@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Firewall - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">🛡️ UFW Firewall</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Manage firewall rules — allow/deny port & protocol</div>
+
+{% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] gap-4 items-start">
+    <div class="card">
+        <h3 class="text-sm mb-3 font-bold">ℹ️ Status</h3>
+        <div class="mb-3">
+            {% if service_active %}<span class="badge ok">🟢 ACTIVE</span>
+            {% else %}<span class="badge warn">⚪ INACTIVE</span>{% endif %}
+        </div>
+        <form method="post" action="/security/firewall/toggle">
+            {% if service_active %}
+            <button class="btn danger w-full justify-center">⏹ Disable Firewall</button>
+            {% else %}
+            <button class="btn primary w-full justify-center">▶ Enable Firewall</button>
+            {% endif %}
+        </form>
+
+        <div class="border-t border-line mt-4 pt-4">
+            <h4 class="text-[12px] font-bold mb-2">➕ Tambah Rule</h4>
+            <form method="post" action="/security/firewall/allow" class="space-y-2">
+                <input name="port" placeholder="Port (22, 80, 443)" required class="w-full text-[13px]">
+                <select name="proto" class="w-full text-[13px]">
+                    <option value="tcp">TCP</option>
+                    <option value="udp">UDP</option>
+                    <option value="any">ANY</option>
+                </select>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn primary flex-1">✅ Allow</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card !p-0 overflow-hidden">
+        <table>
+            <thead><tr><th>Rule</th></tr></thead>
+            <tbody>
+            {% for rule in rules %}
+            <tr><td class="mono text-[12px]">{{ rule }}</td></tr>
+            {% else %}
+            <tr><td class="text-t3 text-center py-7">Tidak ada rule</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

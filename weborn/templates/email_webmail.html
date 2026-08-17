@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Webmail - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">📮 Webmail (Roundcube)</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Web-based email client untuk akses email via browser</div>
+
+{% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="card">
+        <h3 class="text-sm mb-3 font-bold">ℹ️ Status</h3>
+        <div class="space-y-2 text-[13px]">
+            <div><span class="text-t3">Roundcube:</span>
+                {% if running %}<span class="badge ok">🟢 Installed & Running</span>
+                {% elif installed %}<span class="badge warn">⚪ Installed, Stopped</span>
+                {% else %}<span class="badge err">❌ Not Installed</span>{% endif %}
+            </div>
+            {% if webmail_url %}
+            <div><span class="text-t3">URL:</span> <a href="{{ webmail_url }}" class="text-accent" target="_blank">{{ webmail_url }}</a></div>
+            {% endif %}
+        </div>
+
+        {% if not installed %}
+        <form method="post" action="/email/webmail/install" class="mt-4">
+            <button class="btn primary w-full justify-center"
+                    onclick="return confirm('Pasang Roundcube Webmail?')">
+                📥 Install Roundcube
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h3 class="text-sm mb-3 font-bold">📖 Cara Akses</h3>
+        <div class="text-[13px] text-t3 space-y-2">
+            <p>Setelah terpasang, akses webmail di:</p>
+            <code class="block text-[12px] bg-black/10 rounded p-2">https://IP_SERVER/roundcube</code>
+            <p>atau setup nginx:</p>
+            <code class="block text-[12px] bg-black/10 rounded p-2">server_name mail.domain.com</code>
+            <p class="text-[11px]">Kredensial = akun email yang dibuat di <a href="/email/accounts" class="text-accent">Mailbox</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

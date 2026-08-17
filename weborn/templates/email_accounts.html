@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Mailbox - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">👤 Mailbox Management</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Buat & kelola akun email per domain</div>
+
+{% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start">
+    {# ─── Create Form ─── #}
+    <div class="card">
+        <h3 class="text-sm mb-3 font-bold">➕ Buat Akun Email</h3>
+        {% if not domains %}
+        <div class="msg err">Buat domain dulu di <a href="/domains" class="text-accent">Domain Manager</a>.</div>
+        {% else %}
+        <form method="post" action="/email/accounts/create">
+            <div class="field">
+                <label>Domain</label>
+                <select name="domain">
+                    {% for d in domains %}
+                    <option value="{{ d.name }}" {{ 'selected' if d.name == selected_domain }}>{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label>Username</label>
+                <div class="flex items-center gap-0">
+                    <input name="username" placeholder="user" required class="!rounded-r-none !border-r-0 flex-1">
+                    <span class="text-[13px] text-t3 px-2 border border-line !rounded-l-none bg-black/5 whitespace-nowrap">@{{ selected_domain }}</span>
+                </div>
+            </div>
+            <div class="field">
+                <label>Password</label>
+                <input name="password" type="password" required>
+            </div>
+            <button type="submit" class="btn primary w-full justify-center">+ Buat Akun</button>
+        </form>
+        {% endif %}
+    </div>
+
+    {# ─── Mailbox List ─── #}
+    <div class="card !p-0 overflow-hidden">
+        <div class="px-4 py-3 border-b border-line flex items-center gap-3">
+            <span class="text-sm font-bold">📧 Mailboxes</span>
+            {% if domains|length > 1 %}
+            <select class="text-[12px] !py-1" onchange="window.location='?domain='+this.value">
+                {% for d in domains %}
+                <option value="{{ d.name }}" {{ 'selected' if d.name == selected_domain }}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+        </div>
+        <table>
+            <thead><tr><th>Username</th><th>Home</th><th></th></tr></thead>
+            <tbody>
+            {% for m in mailboxes %}
+            <tr>
+                <td class="mono text-[13px]">{{ m.user }}@{{ selected_domain }}</td>
+                <td class="mono text-[11px] text-t3">{{ m.home }}</td>
+                <td class="text-right">
+                    <form method="post" action="/email/accounts/delete" style="display:inline"
+                          onsubmit="return confirm('Hapus akun {{ m.user }}@{{ selected_domain }}?')">
+                        <input type="hidden" name="username" value="{{ m.user }}">
+                        <input type="hidden" name="domain" value="{{ selected_domain }}">
+                        <button class="btn danger !py-0.5 !px-2 text-[11px]">🗑</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-t3 text-center py-7">Belum ada mailbox</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

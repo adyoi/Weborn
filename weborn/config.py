@@ -14,101 +14,188 @@ CONF_TEMPLATES_DIR = Path(__file__).resolve().parent / "addons" / "templates"
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
-# Target deployment (linux) — dipakai untuk generate konfigurasi layanan
+# Target deployment (linux)
 WEB_ROOT = "/var/www"
+GUNICORN_SOCK_DIR = "/run/gunicorn"
 
 # Port panel
 PANEL_HTTP_PORT = 2025
 PANEL_HTTPS_PORT = 2043
 
-# Nama cookie sesi
 SESSION_COOKIE = "weborn_session"
 
-# Mode eksekusi: "dry-run" (dev/Windows), "local" (linux), atau "wsl" (WSL distro).
-# Bisa dioverride lewat env WEBORN_EXECUTOR_MODE (untuk tes WSL/Debian).
 import os as _os
+import platform as _platform
 
-EXECUTOR_MODE = _os.environ.get("WEBORN_EXECUTOR_MODE", "dry-run").strip().lower()
-if EXECUTOR_MODE not in ("dry-run", "local", "wsl"):
+_env_mode = _os.environ.get("WEBORN_EXECUTOR_MODE", "").strip().lower()
+if _env_mode in ("dry-run", "local", "wsl"):
+    EXECUTOR_MODE = _env_mode
+elif _platform.system() == "Linux":
+    EXECUTOR_MODE = "local"
+else:
     EXECUTOR_MODE = "dry-run"
 
-# Distro WSL default untuk mode "wsl"
 WSL_DISTRO = _os.environ.get("WEBORN_WSL_DISTRO", "Debian")
 
-APP_TYPES = {
-    "static": {"label": "Static Site", "command": None},
-    "wsgi": {"label": "WSGI (Gunicorn)", "command": "gunicorn main:app"},
-    "asgi": {"label": "ASGI (Uvicorn)", "command": "uvicorn main:app"},
-    "django": {"label": "Django", "command": "uvicorn main:app"},
-    "fastapi": {"label": "FastAPI", "command": "uvicorn main:app"},
-    "laravel": {"label": "Laravel (PHP)", "command": "php artisan serve"},
-    "nodejs": {"label": "Node.js", "command": "npm start"},
-}
+# ─────────────────────────────────────────────────────────────────────────────
+# APP TYPES — Arsitektur Gunicorn sebagai process manager
+#
+# WSGI (Django/Flask):
+#   Nginx → Gunicorn (sync workers) → Django/Flask
+#   gunicorn main:app -w 4 --bind unix:/run/gunicorn/{name}.sock
+#
+# ASGI (FastAPI/Starlette):
+#   Nginx → Gunicorn (uvicorn workers) → FastAPI/Starlette
+#   gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind unix:/run/gunicorn/{name}.sock
+#
+# Static: Nginx langsung serve file
+# PHP: Nginx → PHP-FPM
+# Node.js: Nginx → Node process (reverse proxy)
+# ─────────────────────────────────────────────────────────────────────────────
 
-# ---------------------------------------------------------------- Runtime apps
-# Bahasa runtime yang dikelola panel. Setiap bahasa butuh addon runtime (Addon Store)
-# yang menginstall interpreter/compiler-nya.
-RUNTIMES = {
+APP_TYPES = {
+    # ── Python WSGI ──
+    "wsgi": {
+        "label": "WSGI (Python)",
+        "runtime": "python",
+        "process_manager": "gunicorn",
+        "command": "gunicorn main:app -w {workers} --bind unix:{sock} --timeout 120 --access-logfile -",
+        "workers_default": 4,
+    },
+    "django": {
+        "label": "Django",
+        "runtime": "python",
+        "process_manager": "gunicorn",
+        "command": "gunicorn main:app -w {workers} --bind unix:{sock} --timeout 120 --access-logfile -",
+        "workers_default": 4,
+    },
+    "flask": {
+        "label": "Flask",
+        "runtime": "python",
+        "process_manager": "gunicorn",
+        "command": "gunicorn main:app -w {workers} --bind unix:{sock} --timeout 120 --access-logfile -",
+        "workers_default": 4,
+    },
+
+    # ── Python ASGI ──
+    "asgi": {
+        "label": "ASGI (Python)",
+        "runtime": "python",
+        "process_manager": "gunicorn",
+        "command": "gunicorn main:app -w {workers} -k uvicorn.workers.UvicornWorker --bind unix:{sock} --timeout 120",
+        "workers_default": 4,
+    },
+    "fastapi": {
+        "label": "FastAPI",
+        "runtime": "python",
+        "process_manager": "gunicorn",
+        "command": "gunicorn main:app -w {workers} -k uvicorn.workers.UvicornWorker --bind unix:{sock} --timeout 120",
+        "workers_default": 4,
+    },
+
+    # ── PHP (via PHP-FPM) ──
+    "laravel": {
+        "label": "Laravel (PHP)",
+        "runtime": "php",
+        "process_manager": "php-fpm",
+        "command": None,  # served by Nginx → PHP-FPM
+    },
+    "php": {
+        "label": "PHP",
+        "runtime": "php",
+        "process_manager": "php-fpm",
+        "command": None,
+    },
+
+    # ── Node.js ──
     "nodejs": {
         "label": "Node.js",
-        "addon": "nodejs",                 # addon runtime di Addon Store
-        "pkg": "npm",
-        "version_cmd": "node -v && npm -v",
-        "run_dir": "app",
-        "default": {"file": "server.js", "cmd": "node server.js"},
+        "runtime": "nodejs",
+        "process_manager": "direct",
+        "command": "node server.js",
+    },
+
+    # ── Static ──
+    "static": {
+        "label": "Static Site",
+        "runtime": None,
+        "process_manager": None,
+        "command": None,  # Nginx serves directly
+    },
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RUNTIMES — Bahasa yang dikelola panel
+# ─────────────────────────────────────────────────────────────────────────────
+
+RUNTIMES = {
+    "python": {
+        "label": "Python",
+        "addon": "python3",
+        "pkg": "pip",
+        "version_cmd": "python3 -V",
+        "wsgi_server": "gunicorn",
+        "asgi_server": "gunicorn+uvicorn",
+        "install_cmd": "pip install gunicorn uvicorn",
+        "default": {
+            "wsgi": "gunicorn main:app -w {workers} --bind unix:{sock}",
+            "asgi": "gunicorn main:app -w {workers} -k uvicorn.workers.UvicornWorker --bind unix:{sock}",
+        },
     },
     "php": {
         "label": "PHP",
         "addon": "php",
         "pkg": "composer",
         "version_cmd": "php -v | head -1",
-        "run_dir": "public",
-        "default": {"file": "index.php", "cmd": "php -S 0.0.0.0:{port} -t public"},
+        "fpm_sock": "/run/php/php{version}-fpm.sock",
+        "default": {
+            "serve": "Nginx → PHP-FPM (no direct process)",
+        },
     },
-    "python": {
-        "label": "Python",
-        "addon": "python",
-        "pkg": "pip",
-        "version_cmd": "python3 -V",
-        "run_dir": "app",
-        "default": {"file": "main.py", "cmd": "python3 -m uvicorn main:app --host 0.0.0.0 --port {port}"},
+    "nodejs": {
+        "label": "Node.js",
+        "addon": "nodejs",
+        "pkg": "npm",
+        "version_cmd": "node -v && npm -v",
+        "default": {
+            "serve": "node server.js",
+        },
     },
 }
 
-# Framework populer per bahasa (preset untuk scaffold starter app).
+# ─────────────────────────────────────────────────────────────────────────────
+# FRAMEWORKS — Preset scaffold per bahasa
+# ─────────────────────────────────────────────────────────────────────────────
+
 FRAMEWORKS = {
-    "nodejs": [
-        {"id": "express", "label": "Express", "pkg": "npm install express",
-         "start": "node server.js"},
-        {"id": "next", "label": "Next.js", "pkg": "npx create-next-app@latest . --js",
-         "start": "npm run dev"},
-        {"id": "nuxt", "label": "Nuxt", "pkg": "npx create-nuxt-app", "start": "npm run dev"},
-        {"id": "nest", "label": "NestJS", "pkg": "npm i -g @nestjs/cli && nest new .",
-         "start": "npm run start:dev"},
-        {"id": "fastify", "label": "Fastify", "pkg": "npm install fastify",
-         "start": "node server.js"},
+    "python": [
+        {"id": "django", "label": "Django", "app_type": "django",
+         "pkg": "pip install django gunicorn uvicorn",
+         "start": "gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind unix:{sock}"},
+        {"id": "fastapi", "label": "FastAPI", "app_type": "fastapi",
+         "pkg": "pip install fastapi uvicorn gunicorn",
+         "start": "gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind unix:{sock}"},
+        {"id": "flask", "label": "Flask", "app_type": "flask",
+         "pkg": "pip install flask gunicorn",
+         "start": "gunicorn main:app -w 4 --bind unix:{sock}"},
     ],
     "php": [
-        {"id": "laravel", "label": "Laravel", "pkg": "composer create-project laravel/laravel .",
-         "start": "php artisan serve --port {port}"},
-        {"id": "wordpress", "label": "WordPress", "pkg": "wp core download",
-         "start": "php -S 0.0.0.0:{port} -t ."},
-        {"id": "codeigniter", "label": "CodeIgniter 4",
-         "pkg": "composer create-project codeigniter4/appstarter .",
-         "start": "php spark serve --port {port}"},
-        {"id": "symfony", "label": "Symfony", "pkg": "composer create-project symfony/skeleton .",
-         "start": "php -S 0.0.0.0:{port} -t public"},
-        {"id": "lumen", "label": "Lumen", "pkg": "composer create-project laravel/lumen .",
-         "start": "php -S 0.0.0.0:{port} -t public"},
+        {"id": "laravel", "label": "Laravel", "app_type": "laravel",
+         "pkg": "composer create-project laravel/laravel .",
+         "serve": "Nginx → PHP-FPM"},
+        {"id": "wordpress", "label": "WordPress", "app_type": "php",
+         "pkg": "wp core download",
+         "serve": "Nginx → PHP-FPM"},
     ],
-    "python": [
-        {"id": "django", "label": "Django", "pkg": "pip install django && django-admin startproject weborn .",
-         "start": "python3 manage.py runserver 0.0.0.0:{port}"},
-        {"id": "fastapi", "label": "FastAPI", "pkg": "pip install fastapi uvicorn",
-         "start": "python3 -m uvicorn main:app --host 0.0.0.0 --port {port}"},
-        {"id": "flask", "label": "Flask", "pkg": "pip install flask",
-         "start": "python3 -m flask run --host 0.0.0.0 --port {port}"},
-        {"id": "tornado", "label": "Tornado", "pkg": "pip install tornado",
-         "start": "python3 main.py"},
+    "nodejs": [
+        {"id": "express", "label": "Express", "app_type": "nodejs",
+         "pkg": "npm install express",
+         "start": "node server.js"},
+        {"id": "next", "label": "Next.js", "app_type": "nodejs",
+         "pkg": "npx create-next-app@latest . --js",
+         "start": "npm run dev"},
+        {"id": "fastify", "label": "Fastify", "app_type": "nodejs",
+         "pkg": "npm install fastify",
+         "start": "node server.js"},
     ],
 }

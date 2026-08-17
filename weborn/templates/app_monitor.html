@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Process Monitor — Weborn{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-5">
+    <h1 class="text-xl font-bold">🧠 Process Monitor</h1>
+    <div class="flex gap-2">
+        <button onclick="location.reload()" class="btn text-xs">↻ Refresh</button>
+        <button onclick="autoRefresh()" id="auto-btn" class="btn text-xs">⏱ Auto: OFF</button>
+    </div>
+</div>
+
+{# ── Summary Cards ── #}
+<div class="grid grid-cols-4 gap-4 mb-6">
+    <div class="card p-4 text-center">
+        <div class="text-2xl font-bold">{{ apps | selectattr('gunicorn_status', 'eq', 'active') | list | length }}</div>
+        <div class="text-t3 text-xs mt-1">Running</div>
+    </div>
+    <div class="card p-4 text-center">
+        <div class="text-2xl font-bold">{{ apps | selectattr('gunicorn_status', 'eq', 'stopped') | list | length }}</div>
+        <div class="text-t3 text-xs mt-1">Stopped</div>
+    </div>
+    <div class="card p-4 text-center">
+        <div class="text-2xl font-bold">{{ apps | selectattr('process_manager', 'eq', 'gunicorn') | list | length }}</div>
+        <div class="text-t3 text-xs mt-1">Gunicorn Apps</div>
+    </div>
+    <div class="card p-4 text-center">
+        <div class="text-2xl font-bold">{{ apps | map(attribute='workers') | map('length') | sum }}</div>
+        <div class="text-t3 text-xs mt-1">Total Workers</div>
+    </div>
+</div>
+
+{# ── App List ── #}
+<div class="card p-5">
+    <h2 class="font-bold text-sm mb-3">Applications</h2>
+    {% if apps %}
+    <div class="space-y-3">
+        {% for app in apps %}
+        <div class="bg-pane2 rounded p-4">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-3">
+                    <span class="font-bold text-sm">{{ app.name }}</span>
+                    <span class="text-t3 text-xs font-mono">{{ app.app_type }}</span>
+                    <span class="text-t3 text-xs">({{ app.process_manager }})</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if app.gunicorn_status == 'active' %}
+                    <span class="px-2 py-0.5 rounded bg-green-500/20 text-green-400 text-[11px] font-mono">● running</span>
+                    {% elif app.gunicorn_status == 'stopped' %}
+                    <span class="px-2 py-0.5 rounded bg-gray-500/20 text-gray-400 text-[11px] font-mono">● stopped</span>
+                    {% else %}
+                    <span class="px-2 py-0.5 rounded bg-red-500/20 text-red-400 text-[11px] font-mono">● {{ app.gunicorn_status }}</span>
+                    {% endif %}
+                    <button onclick="weborn.action('/apps/{{ app.id }}/restart','POST').then(()=>location.reload())"
+                            class="btn text-[11px]">Restart</button>
+                </div>
+            </div>
+
+            {% if app.process_manager == 'gunicorn' and app.workers %}
+            <div class="mt-2">
+                <div class="text-t3 text-[11px] mb-1">
+                    Master PID: <span class="font-mono">{{ app.master_pid }}</span>
+                    · Workers: <span class="font-mono">{{ app.workers | length }}</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="text-xs font-mono w-full">
+                        <thead>
+                            <tr class="text-t3 text-left">
+                                <th class="pb-1 pr-3">PID</th>
+                                <th class="pb-1 pr-3">CPU%</th>
+                                <th class="pb-1 pr-3">MEM%</th>
+                                <th class="pb-1 pr-3">Uptime</th>
+                                <th class="pb-1">Command</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for w in app.workers %}
+                            <tr class="border-t border-line/30">
+                                <td class="py-1 pr-3">{{ w.pid }}</td>
+                                <td class="py-1 pr-3">{{ w.cpu }}</td>
+                                <td class="py-1 pr-3">{{ w.mem }}</td>
+                                <td class="py-1 pr-3">{{ w.uptime }}</td>
+                                <td class="py-1 truncate max-w-[300px]">{{ w.cmd }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% elif app.process_manager != 'gunicorn' %}
+            <div class="text-t3 text-[11px] mt-1">
+                Process manager: <span class="font-mono">{{ app.process_manager }}</span>
+                {% if app.process_manager == 'php-fpm' %} (managed by PHP-FPM socket)
+                {% elif app.process_manager == 'direct' %} (direct process, no Gunicorn)
+                {% else %} (Nginx serves directly)
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-t3 text-sm">Belum ada aplikasi</div>
+    {% endif %}
+</div>
+
+<script>
+let autoInterval = null;
+function autoRefresh() {
+    const btn = document.getElementById('auto-btn');
+    if (autoInterval) {
+        clearInterval(autoInterval);
+        autoInterval = null;
+        btn.textContent = '⏱ Auto: OFF';
+    } else {
+        autoInterval = setInterval(() => location.reload(), 5000);
+        btn.textContent = '⏱ Auto: ON';
+    }
+}
+</script>
+{% endblock %}

@@ -1,6 +1,77 @@
 // Weborn panel: aksi dengan modal progress + streaming SSE (install/update/uninstall)
+// + browser navigation guard (cegah reload/tutup saat proses berjalan)
 (function () {
   const $ = (id) => document.getElementById(id);
+
+  // ── Navigation guard ──────────────────────────────────────────────────────
+  // Mencegah browser reload / close / back / forward saat proses sedang berjalan.
+  // Menggunakan beforeunload + event listener pada progress overlay.
+  let _processRunning = false;
+  let _navGuardReason = '';
+
+  function enableNavGuard(reason) {
+    _processRunning = true;
+    _navGuardReason = reason || 'Proses sedang berjalan';
+  }
+  function disableNavGuard() {
+    _processRunning = false;
+    _navGuardReason = '';
+  }
+
+  // beforeunload: cegah tutup/reload tab
+  window.addEventListener('beforeunload', function (e) {
+    if (_processRunning) {
+      e.preventDefault();
+      e.returnValue = _navGuardReason;
+      return e.returnValue;
+    }
+  });
+
+  // popstate: cegah navigasi back/forward
+  window.addEventListener('popstate', function (e) {
+    if (_processRunning) {
+      e.preventDefault();
+      window.history.pushState(null, '', window.location.href);
+      showToast(_navGuardReason);
+    }
+  });
+
+  // Intercept semua link click (navigasi dalam tab)
+  document.addEventListener('click', function (e) {
+    if (!_processRunning) return;
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    const href = a.getAttribute('href');
+    // Abaikan hash-only, javascript:, dan anchor internal
+    if (!href || href === '#' || href.startsWith('javascript:') || href.startsWith('#')) return;
+    e.preventDefault();
+    showToast(_navGuardReason);
+  });
+
+  // Intercept form submit
+  document.addEventListener('submit', function (e) {
+    if (_processRunning) {
+      e.preventDefault();
+      showToast(_navGuardReason);
+    }
+  });
+
+  // Toast notification untuk guard
+  function showToast(msg) {
+    let t = document.getElementById('weborn-nav-guard-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'weborn-nav-guard-toast';
+      t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:100000;' +
+        'background:#f59e0b;color:#000;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:600;' +
+        'box-shadow:0 4px 20px rgba(0,0,0,.3);transition:opacity .3s;pointer-events:none;';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(t._hideTimer);
+    t._hideTimer = setTimeout(() => { t.style.opacity = '0'; }, 3000);
+  }
 
   const THEME_KEY = 'weborn_theme';
   const THEME_ICONS = { system: '🌓', dark: '🌙', light: '☀️' };
@@ -42,6 +113,7 @@
     $('progress-close').style.display = 'none';
     $('progress-overlay').classList.add('visible');
     setProgress(0);
+    enableNavGuard(title || 'Proses sedang berjalan');
   }
   function setProgress(pct) {
     $('progress-fill').style.width = Math.max(2, Math.min(100, pct)) + '%';
@@ -62,7 +134,10 @@
     $('progress-close').style.display = 'inline-block';
     setProgress(100);
   }
-  function hideProgress() { $('progress-overlay').classList.remove('visible'); }
+  function hideProgress() {
+    $('progress-overlay').classList.remove('visible');
+    disableNavGuard();
+  }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g,
       (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

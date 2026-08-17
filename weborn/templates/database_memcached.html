@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Memcached - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">⚡ Memcached</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Distributed memory caching — port default 11211</div>
+
+{% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
+
+{% if not installed %}
+<div class="msg err">Memcached belum terpasang. Install via <a href="/addons/memcached" class="text-accent">Addon Store</a>.</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="card">
+        <h3 class="text-sm mb-3 font-bold">ℹ️ Info</h3>
+        <div class="text-[13px] space-y-1">
+            <div><span class="text-t3">Host:</span> <code class="mono">127.0.0.1</code></div>
+            <div><span class="text-t3">Port:</span> <code class="mono">11211</code></div>
+            <div><span class="text-t3">Config:</span> <code class="mono">/etc/memcached.conf</code></div>
+        </div>
+    </div>
+    <div class="card">
+        <h3 class="text-sm mb-3 font-bold">⚙️ Quick Actions</h3>
+        <a href="/addons/memcached" class="btn">⚙️ Kelola via Addon Store</a>
+    </div>
+</div>
+{% endblock %}

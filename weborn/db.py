@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS domains (
     proxy_target   TEXT,                                  -- http://127.0.0.1:8000 dst.
     ssl            INTEGER NOT NULL DEFAULT 0,
     enabled        INTEGER NOT NULL DEFAULT 1,
+    locations      TEXT NOT NULL DEFAULT '[]',           -- JSON array of path locations
     created_at     TEXT NOT NULL
 );
 
@@ -158,6 +159,14 @@ def init_db():
             "INSERT OR IGNORE INTO settings(key, value) VALUES ('secret_key', ?)",
             (secrets.token_urlsafe(48),),
         )
+        # migration: add locations column if missing
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(domains)").fetchall()}
+        if "locations" not in cols:
+            conn.execute("ALTER TABLE domains ADD COLUMN locations TEXT NOT NULL DEFAULT '[]'")
+        if "parent" not in cols:
+            conn.execute("ALTER TABLE domains ADD COLUMN parent INTEGER REFERENCES domains(id)")
+        if "kind" not in cols:
+            conn.execute("ALTER TABLE domains ADD COLUMN kind TEXT NOT NULL DEFAULT 'domain'")
         conn.commit()
 
 

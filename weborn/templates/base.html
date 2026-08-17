@@ -17,6 +17,7 @@
         </div>
 
         <nav>
+            {# ── Beranda ── #}
             <div class="menu-group mt-1">
                 <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Beranda</h4>
                 <a href="/" class="menu-link {{ 'menu-active' if active == 'dashboard' else '' }}">📊 Dashboard</a>
@@ -24,85 +25,67 @@
                 <a href="/addons" class="menu-link {{ 'menu-active' if active == 'addons' else '' }}">🧩 Addon Store</a>
             </div>
 
+            {# ── Web Server ── #}
             <div class="menu-group mt-1">
                 <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Web Server</h4>
-                <a href="/web-server" class="menu-link {{ 'menu-active' if active == 'web-server' else '' }}">🌐 Server</a>
-                <a href="/domains" class="menu-link {{ 'menu-active' if active == 'domains' else '' }}">🏷️ Domain</a>
-                <a href="/reverse-proxy" class="menu-link {{ 'menu-active' if active == 'proxy' else '' }}">🔄 Proxy</a>
-                <a href="/cdn" class="menu-link {{ 'menu-active' if active == 'cdn' else '' }}">☁️ CDN</a>
-                <a href="/dns" class="menu-link {{ 'menu-active' if active == 'dns' else '' }}">📡 DNS</a>
+                <a href="/domains" class="menu-link {{ 'menu-active' if active == 'domains' else '' }}">🏷️ Domain & DNS</a>
+                <a href="/web-server/nginx" class="menu-link {{ 'menu-active' if active == 'ws-nginx' else '' }}">🌐 Nginx</a>
+                <a href="/web-server/php" class="menu-link {{ 'menu-active' if active == 'ws-php' else '' }}">🐘 PHP-FPM</a>
+                <a href="/web-server/cache" class="menu-link {{ 'menu-active' if active == 'ws-cache' else '' }}">⚡ Cache</a>
+                <a href="/reverse-proxy" class="menu-link {{ 'menu-active' if active == 'proxy' else '' }}">🔄 Reverse Proxy</a>
             </div>
 
+            {# ── Database ── #}
             <div class="menu-group mt-1">
                 <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Database</h4>
-                <a href="/database" class="menu-link {{ 'menu-active' if active == 'database' else '' }}">🗄️ MySQL</a>
-                <a href="/addons/postgresql" class="menu-link">🐘 PostgreSQL</a>
-                <a href="/addons/redis" class="menu-link">🔴 Redis</a>
-                <a href="/addons/mongodb" class="menu-link">🍃 MongoDB</a>
-                <a href="/addons/memcached" class="menu-link">⚡ Memcached</a>
+                <a href="/database" class="menu-link {{ 'menu-active' if active == 'database' else '' }}">🗄️ MariaDB</a>
+                <a href="/database/pg" class="menu-link {{ 'menu-active' if active == 'db-pg' else '' }}">🐘 PostgreSQL</a>
+                <a href="/database/mongodb" class="menu-link {{ 'menu-active' if active == 'db-mongo' else '' }}">🍃 MongoDB</a>
+                <a href="/database/redis" class="menu-link {{ 'menu-active' if active == 'db-redis' else '' }}">🔴 Redis</a>
+                <a href="/database/memcached" class="menu-link {{ 'menu-active' if active == 'db-memcached' else '' }}">⚡ Memcached</a>
             </div>
 
+            {# ── Mail Server ── #}
             <div class="menu-group mt-1">
-                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Mail</h4>
-                <a href="/addons/postfix" class="menu-link">📧 Postfix</a>
-                <a href="/addons/dovecot" class="menu-link">📬 Dovecot</a>
-                <a href="/addons/exim" class="menu-link">📨 Exim</a>
-                <a href="/addons/roundcube" class="menu-link">📮 Roundcube</a>
-                <a href="/addons/spamassassin" class="menu-link">🛡️ SpamAssassin</a>
+                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Mail Server</h4>
+                <a href="/email" class="menu-link {{ 'menu-active' if active == 'email' else '' }}">📧 Overview</a>
+                <a href="/email/accounts" class="menu-link {{ 'menu-active' if active == 'email-accounts' else '' }}">👤 Mailbox</a>
+                <a href="/email/dns" class="menu-link {{ 'menu-active' if active == 'email-dns' else '' }}">📡 Mail DNS</a>
+                <a href="/email/webmail" class="menu-link {{ 'menu-active' if active == 'email-webmail' else '' }}">📮 Webmail</a>
+                <a href="/email/security" class="menu-link {{ 'menu-active' if active == 'email-security' else '' }}">🛡️ Spam & DKIM</a>
             </div>
 
+            {# ── Weborn (App Manager) ── #}
+            <div class="menu-group mt-1">
+                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Weborn</h4>
+                <a href="/apps" class="menu-link {{ 'menu-active' if active == 'apps' else '' }}">⚡ WSGI Apps</a>
+                <a href="/apps?type=asgi" class="menu-link {{ 'menu-active' if active == 'apps-asgi' else '' }}">🚀 ASGI Apps</a>
+                <a href="/apps/monitor" class="menu-link {{ 'menu-active' if active == 'app-monitor' else '' }}">🧠 Process Monitor</a>
+            </div>
+
+            {# ── Monitoring ── #}
             <div class="menu-group mt-1">
                 <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Monitoring</h4>
                 <a href="/logs" class="menu-link {{ 'menu-active' if active == 'logs' else '' }}">📄 Logs</a>
-                <a href="/addons/grafana" class="menu-link">📊 Grafana</a>
-                <a href="/addons/prometheus" class="menu-link">📈 Prometheus</a>
-                <a href="/addons/netdata" class="menu-link">📡 Netdata</a>
-                <a href="/addons/glances" class="menu-link">📡 Glances</a>
-            </div>
-
-            <div class="menu-group mt-1">
-                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Remote Access</h4>
-                <a href="/accounts" class="menu-link {{ 'menu-active' if active == 'accounts' else '' }}">👤 Akun OS</a>
-                <a href="/addons/ssh" class="menu-link">🔑 SSH</a>
-                <a href="/addons/openvpn" class="menu-link">🔒 OpenVPN</a>
-                <a href="/addons/cockpit" class="menu-link">🖥️ Cockpit</a>
-                <a href="/addons/ftp" class="menu-link">📁 FTP</a>
-            </div>
-
-            <div class="menu-group mt-1">
-                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Runtime</h4>
-                <a href="/addons/nodejs" class="menu-link">💚 Node.js</a>
-                <a href="/addons/python3" class="menu-link">🐍 Python</a>
-                <a href="/addons/php" class="menu-link">🐘 PHP</a>
-                <a href="/addons/ruby" class="menu-link">💎 Ruby</a>
-                <a href="/addons/golang" class="menu-link">🐹 Go</a>
-            </div>
-
-            <div class="menu-group mt-1">
-                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Security</h4>
-                <a href="/security" class="menu-link {{ 'menu-active' if active == 'security' else '' }}">🛡️ Security</a>
-                <a href="/addons/fail2ban" class="menu-link">⛔ Fail2Ban</a>
-                <a href="/addons/clamav" class="menu-link">🦠 ClamAV</a>
-                <a href="/addons/aide" class="menu-link">🔍 AIDE</a>
-                <a href="/addons/lynis" class="menu-link">🔎 Lynis</a>
-            </div>
-
-            <div class="menu-group mt-1">
-                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">System</h4>
-                <a href="/services" class="menu-link {{ 'menu-active' if active == 'services' else '' }}">⚙️ Systemd</a>
                 <a href="/processes" class="menu-link {{ 'menu-active' if active == 'processes' else '' }}">🧠 Proses</a>
-                <a href="/cron" class="menu-link {{ 'menu-active' if active == 'cron' else '' }}">⏰ Cron</a>
-                <a href="/files" class="menu-link {{ 'menu-active' if active == 'files' else '' }}">📁 Files</a>
-                <a href="/terminal" class="menu-link {{ 'menu-active' if active == 'terminal' else '' }}">💻 Terminal</a>
+                <a href="/network" class="menu-link {{ 'menu-active' if active == 'network' else '' }}">🌍 Network</a>
+                <a href="/packages" class="menu-link {{ 'menu-active' if active == 'packages' else '' }}">📦 Paket</a>
+                <a href="/cron" class="menu-link {{ 'menu-active' if active == 'cron' else '' }}">⏰ Cron Jobs</a>
             </div>
 
+            {# ── Access & Security ── #}
             <div class="menu-group mt-1">
-                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Config</h4>
-                <a href="/settings" class="menu-link {{ 'menu-active' if active == 'settings' else '' }}">⚙️ Settings</a>
-                <a href="/panel-accounts" class="menu-link {{ 'menu-active' if active == 'panel-accounts' else '' }}">🔑 Akun Panel</a>
-                <a href="/packages" class="menu-link {{ 'menu-active' if active == 'packages' else '' }}">📦 Paket</a>
-                <a href="/network" class="menu-link {{ 'menu-active' if active == 'network' else '' }}">🌍 Network</a>
+                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Access & Security</h4>
+                <a href="/terminal" class="menu-link {{ 'menu-active' if active == 'terminal' else '' }}">💻 Terminal</a>
+                <a href="/files" class="menu-link {{ 'menu-active' if active == 'files' else '' }}">📁 File Explorer</a>
+                <a href="/accounts" class="menu-link {{ 'menu-active' if active == 'accounts' else '' }}">👤 OS Users</a>
+                <a href="/panel-accounts" class="menu-link {{ 'menu-active' if active == 'panel-accounts' else '' }}">🔑 Panel Users</a>
+                <a href="/services" class="menu-link {{ 'menu-active' if active == 'services' else '' }}">⚙️ Services</a>
+                <a href="/security/firewall" class="menu-link {{ 'menu-active' if active == 'security' else '' }}">🛡️ Firewall</a>
+                <a href="/security/fail2ban" class="menu-link {{ 'menu-active' if active == 'fail2ban' else '' }}">⛔ Fail2Ban</a>
+                <a href="/security/clamav" class="menu-link {{ 'menu-active' if active == 'clamav' else '' }}">🦠 ClamAV</a>
                 <a href="/backup" class="menu-link {{ 'menu-active' if active == 'backup' else '' }}">💾 Backup</a>
+                <a href="/settings" class="menu-link {{ 'menu-active' if active == 'settings' else '' }}">⚙️ Settings</a>
             </div>
         </nav>
 
