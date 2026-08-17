@@ -50,4 +50,6 @@ async def nginx_action(action: str, user: dict = Depends(require_admin)):
         result = await nginx.restart()
     else:
         result = await nginx.reload()
-    return JSONResponse({"ok": result.ok, "output": result.output})
+    ok = result.get("ok", False) if isinstance(result, dict) else result.ok
+    output = result.get("output", result.get("error", "")) if isinstance(result, dict) else result.output
+    return JSONResponse({"ok": ok, "output": output})

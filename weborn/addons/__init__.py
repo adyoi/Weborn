@@ -1,4 +1,4 @@
-﻿"""Sistem Addon terpadu Weborn.
+"""Sistem Addon terpadu Weborn.
 
 Prinsip: SEMUA yang dikelola panel (nginx, caddy, mysql, dovecot, grafana,
 wordpress, weborn-engine, plugin apapun) adalah sebuah ADDON yang punya satu

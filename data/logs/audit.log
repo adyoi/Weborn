@@ -4434,3 +4434,468 @@ WEBORN_EOF' -> rc=0 ok=True
 [2026-08-16T14:12:18.522332] nginx --version -> rc=1 ok=False
 [2026-08-16T14:12:18.615870] python --version -> rc=0 ok=True
 [2026-08-16T14:12:21.383930] python --version -> rc=0 ok=True
+[2026-08-16T22:06:02.431651] which nginx -> rc=0 ok=True
+[2026-08-16T22:06:02.436502] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:06:02.444807] nginx --version -> rc=0 ok=True
+[2026-08-16T22:06:02.451774] which apache2 -> rc=0 ok=True
+[2026-08-16T22:06:02.461863] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:06:02.468739] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:06:02.473526] which mysql -> rc=0 ok=True
+[2026-08-16T22:06:02.478750] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:06:02.486745] mysql --version -> rc=0 ok=True
+[2026-08-16T22:06:02.491916] which psql -> rc=0 ok=True
+[2026-08-16T22:06:02.495149] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:06:02.504492] psql --version -> rc=0 ok=True
+[2026-08-16T22:06:02.511272] which dovecot -> rc=0 ok=True
+[2026-08-16T22:06:02.517513] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:06:02.521820] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:06:02.529120] which sshd -> rc=0 ok=True
+[2026-08-16T22:06:02.531761] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:06:02.537290] sshd --version -> rc=0 ok=True
+[2026-08-16T22:06:28.153286] which psql -> rc=0 ok=True
+[2026-08-16T22:06:28.165083] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:06:28.171368] psql --version -> rc=0 ok=True
+[2026-08-16T22:07:11.792230] which nginx -> rc=0 ok=True
+[2026-08-16T22:07:11.800793] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:07:11.809242] nginx --version -> rc=0 ok=True
+[2026-08-16T22:08:04.540748] bash -c ls -> rc=0 ok=True
+[2026-08-16T22:08:12.430826] bash -c ls -> rc=0 ok=True
+[2026-08-16T22:08:42.113800] which nginx -> rc=0 ok=True
+[2026-08-16T22:08:42.120329] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:08:42.125370] nginx --version -> rc=0 ok=True
+[2026-08-16T22:08:42.130450] which apache2 -> rc=0 ok=True
+[2026-08-16T22:08:42.136087] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:08:42.140449] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:08:42.143610] which mysql -> rc=0 ok=True
+[2026-08-16T22:08:42.151738] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:08:42.160042] mysql --version -> rc=0 ok=True
+[2026-08-16T22:08:42.170283] which psql -> rc=0 ok=True
+[2026-08-16T22:08:42.170283] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:08:42.180258] psql --version -> rc=0 ok=True
+[2026-08-16T22:08:42.184729] which dovecot -> rc=0 ok=True
+[2026-08-16T22:08:42.190088] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:08:42.192781] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:08:42.200387] which sshd -> rc=0 ok=True
+[2026-08-16T22:08:42.207087] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:08:42.210426] sshd --version -> rc=0 ok=True
+[2026-08-16T22:09:53.646618] which mysql -> rc=0 ok=True
+[2026-08-16T22:09:53.649701] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:09:53.655839] mysql --version -> rc=0 ok=True
+[2026-08-16T22:09:53.664125] which psql -> rc=0 ok=True
+[2026-08-16T22:09:53.672705] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:09:53.678719] psql --version -> rc=0 ok=True
+[2026-08-16T22:09:53.681489] which redis-server -> rc=0 ok=True
+[2026-08-16T22:09:53.689375] systemctl is-active redis-server -> rc=0 ok=True
+[2026-08-16T22:09:53.697004] redis-server --version -> rc=0 ok=True
+[2026-08-16T22:09:53.702960] which dovecot -> rc=0 ok=True
+[2026-08-16T22:09:53.702960] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:09:53.719373] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:09:53.725595] which exim -> rc=0 ok=True
+[2026-08-16T22:09:53.729346] systemctl is-active exim4 -> rc=0 ok=True
+[2026-08-16T22:09:53.737406] exim --version -> rc=0 ok=True
+[2026-08-16T22:09:53.743911] which grafana-server -> rc=0 ok=True
+[2026-08-16T22:09:53.749734] grafana-server --version -> rc=0 ok=True
+[2026-08-16T22:09:53.752522] which vsftpd -> rc=0 ok=True
+[2026-08-16T22:09:53.756106] systemctl is-active vsftpd -> rc=0 ok=True
+[2026-08-16T22:09:53.764266] vsftpd --version -> rc=0 ok=True
+[2026-08-16T22:09:53.769337] which sshd -> rc=0 ok=True
+[2026-08-16T22:09:53.779406] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:09:53.783923] sshd --version -> rc=0 ok=True
+[2026-08-16T22:09:53.792039] which node -> rc=0 ok=True
+[2026-08-16T22:09:53.799699] node --version -> rc=0 ok=True
+[2026-08-16T22:09:53.805892] which php -> rc=0 ok=True
+[2026-08-16T22:09:53.812412] php --version -> rc=0 ok=True
+[2026-08-16T22:09:53.819490] which certbot -> rc=0 ok=True
+[2026-08-16T22:09:53.824223] certbot --version -> rc=0 ok=True
+[2026-08-16T22:09:53.829316] which apache2 -> rc=0 ok=True
+[2026-08-16T22:09:53.844232] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:09:53.849647] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:09:53.858191] which caddy -> rc=0 ok=True
+[2026-08-16T22:09:53.864626] systemctl is-active caddy -> rc=0 ok=True
+[2026-08-16T22:09:53.869578] caddy --version -> rc=0 ok=True
+[2026-08-16T22:09:53.875945] which nginx -> rc=0 ok=True
+[2026-08-16T22:09:53.881074] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:09:53.894547] nginx --version -> rc=0 ok=True
+[2026-08-16T22:09:53.899772] python --version -> rc=0 ok=True
+[2026-08-16T22:10:23.437721] systemctl start mariadb -> rc=0 ok=True
+[2026-08-16T22:10:24.450007] which mysql -> rc=0 ok=True
+[2026-08-16T22:10:24.456098] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:10:24.462697] mysql --version -> rc=0 ok=True
+[2026-08-16T22:10:24.469335] which psql -> rc=0 ok=True
+[2026-08-16T22:10:24.477581] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:10:24.484881] psql --version -> rc=0 ok=True
+[2026-08-16T22:10:24.491503] which redis-server -> rc=0 ok=True
+[2026-08-16T22:10:24.499504] systemctl is-active redis-server -> rc=0 ok=True
+[2026-08-16T22:10:24.505331] redis-server --version -> rc=0 ok=True
+[2026-08-16T22:10:24.512282] which dovecot -> rc=0 ok=True
+[2026-08-16T22:10:24.519126] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:10:24.524923] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:10:24.531426] which exim -> rc=0 ok=True
+[2026-08-16T22:10:24.538243] systemctl is-active exim4 -> rc=0 ok=True
+[2026-08-16T22:10:24.545743] exim --version -> rc=0 ok=True
+[2026-08-16T22:10:24.551634] which grafana-server -> rc=0 ok=True
+[2026-08-16T22:10:24.559917] grafana-server --version -> rc=0 ok=True
+[2026-08-16T22:10:24.566176] which vsftpd -> rc=0 ok=True
+[2026-08-16T22:10:24.572276] systemctl is-active vsftpd -> rc=0 ok=True
+[2026-08-16T22:10:24.577495] vsftpd --version -> rc=0 ok=True
+[2026-08-16T22:10:24.585466] which sshd -> rc=0 ok=True
+[2026-08-16T22:10:24.603129] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:10:24.619141] sshd --version -> rc=0 ok=True
+[2026-08-16T22:10:24.626629] which node -> rc=0 ok=True
+[2026-08-16T22:10:24.647139] node --version -> rc=0 ok=True
+[2026-08-16T22:10:24.653696] which php -> rc=0 ok=True
+[2026-08-16T22:10:24.659062] php --version -> rc=0 ok=True
+[2026-08-16T22:10:24.666546] which certbot -> rc=0 ok=True
+[2026-08-16T22:10:24.673965] certbot --version -> rc=0 ok=True
+[2026-08-16T22:10:24.680896] which apache2 -> rc=0 ok=True
+[2026-08-16T22:10:24.687905] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:10:24.695912] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:10:24.703857] which caddy -> rc=0 ok=True
+[2026-08-16T22:10:24.724523] systemctl is-active caddy -> rc=0 ok=True
+[2026-08-16T22:10:24.736212] caddy --version -> rc=0 ok=True
+[2026-08-16T22:10:24.749327] which nginx -> rc=0 ok=True
+[2026-08-16T22:10:24.759763] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:10:24.769070] nginx --version -> rc=0 ok=True
+[2026-08-16T22:10:24.779416] python --version -> rc=0 ok=True
+[2026-08-16T22:10:28.924178] systemctl stop mariadb -> rc=0 ok=True
+[2026-08-16T22:10:29.905952] which mysql -> rc=0 ok=True
+[2026-08-16T22:10:29.910756] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:10:29.917393] mysql --version -> rc=0 ok=True
+[2026-08-16T22:10:29.924393] which psql -> rc=0 ok=True
+[2026-08-16T22:10:29.929034] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:10:29.935321] psql --version -> rc=0 ok=True
+[2026-08-16T22:10:29.940483] which redis-server -> rc=0 ok=True
+[2026-08-16T22:10:29.940483] systemctl is-active redis-server -> rc=0 ok=True
+[2026-08-16T22:10:29.951005] redis-server --version -> rc=0 ok=True
+[2026-08-16T22:10:29.956525] which dovecot -> rc=0 ok=True
+[2026-08-16T22:10:29.961426] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:10:29.964682] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:10:29.972723] which exim -> rc=0 ok=True
+[2026-08-16T22:10:29.972723] systemctl is-active exim4 -> rc=0 ok=True
+[2026-08-16T22:10:29.981163] exim --version -> rc=0 ok=True
+[2026-08-16T22:10:29.981163] which grafana-server -> rc=0 ok=True
+[2026-08-16T22:10:29.989033] grafana-server --version -> rc=0 ok=True
+[2026-08-16T22:10:29.997389] which vsftpd -> rc=0 ok=True
+[2026-08-16T22:10:30.002407] systemctl is-active vsftpd -> rc=0 ok=True
+[2026-08-16T22:10:30.005714] vsftpd --version -> rc=0 ok=True
+[2026-08-16T22:10:30.017305] which sshd -> rc=0 ok=True
+[2026-08-16T22:10:30.025589] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:10:30.032208] sshd --version -> rc=0 ok=True
+[2026-08-16T22:10:30.039004] which node -> rc=0 ok=True
+[2026-08-16T22:10:30.044182] node --version -> rc=0 ok=True
+[2026-08-16T22:10:30.050712] which php -> rc=0 ok=True
+[2026-08-16T22:10:30.056216] php --version -> rc=0 ok=True
+[2026-08-16T22:10:30.059268] which certbot -> rc=0 ok=True
+[2026-08-16T22:10:30.067485] certbot --version -> rc=0 ok=True
+[2026-08-16T22:10:30.073096] which apache2 -> rc=0 ok=True
+[2026-08-16T22:10:30.075311] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:10:30.080897] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:10:30.089508] which caddy -> rc=0 ok=True
+[2026-08-16T22:10:30.095041] systemctl is-active caddy -> rc=0 ok=True
+[2026-08-16T22:10:30.100774] caddy --version -> rc=0 ok=True
+[2026-08-16T22:10:30.102516] which nginx -> rc=0 ok=True
+[2026-08-16T22:10:30.109248] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:10:30.114253] nginx --version -> rc=0 ok=True
+[2026-08-16T22:10:30.119317] python --version -> rc=0 ok=True
+[2026-08-16T22:10:33.186313] systemctl start mariadb -> rc=0 ok=True
+[2026-08-16T22:10:34.170848] which mysql -> rc=0 ok=True
+[2026-08-16T22:10:34.179134] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:10:34.187249] mysql --version -> rc=0 ok=True
+[2026-08-16T22:10:34.202073] which psql -> rc=0 ok=True
+[2026-08-16T22:10:34.210909] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:10:34.219941] psql --version -> rc=0 ok=True
+[2026-08-16T22:10:34.225100] which redis-server -> rc=0 ok=True
+[2026-08-16T22:10:34.236945] systemctl is-active redis-server -> rc=0 ok=True
+[2026-08-16T22:10:34.242555] redis-server --version -> rc=0 ok=True
+[2026-08-16T22:10:34.248093] which dovecot -> rc=0 ok=True
+[2026-08-16T22:10:34.256060] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:10:34.263142] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:10:34.270409] which exim -> rc=0 ok=True
+[2026-08-16T22:10:34.276989] systemctl is-active exim4 -> rc=0 ok=True
+[2026-08-16T22:10:34.284575] exim --version -> rc=0 ok=True
+[2026-08-16T22:10:34.290967] which grafana-server -> rc=0 ok=True
+[2026-08-16T22:10:34.301427] grafana-server --version -> rc=0 ok=True
+[2026-08-16T22:10:34.315359] which vsftpd -> rc=0 ok=True
+[2026-08-16T22:10:34.325447] systemctl is-active vsftpd -> rc=0 ok=True
+[2026-08-16T22:10:34.335659] vsftpd --version -> rc=0 ok=True
+[2026-08-16T22:10:34.345814] which sshd -> rc=0 ok=True
+[2026-08-16T22:10:34.353087] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:10:34.361085] sshd --version -> rc=0 ok=True
+[2026-08-16T22:10:34.369041] which node -> rc=0 ok=True
+[2026-08-16T22:10:34.376908] node --version -> rc=0 ok=True
+[2026-08-16T22:10:34.383787] which php -> rc=0 ok=True
+[2026-08-16T22:10:34.390337] php --version -> rc=0 ok=True
+[2026-08-16T22:10:34.397945] which certbot -> rc=0 ok=True
+[2026-08-16T22:10:34.404207] certbot --version -> rc=0 ok=True
+[2026-08-16T22:10:34.410789] which apache2 -> rc=0 ok=True
+[2026-08-16T22:10:34.417752] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:10:34.425146] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:10:34.432032] which caddy -> rc=0 ok=True
+[2026-08-16T22:10:34.438538] systemctl is-active caddy -> rc=0 ok=True
+[2026-08-16T22:10:34.445312] caddy --version -> rc=0 ok=True
+[2026-08-16T22:10:34.451701] which nginx -> rc=0 ok=True
+[2026-08-16T22:10:34.458575] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:10:34.464162] nginx --version -> rc=0 ok=True
+[2026-08-16T22:10:34.470949] python --version -> rc=0 ok=True
+[2026-08-16T22:11:19.910797] systemctl start weborn.service -> rc=0 ok=True
+[2026-08-16T22:11:23.907707] systemctl stop weborn.service -> rc=0 ok=True
+[2026-08-16T22:11:32.965339] systemctl start apache2.service -> rc=0 ok=True
+[2026-08-16T22:11:35.703525] systemctl stop apache2.service -> rc=0 ok=True
+[2026-08-16T22:11:38.185262] which nginx -> rc=0 ok=True
+[2026-08-16T22:11:38.196058] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:11:38.205695] nginx --version -> rc=0 ok=True
+[2026-08-16T22:11:38.213629] which apache2 -> rc=0 ok=True
+[2026-08-16T22:11:38.221572] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:11:38.227788] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:11:38.235545] which mysql -> rc=0 ok=True
+[2026-08-16T22:11:38.243578] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:11:38.252016] mysql --version -> rc=0 ok=True
+[2026-08-16T22:11:38.264192] which psql -> rc=0 ok=True
+[2026-08-16T22:11:38.269981] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:11:38.275432] psql --version -> rc=0 ok=True
+[2026-08-16T22:11:38.285985] which dovecot -> rc=0 ok=True
+[2026-08-16T22:11:38.292035] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:11:38.300276] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:11:38.308437] which sshd -> rc=0 ok=True
+[2026-08-16T22:11:38.321070] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:11:38.328296] sshd --version -> rc=0 ok=True
+[2026-08-16T22:11:54.665451] which nginx -> rc=0 ok=True
+[2026-08-16T22:11:54.670366] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:11:54.675747] nginx --version -> rc=0 ok=True
+[2026-08-16T22:11:54.680261] which apache2 -> rc=0 ok=True
+[2026-08-16T22:11:54.683739] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:11:54.691992] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:11:54.695744] which mysql -> rc=0 ok=True
+[2026-08-16T22:11:54.698335] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:11:54.708456] mysql --version -> rc=0 ok=True
+[2026-08-16T22:11:54.723272] which psql -> rc=0 ok=True
+[2026-08-16T22:11:54.728396] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:11:54.733429] psql --version -> rc=0 ok=True
+[2026-08-16T22:11:54.738498] which dovecot -> rc=0 ok=True
+[2026-08-16T22:11:54.746290] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:11:54.752145] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:11:54.762421] which sshd -> rc=0 ok=True
+[2026-08-16T22:11:54.768249] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:11:54.771464] sshd --version -> rc=0 ok=True
+[2026-08-16T22:11:57.068288] which mysql -> rc=0 ok=True
+[2026-08-16T22:11:57.073451] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:11:57.078766] mysql --version -> rc=0 ok=True
+[2026-08-16T22:11:57.081657] which psql -> rc=0 ok=True
+[2026-08-16T22:11:57.088514] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:11:57.090037] psql --version -> rc=0 ok=True
+[2026-08-16T22:11:57.098482] which redis-server -> rc=0 ok=True
+[2026-08-16T22:11:57.108475] systemctl is-active redis-server -> rc=0 ok=True
+[2026-08-16T22:11:57.117012] redis-server --version -> rc=0 ok=True
+[2026-08-16T22:11:57.121790] which dovecot -> rc=0 ok=True
+[2026-08-16T22:11:57.123528] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:11:57.132132] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:11:57.135337] which exim -> rc=0 ok=True
+[2026-08-16T22:11:57.140031] systemctl is-active exim4 -> rc=0 ok=True
+[2026-08-16T22:11:57.147474] exim --version -> rc=0 ok=True
+[2026-08-16T22:11:57.153188] which grafana-server -> rc=0 ok=True
+[2026-08-16T22:11:57.158615] grafana-server --version -> rc=0 ok=True
+[2026-08-16T22:11:57.163104] which vsftpd -> rc=0 ok=True
+[2026-08-16T22:11:57.166862] systemctl is-active vsftpd -> rc=0 ok=True
+[2026-08-16T22:11:57.173031] vsftpd --version -> rc=0 ok=True
+[2026-08-16T22:11:57.178409] which sshd -> rc=0 ok=True
+[2026-08-16T22:11:57.183464] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:11:57.189481] sshd --version -> rc=0 ok=True
+[2026-08-16T22:11:57.194817] which node -> rc=0 ok=True
+[2026-08-16T22:11:57.199831] node --version -> rc=0 ok=True
+[2026-08-16T22:11:57.205844] which php -> rc=0 ok=True
+[2026-08-16T22:11:57.209918] php --version -> rc=0 ok=True
+[2026-08-16T22:11:57.216092] which certbot -> rc=0 ok=True
+[2026-08-16T22:11:57.222380] certbot --version -> rc=0 ok=True
+[2026-08-16T22:11:57.226918] which apache2 -> rc=0 ok=True
+[2026-08-16T22:11:57.233128] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:11:57.238327] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:11:57.241728] which caddy -> rc=0 ok=True
+[2026-08-16T22:11:57.248354] systemctl is-active caddy -> rc=0 ok=True
+[2026-08-16T22:11:57.254594] caddy --version -> rc=0 ok=True
+[2026-08-16T22:11:57.258286] which nginx -> rc=0 ok=True
+[2026-08-16T22:11:57.262843] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:11:57.268205] nginx --version -> rc=0 ok=True
+[2026-08-16T22:11:57.273017] python --version -> rc=0 ok=True
+[2026-08-16T22:11:59.666303] which nginx -> rc=0 ok=True
+[2026-08-16T22:11:59.671825] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:11:59.676332] nginx --version -> rc=0 ok=True
+[2026-08-16T22:12:21.038422] which nginx -> rc=0 ok=True
+[2026-08-16T22:12:21.048169] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:12:21.048169] nginx --version -> rc=0 ok=True
+[2026-08-16T22:12:21.058323] which apache2 -> rc=0 ok=True
+[2026-08-16T22:12:21.065400] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:12:21.070824] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:12:21.070824] which mysql -> rc=0 ok=True
+[2026-08-16T22:12:21.078356] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:12:21.086745] mysql --version -> rc=0 ok=True
+[2026-08-16T22:12:21.088262] which psql -> rc=0 ok=True
+[2026-08-16T22:12:21.097917] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:12:21.103276] psql --version -> rc=0 ok=True
+[2026-08-16T22:12:21.108317] which dovecot -> rc=0 ok=True
+[2026-08-16T22:12:21.111505] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:12:21.118195] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:12:21.120593] which sshd -> rc=0 ok=True
+[2026-08-16T22:12:21.129810] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:12:21.134350] sshd --version -> rc=0 ok=True
+[2026-08-16T22:13:35.927639] which mysql -> rc=0 ok=True
+[2026-08-16T22:13:35.930764] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:13:35.938156] mysql --version -> rc=0 ok=True
+[2026-08-16T22:13:35.942091] which psql -> rc=0 ok=True
+[2026-08-16T22:13:35.955831] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:13:35.962136] psql --version -> rc=0 ok=True
+[2026-08-16T22:13:35.967574] which redis-server -> rc=0 ok=True
+[2026-08-16T22:13:35.970167] systemctl is-active redis-server -> rc=0 ok=True
+[2026-08-16T22:13:35.982113] redis-server --version -> rc=0 ok=True
+[2026-08-16T22:13:35.987347] which dovecot -> rc=0 ok=True
+[2026-08-16T22:13:35.994127] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:13:35.999418] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:13:36.006721] which exim -> rc=0 ok=True
+[2026-08-16T22:13:36.010924] systemctl is-active exim4 -> rc=0 ok=True
+[2026-08-16T22:13:36.015782] exim --version -> rc=0 ok=True
+[2026-08-16T22:13:36.019049] which grafana-server -> rc=0 ok=True
+[2026-08-16T22:13:36.025632] grafana-server --version -> rc=0 ok=True
+[2026-08-16T22:13:36.029415] which vsftpd -> rc=0 ok=True
+[2026-08-16T22:13:36.037704] systemctl is-active vsftpd -> rc=0 ok=True
+[2026-08-16T22:13:36.039290] vsftpd --version -> rc=0 ok=True
+[2026-08-16T22:13:36.047759] which sshd -> rc=0 ok=True
+[2026-08-16T22:13:36.052582] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:13:36.057521] sshd --version -> rc=0 ok=True
+[2026-08-16T22:13:36.064243] which node -> rc=0 ok=True
+[2026-08-16T22:13:36.069058] node --version -> rc=0 ok=True
+[2026-08-16T22:13:36.074319] which php -> rc=0 ok=True
+[2026-08-16T22:13:36.203648] php --version -> rc=0 ok=True
+[2026-08-16T22:13:36.221140] which certbot -> rc=0 ok=True
+[2026-08-16T22:13:36.235515] certbot --version -> rc=0 ok=True
+[2026-08-16T22:13:36.251187] which apache2 -> rc=0 ok=True
+[2026-08-16T22:13:36.260941] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:13:36.277921] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:13:36.292546] which caddy -> rc=0 ok=True
+[2026-08-16T22:13:36.302935] systemctl is-active caddy -> rc=0 ok=True
+[2026-08-16T22:13:36.318030] caddy --version -> rc=0 ok=True
+[2026-08-16T22:13:36.333575] which nginx -> rc=0 ok=True
+[2026-08-16T22:13:36.349531] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:13:36.364587] nginx --version -> rc=0 ok=True
+[2026-08-16T22:13:36.377876] python --version -> rc=0 ok=True
+[2026-08-16T22:14:48.718735] which nginx -> rc=0 ok=True
+[2026-08-16T22:14:48.725698] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:14:48.732400] nginx --version -> rc=0 ok=True
+[2026-08-16T22:14:48.738974] which apache2 -> rc=0 ok=True
+[2026-08-16T22:14:48.746655] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:14:48.755039] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:14:48.759476] which mysql -> rc=0 ok=True
+[2026-08-16T22:14:48.766641] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:14:48.766641] mysql --version -> rc=0 ok=True
+[2026-08-16T22:14:48.778325] which psql -> rc=0 ok=True
+[2026-08-16T22:14:48.784561] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:14:48.786644] psql --version -> rc=0 ok=True
+[2026-08-16T22:14:48.794546] which dovecot -> rc=0 ok=True
+[2026-08-16T22:14:48.799440] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:14:48.804791] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:14:48.811203] which sshd -> rc=0 ok=True
+[2026-08-16T22:14:48.816847] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:14:48.821798] sshd --version -> rc=0 ok=True
+[2026-08-16T22:14:55.597047] which nginx -> rc=0 ok=True
+[2026-08-16T22:14:55.598730] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:14:55.607203] nginx --version -> rc=0 ok=True
+[2026-08-16T22:15:08.428568] bash -c command -v certbot && echo yes || echo no -> rc=0 ok=True
+[2026-08-16T22:15:08.433531] certbot certonly --nginx -d dupe.example.com --non-interactive --agree-tos --register-unsafely-without-email --keep-until-expiring -> rc=0 ok=True
+[2026-08-16T22:15:11.670865] bash -c command -v certbot && echo yes || echo no -> rc=0 ok=True
+[2026-08-16T22:15:11.674291] certbot certonly --nginx -d app.example.com --non-interactive --agree-tos --register-unsafely-without-email --keep-until-expiring -> rc=0 ok=True
+[2026-08-16T22:30:02.298267] which nginx -> rc=0 ok=True
+[2026-08-16T22:30:02.303795] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:30:02.310602] nginx --version -> rc=0 ok=True
+[2026-08-16T22:30:02.318634] which apache2 -> rc=0 ok=True
+[2026-08-16T22:30:02.325067] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:30:02.330534] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:30:02.338742] which mysql -> rc=0 ok=True
+[2026-08-16T22:30:02.341891] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:30:02.350495] mysql --version -> rc=0 ok=True
+[2026-08-16T22:30:02.353890] which psql -> rc=0 ok=True
+[2026-08-16T22:30:02.360411] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:30:02.368921] psql --version -> rc=0 ok=True
+[2026-08-16T22:30:02.375479] which dovecot -> rc=0 ok=True
+[2026-08-16T22:30:02.383765] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:30:02.388435] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:30:02.393819] which sshd -> rc=0 ok=True
+[2026-08-16T22:30:02.400801] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:30:02.407858] sshd --version -> rc=0 ok=True
+[2026-08-16T22:30:15.738792] which nginx -> rc=0 ok=True
+[2026-08-16T22:30:15.753827] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:30:15.760678] nginx --version -> rc=0 ok=True
+[2026-08-16T22:30:15.768461] which apache2 -> rc=0 ok=True
+[2026-08-16T22:30:15.770520] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:30:15.775362] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:30:15.783731] which mysql -> rc=0 ok=True
+[2026-08-16T22:30:15.785472] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:30:15.792692] mysql --version -> rc=0 ok=True
+[2026-08-16T22:30:15.798450] which psql -> rc=0 ok=True
+[2026-08-16T22:30:15.800608] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:30:15.810525] psql --version -> rc=0 ok=True
+[2026-08-16T22:30:15.815064] which dovecot -> rc=0 ok=True
+[2026-08-16T22:30:15.816801] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:30:15.824901] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:30:15.826657] which sshd -> rc=0 ok=True
+[2026-08-16T22:30:15.832926] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:30:15.840328] sshd --version -> rc=0 ok=True
+[2026-08-16T22:33:33.357007] which nginx -> rc=0 ok=True
+[2026-08-16T22:33:33.364575] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:33:33.370615] nginx --version -> rc=0 ok=True
+[2026-08-16T22:33:33.376615] which apache2 -> rc=0 ok=True
+[2026-08-16T22:33:33.384699] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:33:33.392244] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:33:33.399783] which mysql -> rc=0 ok=True
+[2026-08-16T22:33:33.406797] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:33:33.413352] mysql --version -> rc=0 ok=True
+[2026-08-16T22:33:33.423473] which psql -> rc=0 ok=True
+[2026-08-16T22:33:33.430007] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:33:33.436037] psql --version -> rc=0 ok=True
+[2026-08-16T22:33:33.443594] which dovecot -> rc=0 ok=True
+[2026-08-16T22:33:33.449110] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:33:33.455145] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:33:33.464694] which sshd -> rc=0 ok=True
+[2026-08-16T22:33:33.470251] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:33:33.477266] sshd --version -> rc=0 ok=True
+[2026-08-16T22:34:09.414914] which nginx -> rc=0 ok=True
+[2026-08-16T22:34:09.421440] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:34:09.426440] nginx --version -> rc=0 ok=True
+[2026-08-16T22:34:09.432479] which apache2 -> rc=0 ok=True
+[2026-08-16T22:34:09.442062] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:34:09.450636] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:34:09.459159] which mysql -> rc=0 ok=True
+[2026-08-16T22:34:09.468687] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:34:09.476317] mysql --version -> rc=0 ok=True
+[2026-08-16T22:34:09.485371] which psql -> rc=0 ok=True
+[2026-08-16T22:34:09.490910] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:34:09.499442] psql --version -> rc=0 ok=True
+[2026-08-16T22:34:09.506443] which dovecot -> rc=0 ok=True
+[2026-08-16T22:34:09.512269] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:34:09.525836] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:34:09.531364] which sshd -> rc=0 ok=True
+[2026-08-16T22:34:09.536371] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:34:09.554485] sshd --version -> rc=0 ok=True
+[2026-08-16T22:34:25.082903] which nginx -> rc=0 ok=True
+[2026-08-16T22:34:25.090452] systemctl is-active nginx -> rc=0 ok=True
+[2026-08-16T22:34:25.098523] nginx --version -> rc=0 ok=True
+[2026-08-16T22:34:25.105540] which apache2 -> rc=0 ok=True
+[2026-08-16T22:34:25.110122] systemctl is-active apache2 -> rc=0 ok=True
+[2026-08-16T22:34:25.116116] apache2 --version -> rc=0 ok=True
+[2026-08-16T22:34:25.123176] which mysql -> rc=0 ok=True
+[2026-08-16T22:34:25.130703] systemctl is-active mariadb -> rc=0 ok=True
+[2026-08-16T22:34:25.138225] mysql --version -> rc=0 ok=True
+[2026-08-16T22:34:25.145265] which psql -> rc=0 ok=True
+[2026-08-16T22:34:25.150304] systemctl is-active postgresql -> rc=0 ok=True
+[2026-08-16T22:34:25.156325] psql --version -> rc=0 ok=True
+[2026-08-16T22:34:25.161875] which dovecot -> rc=0 ok=True
+[2026-08-16T22:34:25.167882] systemctl is-active dovecot -> rc=0 ok=True
+[2026-08-16T22:34:25.173417] dovecot --version -> rc=0 ok=True
+[2026-08-16T22:34:25.179995] which sshd -> rc=0 ok=True
+[2026-08-16T22:34:25.185989] systemctl is-active ssh -> rc=0 ok=True
+[2026-08-16T22:34:25.193323] sshd --version -> rc=0 ok=True
+[2026-08-17T09:10:57.806484] useradd -m -s /bin/bash - G s s h , s u d o admin -> rc=2 ok=False
+[2026-08-17T09:10:57.836937] useradd -m -s /usr/sbin/nologin www-data -> rc=9 ok=False
+[2026-08-17T09:14:55.942512] useradd -m -s /bin/bash - G s s h , s u d o admin -> rc=2 ok=False
+[2026-08-17T09:14:55.964176] useradd -m -s /usr/sbin/nologin www-data -> rc=9 ok=False
+[2026-08-17T09:19:17.271653] useradd -m -s /bin/bash - G s s h , s u d o admin -> rc=2 ok=False
+[2026-08-17T09:19:17.321733] useradd -m -s /usr/sbin/nologin www-data -> rc=9 ok=False
+[2026-08-17T09:19:33.177035] useradd -m -s /bin/bash - G s s h , s u d o admin -> rc=2 ok=False
+[2026-08-17T09:19:33.200459] useradd -m -s /usr/sbin/nologin www-data -> rc=9 ok=False
