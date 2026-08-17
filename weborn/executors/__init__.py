@@ -99,8 +99,12 @@ class LocalExecutor(Executor):
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        # Pipe empty string to stdin in case sudo asks for password
-        stdout, stderr = await proc.communicate(input=b"")
+        try:
+            # Pipe empty string to stdin in case sudo asks for password
+            stdout, stderr = await proc.communicate(input=b"")
+        except RuntimeError:
+            # stdin pipe may be closed by OS under heavy concurrency
+            stdout, stderr = await proc.communicate(input=None)
         result = ExecResult(
             ok=proc.returncode == 0,
             returncode=proc.returncode,

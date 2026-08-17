@@ -283,6 +283,11 @@ Weborn creates Linux users with sudo privileges during setup. In production:
 4. Commit with a clear message
 5. Open a Pull Request against the `main` branch
 
+## Contributors
+
+- **adyoi** — Creator & Lead Developer
+- **OpenCode** — AI-powered development assistant
+
 ## License
 
 This project is licensed under the MIT License. See the `LICENSE` file for details.

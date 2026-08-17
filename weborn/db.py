@@ -302,6 +302,12 @@ def get_app_by_port(port: int):
     return dict(row) if row else None
 
 
+def get_app_by_name(name: str):
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM apps WHERE name = ?", (name,)).fetchone()
+    return dict(row) if row else None
+
+
 def set_app_status(app_id: int, status: str) -> None:
     with get_conn() as conn:
         conn.execute("UPDATE apps SET status = ? WHERE id = ?", (status, app_id))

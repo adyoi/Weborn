@@ -40,7 +40,10 @@ async def dashboard(request: Request, user: dict = Depends(require_user)):
     services = []
     installed_count = 0
     for addon in all_addons:
-        status = await manager.status(addon)
+        try:
+            status = await manager.status(addon)
+        except Exception:
+            status = {"installed": False, "active": False, "status": "unknown"}
         status["addon"] = addon
         if status["installed"]:
             installed_count += 1

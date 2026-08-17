@@ -22,7 +22,7 @@ import re
 from datetime import datetime
 
 from ..config import APP_TYPES, FRAMEWORKS, GUNICORN_SOCK_DIR, RUNTIMES, WEB_ROOT
-from ..db import add_app, delete_app, get_app, get_app_by_port, list_apps, set_app_status
+from ..db import add_app, delete_app, get_app, get_app_by_name, get_app_by_port, list_apps, set_app_status
 
 # Stub starter per framework
 STUBS = {
@@ -35,6 +35,29 @@ STUBS = {
         "const fastify = require('fastify')({ logger: true });\n"
         "fastify.get('/', async () => ({ ok: true }));\n"
         "fastify.listen({ port: process.env.PORT || 8000, host: '0.0.0.0' });\n"),
+    "nest": ("src/main.ts",
+        "import { NestFactory } from '@nestjs/core';\n"
+        "import { AppModule } from './app.module';\n"
+        "async function bootstrap() {\n"
+        "  const app = await NestFactory.create(AppModule);\n"
+        "  await app.listen(process.env.PORT || 3000);\n"
+        "}\n"
+        "bootstrap();\n"),
+    "hono": ("server.js",
+        "const { Hono } = require('hono');\n"
+        "const app = new Hono();\n"
+        "app.get('/', (c) => c.json({ ok: true }));\n"
+        "require('node:http').createServer(app.fetch).listen(process.env.PORT || 8000);\n"),
+    "sveltekit": ("src/routes/+page.svelte",
+        "<script>\n"
+        "  export let data;\n"
+        "</script>\n"
+        "<h1>Welcome to {data.name}</h1>\n"),
+    "astro": ("src/pages/index.astro",
+        "---\n"
+        "const name = '{name}';\n"
+        "---\n"
+        "<html><body><h1>Welcome to {name}</h1></body></html>\n"),
     "fastapi": ("main.py",
         "from fastapi import FastAPI\n\n"
         "app = FastAPI(title='{name}')\n\n"
@@ -54,6 +77,46 @@ STUBS = {
         "django.setup()\n"
         "from django.core.wsgi import get_wsgi_application\n"
         "app = get_wsgi_application()\n"),
+    "litestar": ("main.py",
+        "from litestar import Litestar, get\n\n"
+        "@get('/')\n"
+        "def home() -> dict:\n"
+        "    return {'app': '{name}', 'ok': True}\n\n"
+        "app = Litestar(route_handlers=[home])\n"),
+    "sanic": ("main.py",
+        "from sanic import Sanic\n"
+        "from sanic.response import json\n\n"
+        "app = Sanic('{name}')\n\n"
+        "@app.get('/')\n"
+        "async def home(request):\n"
+        "    return json({'app': '{name}', 'ok': True})\n"),
+    "tornado": ("main.py",
+        "import tornado.ioloop\n"
+        "import tornado.web\n\n"
+        "class MainHandler(tornado.web.RequestHandler):\n"
+        "    def get(self):\n"
+        "        self.write({'app': '{name}', 'ok': True})\n\n"
+        "app = tornado.web.Application([(r'/', MainHandler)])\n"
+        "app.listen(8000)\n"
+        "tornado.ioloop.IOLoop.current().start()\n"),
+    "pyramid": ("main.py",
+        "from wsgiref.simple_server import make_server\n"
+        "from pyramid.config import Configurator\n"
+        "from pyramid.response import Response\n\n"
+        "def home(request):\n"
+        "    return Response(json_body={'app': '{name}', 'ok': True})\n\n"
+        "with Configurator() as config:\n"
+        "    config.add_route('home', '/')\n"
+        "    config.add_view(home, route_name='home')\n"
+        "    app = config.make_wsgi_app()\n"),
+    "bottle": ("main.py",
+        "from bottle import Bottle, response\n"
+        "import json\n\n"
+        "app = Bottle()\n\n"
+        "@app.route('/')\n"
+        "def home():\n"
+        "    response.content_type = 'application/json'\n"
+        "    return json.dumps({'app': '{name}', 'ok': True})\n"),
 }
 
 LANG_STUB = {
@@ -80,11 +143,13 @@ def _app_type_for(language: str, framework: str) -> str:
     lang_lower = (language or "").lower()
     if fw_lower in ("django", "flask"):
         return fw_lower
-    if fw_lower == "fastapi" or (lang_lower == "python" and "fastapi" in fw_lower):
-        return "fastapi"
-    if fw_lower in ("laravel", "wordpress", "codeigniter", "symfony"):
+    if fw_lower in ("fastapi", "litestar", "sanic"):
+        return "asgi"
+    if fw_lower in ("tornado", "pyramid", "bottle"):
+        return "wsgi"
+    if fw_lower in ("laravel", "wordpress", "codeigniter", "symfony", "slim"):
         return "laravel"
-    if fw_lower in ("express", "next", "nuxt", "fastify", "nest"):
+    if fw_lower in ("express", "next", "nuxt", "fastify", "nest", "hono", "sveltekit", "astro"):
         return "nodejs"
     if lang_lower == "php":
         return "laravel"
@@ -138,6 +203,11 @@ class AppManager:
         slug = _slug(name)
         app_type = _app_type_for(language, framework)
         type_info = APP_TYPES.get(app_type, {})
+
+        # Check for duplicate name
+        existing = get_app_by_name(name)
+        if existing:
+            return {"ok": False, "error": f"nama app '{name}' sudah dipakai"}
 
         if not port:
             try:

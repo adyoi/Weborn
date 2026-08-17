@@ -14,16 +14,22 @@ router = APIRouter()
 
 
 @router.get("/apps", response_class=HTMLResponse)
-async def apps_page(request: Request, user: dict = Depends(require_user)):
+async def apps_page(request: Request, user: dict = Depends(require_user),
+                    type: str = ""):
     if hasattr(user, "headers"):
         return user
     manager = AppManager(get_executor())
+    apps = manager.list()
+    # Filter by type (wsgi, asgi, flask, django, fastapi, etc.)
+    if type:
+        apps = [a for a in apps if a.get("app_type") == type]
     return render(request, "apps.html", {
         "user": user,
-        "apps": manager.list(),
+        "apps": apps,
         "runtimes": RUNTIMES,
         "frameworks": FRAMEWORKS,
         "active": "apps",
+        "app_type_filter": type,
     })
 
 

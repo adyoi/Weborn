@@ -40,6 +40,17 @@
     </form>
 </div>
 
+<div class="flex gap-1 mb-3 flex-wrap text-[10px]">
+    <a href="/apps" class="btn {{ 'primary' if not app_type_filter else '' }} sm">Semua</a>
+    <a href="/apps?type=wsgi" class="btn {{ 'primary' if app_type_filter == 'wsgi' else '' }} sm">WSGI</a>
+    <a href="/apps?type=asgi" class="btn {{ 'primary' if app_type_filter == 'asgi' else '' }} sm">ASGI</a>
+    <a href="/apps?type=flask" class="btn {{ 'primary' if app_type_filter == 'flask' else '' }} sm">Flask</a>
+    <a href="/apps?type=django" class="btn {{ 'primary' if app_type_filter == 'django' else '' }} sm">Django</a>
+    <a href="/apps?type=fastapi" class="btn {{ 'primary' if app_type_filter == 'fastapi' else '' }} sm">FastAPI</a>
+    <a href="/apps?type=nodejs" class="btn {{ 'primary' if app_type_filter == 'nodejs' else '' }} sm">Node.js</a>
+    <a href="/apps?type=laravel" class="btn {{ 'primary' if app_type_filter == 'laravel' else '' }} sm">Laravel</a>
+</div>
+
 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
     {% for a in apps %}
     <div class="card">
