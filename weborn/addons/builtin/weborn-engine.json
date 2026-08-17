@@ -11,7 +11,7 @@
     "template": "weborn-engine.conf.j2"
   },
   "fields": [
-    {"name": "mode", "label": "Mode", "default": "asgi", "options": ["asgi", "sync"]},
+    {"name": "mode", "label": "Mode", "default": "asgi", "options": ["asgi", "wsgi", "sync"]},
     {"name": "port", "label": "Port", "default": "8080"},
     {"name": "root", "label": "Root Directory", "default": "/var/www"},
     {"name": "panel", "label": "Mount GUI /panel", "default": "on"},

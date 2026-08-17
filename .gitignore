@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.venv-wsl/
+node_modules/
+data/weborn.db
+data/weborn.db-shm
+data/weborn.db-wal
+data/logs/
+data/backups/
+*.egg-info/
+dist/
+build/
+.env
+.opencode/

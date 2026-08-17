@@ -13,6 +13,7 @@ Default yang dijamin ada (bootstrap): `admin` (hak root) dan `www-data`.
 """
 import os
 import re
+import shlex
 
 from ..executors import get_executor
 
@@ -133,7 +134,8 @@ class AccountManager:
                 ["useradd", "-m", "-s", shell,
                  *(f"-G{','.join(sorted(groups))}" if groups else ()),
                  username],
-                ["bash", "-c", f"echo '{username}:{password}' | chpasswd"],
+                ["bash", "-c",
+                 f"echo {shlex.quote(username + ':' + password)} | chpasswd"],
             ]
             output = []
             for cmd in cmds:
@@ -154,7 +156,8 @@ class AccountManager:
 
     async def set_password(self, username: str, password: str) -> dict:
         if self.executor.mode in ("local", "wsl"):
-            r = await self.executor.run("bash", "-c", f"echo '{username}:{password}' | chpasswd")
+            r = await self.executor.run("bash", "-c",
+                                        f"echo {shlex.quote(username + ':' + password)} | chpasswd")
             return {"ok": r.ok, "output": r.output}
         return {"ok": True, "output": f"(dry-run) chpasswd {username}"}
 

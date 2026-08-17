@@ -368,7 +368,7 @@ class SecureHTTPRequestHandler(SimpleHTTPRequestHandler):
                                         self.authenticated = True
                                         self.authenticated_realm = rules['auth'].get('name', '')
                                         return True
-                except:
+                except Exception:
                     pass
             
             # Tidak terautentikasi - kirim tantangan

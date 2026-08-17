@@ -1,6 +1,6 @@
 """Autentikasi panel: sesi berbasis cookie + RBAC dasar."""
 from fastapi import Request
-from starlette.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from . import db
 from .config import SESSION_COOKIE
@@ -46,7 +46,6 @@ def require_admin(request: Request):
     if not user:
         return RedirectResponse("/login", status_code=303)
     if user.get("role") != "admin":
-        from starlette.responses import JSONResponse
         return JSONResponse(
             {"ok": False, "error": "akses ditolak: dibutuhkan admin (root)"},
             status_code=403,

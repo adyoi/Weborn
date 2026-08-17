@@ -116,7 +116,11 @@ def _static_response(root: str, request: Request, path: str):
 async def _proxy(request: Request, target: str, path: str):
     """Forward request ke backend app (sync/async apa pun) via http.client."""
     parts = urlsplit(target)
-    if not parts.hostname or not parts.port:
+    hostname = parts.hostname
+    scheme = parts.scheme or "http"
+    port = parts.port or (443 if scheme == "https" else 80)
+
+    if not hostname:
         return Response("target backend tidak valid", status_code=502)
 
     body = b""
@@ -125,7 +129,10 @@ async def _proxy(request: Request, target: str, path: str):
 
     def _forward(body: bytes):
         import http.client
-        conn = http.client.HTTPConnection(parts.hostname, parts.port, timeout=30)
+        if scheme == "https":
+            conn = http.client.HTTPSConnection(hostname, port, timeout=30)
+        else:
+            conn = http.client.HTTPConnection(hostname, port, timeout=30)
         qs = request.url.query
         url = path if not qs else f"{path}?{qs}"
         headers = {}

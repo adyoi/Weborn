@@ -21,7 +21,7 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
-    init_db()  # pastikan schema ada sebelum SessionMiddleware ambil secret key
+    init_db()  # pastikan schema + secret_key ada sebelum SessionMiddleware
     app = FastAPI(title="Weborn Control Panel", version="0.1.0", lifespan=lifespan)
     app.add_middleware(SessionMiddleware, secret_key=get_secret_key(), same_site="lax")
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")

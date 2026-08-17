@@ -63,6 +63,7 @@ if [ ! -d "$APP_DIR/.venv" ]; then
 fi
 "$APP_DIR/.venv/bin/pip" install --upgrade pip -q
 "$APP_DIR/.venv/bin/pip" install -r "$SRC_DIR/requirements.txt" -q
+"$APP_DIR/.venv/bin/pip" install gunicorn -q
 
 # ---------- 3. salin kode (tanpa data/git) ----------
 echo "==> [3/5] Salin kode aplikasi..."
