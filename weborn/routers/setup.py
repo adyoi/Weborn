@@ -1,8 +1,11 @@
-"""Setup wizard: buat akun panel pertama kali."""
+"""Setup wizard: buat akun admin pertama + user Linux OS."""
+import shlex
+
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from ..db import create_panel_user, has_panel_users
+from ..executors import get_executor
 from ..ui import render
 
 router = APIRouter()
@@ -30,7 +33,28 @@ async def setup_action(
         return render(request, "setup.html", {"error": "Password minimal 6 karakter"})
     if password != password_confirm:
         return render(request, "setup.html", {"error": "Konfirmasi password tidak cocok"})
+
+    # 1) Buat panel user
     ok = create_panel_user(username, password, role="admin")
     if not ok:
         return render(request, "setup.html", {"error": "Username sudah digunakan"})
-    return RedirectResponse("/login", status_code=303)
+
+    # 2) Buat Linux OS user (admin, bisa SSH/sudo)
+    ex = get_executor()
+    if ex.mode in ("local", "wsl"):
+        import re as _re
+        if not _re.match(r"^[a-z_][a-z0-9_-]{2,31}$", username):
+            return RedirectResponse("/login", status_code=303)
+
+        # Cek apakah user sudah ada di OS
+        check = await ex.run("bash", "-c", f"id {shlex.quote(username)} >/dev/null 2>&1 && echo exists || echo new")
+        if "new" in check.stdout:
+            # Buat user OS dengan home directory + bash shell
+            await ex.run("useradd", "-m", "-s", "/bin/bash", "-G", "sudo", username)
+            # Set password OS
+            await ex.run("bash", "-c",
+                         f"echo {shlex.quote(username + ':' + password)} | chpasswd")
+            # Pastikan user bisa login via SSH
+            await ex.run("usermod", "-aG", "ssh-user", username)
+
+    return RedirectResponse("/login?msg=Akun+admin+dan+user+Linux+dibuat", status_code=303)

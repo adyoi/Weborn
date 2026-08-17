@@ -12,61 +12,101 @@
   <img alt="GitHub Actions" src="https://github.com/adyoi/Weborn/workflows/CI/badge.svg" />
 </p>
 
-Weborn is a self‑hosted control panel for running, securing, and managing server‑side services from one clean dashboard. It gives you a single place to manage applications, runtime environments, domains, databases, cron jobs, backups, and system‑level operations without juggling multiple tools.
+Weborn is a self‑hosted control panel for running, securing, and managing server‑side services from one clean dashboard. It provides a unified interface for application deployment, domain management, database administration, monitoring, security hardening, and system operations.
 
-## What’s new (2026‑08‑17)
+## What's New (2026‑08‑17)
 
-- Fixed Nginx‑action crash and added robust handling for `dict`/`ExecResult` responses.
-- Domain creation now stores `proxy_target`, enabling proper reverse‑proxy routing.
-- DNS routes now correctly commit SQLite changes.
-- UFW firewall rules accept “TCP+UDP” without syntax errors.
-- Reverse‑proxy (`engine/asgi.py`) now resolves ports for URLs without explicit ports and supports HTTPS back‑ends.
-- Systemd unit creation/deletion now runs `systemctl daemon‑reload`.
-- Added missing Jinja2 templates for built‑in addons (Redis, PostgreSQL, Certbot, etc.).
-- Fixed parent‑directory navigation in `files.html`.
-- Installer now creates `data/backups` and uninstaller cleans all generated folders.
+- **Admin Setup Creates Linux User** — Setup wizard now creates both panel account and Linux OS user with sudo/SSH access
+- **Interactive WebSocket Terminal** — Real PTY shell via xterm.js, not just a form-based command runner
+- **App Access Links** — Direct browser links after app installation (`http://localhost:{port}`)
+- **App Log Streaming** — Real-time log monitoring via WebSocket for each application
+- **WSGI/ASGI Runtime Support** — Gunicorn (WSGI) and Uvicorn (ASGI) app types
+- **Addon Store with 35 Addons** — 7 categories × 5 addons each
+- **Restructured Menu** — 10 organized groups for better navigation
+- **Domain & App Edit Routes** — Full CRUD for domains and applications
+- **Proper 404 Pages** — Custom error pages instead of JSON responses
+- **Backup DB Restore** — Database checkbox included in backup restore
+- **WORKFLOW.md** — Complete admin workflow documentation
 
 ## Why Weborn?
 
-Weborn is built for people who want a simpler way to manage common server tasks without exposing themselves to a fragmented stack of separate tools. It brings deployment, monitoring, maintenance, and administration together in one interface.
+Weborn is built for system administrators and developers who want a single pane of glass for server management. Instead of juggling multiple tools for deployments, DNS, databases, monitoring, and security — Weborn brings everything together in one clean, modern interface.
 
-## Key features
+## Key Features
 
-- Dashboard with system health and service status overview
-- User authentication and account management
-- Web app and runtime management
-- Support for Node.js, Python, PHP, Django, FastAPI, Laravel, and similar stacks
-- Domain, proxy, database, cron, backup, and system configuration tools
-- Addon‑based extensibility for custom modules
-- Local executor mode for privileged operations on Linux and WSL
+### 🏠 Dashboard & System
+- Real-time system monitoring (CPU, RAM, Disk)
+- Service status overview (Nginx, Apache, MySQL, PostgreSQL, etc.)
+- OS information and package management
 
-## Tech stack
+### 📦 Application Management
+- Create isolated apps with dedicated user, directory, and port
+- Support for Node.js, Python, PHP, Ruby, Go, and Rust
+- Framework presets: Express, FastAPI, Django, Flask, Laravel, Next.js, and more
+- WSGI (Gunicorn) and ASGI (Uvicorn) runtime modes
+- Real-time log streaming via WebSocket
+- Direct browser access links
 
-- Python 3.10+
-- FastAPI
-- Jinja2 templates
-- SQLite
-- Tailwind CSS
-- Debian/Ubuntu installer scripts
+### 🌐 Web Hosting
+- Domain management with Nginx config generation
+- SSL/TLS via Let's Encrypt (Certbot)
+- Reverse proxy and CDN support
+- DNS record management (A, CNAME, MX, TXT, NS)
 
-## Repository structure
+### 🗄️ Database Management
+- MySQL/MariaDB administration
+- PostgreSQL support via addons
+- Redis, MongoDB, Memcached management
 
-```text
-.
-├── run.py                # app entry point
-├── requirements.txt      # Python dependencies
-├── install.sh            # Debian/Ubuntu installer
-├── uninstall.sh          # uninstall helper
-├── package.json          # frontend asset build config
-├── weborn/               # main application package
-├── engine/               # platform logic and helpers
-├── data/                 # runtime data, logs, configs, backups
-├── assets/               # brand assets and screenshots
-├── LICENSE               # MIT license
-├── README.md             # project documentation
-├── index.html            # static entrypoint / UI shell
-└── .wsl_setup.sh         # WSL helper setup script
-```
+### 📧 Mail Services
+- Postfix (MTA)
+- Dovecot (IMAP/POP3)
+- Exim mail transfer
+- Roundcube webmail
+- SpamAssassin filtering
+
+### 🔒 Security
+- Fail2Ban intrusion prevention
+- ClamAV antivirus scanning
+- AIDE file integrity checking
+- Lynis security auditing
+- UFW firewall management
+
+### 📊 Monitoring
+- Grafana dashboards
+- Prometheus metrics
+- Netdata real-time monitoring
+- Glances system overview
+- Centralized log viewer
+
+### 🛠️ Addon Store
+- 35 built-in addons across 7 categories
+- One-click install/update/uninstall
+- Configuration templates with live preview
+- Third-party addon support (JSON manifests)
+- Streaming SSE progress for operations
+
+### 💻 Remote Access
+- SSH user management
+- OpenVPN server
+- Cockpit web console
+- FTP server (vsftpd)
+- WebSocket terminal (PTY-based)
+
+### ⚙️ System Administration
+- Systemd service management
+- Process viewer (psutil)
+- Cron job scheduling
+- File explorer with edit/chown/chmod
+- Config file editor
+- Package management
+
+## Tech Stack
+
+- **Backend:** Python 3.10+, FastAPI, SQLite, Jinja2
+- **Frontend:** Tailwind CSS, xterm.js, WebSocket
+- **System:** systemd, Nginx, Let's Encrypt, psutil
+- **Executor Modes:** Local (Linux), WSL, Dry-run (Windows dev)
 
 ## Requirements
 
@@ -75,7 +115,7 @@ Weborn is built for people who want a simpler way to manage common server tasks 
 - Linux or WSL recommended for full local execution
 - Root access for privileged system tasks when using `--local`
 
-## Quick start
+## Quick Start
 
 ```bash
 # 1️⃣ Clone the repository
@@ -97,7 +137,7 @@ npm install
 npm run css:build
 
 # 5️⃣ Run the dashboard
-# • Development / dry‑run (works on Windows)
+# • Development / dry-run (works on Windows)
 python run.py --reload --host 127.0.0.1 --port 2025
 
 # • Full system execution on Linux/WSL (requires sudo)
@@ -110,9 +150,17 @@ Open the dashboard in your browser:
 http://127.0.0.1:2025
 ```
 
-If you want live reload during development, use `--reload` as shown above.
+## First-Time Setup
 
-## Frontend build
+1. Open the panel in your browser
+2. You'll be redirected to `/setup` (first-time wizard)
+3. Enter username and password (min 6 characters)
+4. Panel creates:
+   - Panel admin account (SQLite)
+   - Linux OS user with sudo/SSH access
+5. Login with your new credentials
+
+## Frontend Build
 
 Weborn includes Tailwind CSS for the dashboard UI. Rebuild the generated CSS with:
 
@@ -139,25 +187,61 @@ sudo bash install.sh
 - Creates the required `data/backups` directory.
 - Adds a systemd unit (`weborn.service`) and reloads the daemon.
 
-To remove the installation (now also purges `engine/`, `assets/`, and `data/backups`):
+To remove the installation:
 
 ```bash
 sudo bash uninstall.sh
 ```
 
-## Security note
+## Menu Structure
 
-Any default admin credentials generated by the app should be changed immediately in production. Weborn is intended for self‑hosting and should be protected behind a trusted network and hardened security controls.
+| Group | Items |
+|-------|-------|
+| **Beranda** | Dashboard, Aplikasi, Addon Store |
+| **Web Server** | Server, Domain, Proxy, CDN, DNS |
+| **Database** | MySQL, PostgreSQL, Redis, MongoDB, Memcached |
+| **Mail** | Postfix, Dovecot, Exim, Roundcube, SpamAssassin |
+| **Monitoring** | Logs, Grafana, Prometheus, Netdata, Glances |
+| **Remote Access** | Akun OS, SSH, OpenVPN, Cockpit, FTP |
+| **Runtime** | Node.js, Python, PHP, Ruby, Go |
+| **Security** | Security, Fail2Ban, ClamAV, AIDE, Lynis |
+| **System** | Systemd, Proses, Cron, Files, Terminal |
+| **Config** | Settings, Akun Panel, Paket, Network, Backup |
+
+## Executor Modes
+
+| Mode | Description |
+|------|-------------|
+| `local` | Direct execution on Linux (requires root) |
+| `wsl` | Execute via WSL distro (Debian default) |
+| `dry-run` | Simulate commands without execution (Windows dev) |
+
+Set via environment variable:
+```bash
+export WEBORN_EXECUTOR_MODE=local
+# or
+export WEBORN_EXECUTOR_MODE=wsl
+export WEBORN_WSL_DISTRO=Debian
+```
+
+## Security Note
+
+Weborn creates Linux users with sudo privileges during setup. In production:
+- Use strong passwords
+- Configure SSH key authentication
+- Enable firewall (UFW)
+- Run behind a reverse proxy with HTTPS
+- Regularly update packages
 
 ## Contributing
 
 1. Fork the repository.
 2. Create a feature branch (`git checkout -b my-feature`).
-3. Make your changes and ensure the code follows the existing style (PEP 8). Run linters/formatters (`ruff`, `black`).
+3. Make your changes and ensure the code follows existing style (PEP 8).
 4. Commit with a clear message.
 5. Open a Pull Request against the `main` branch.
 
-## Dashboard preview
+## Dashboard Preview
 
 <p align="center">
   <img src="assets/weborn-screenshot.png" alt="Weborn dashboard preview" width="1200" />

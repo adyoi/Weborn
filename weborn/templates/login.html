@@ -21,6 +21,9 @@
         {% if error %}
             <div class="msg err">{{ error }}</div>
         {% endif %}
+        {% if request.query_params.get('msg') %}
+            <div class="msg ok">{{ request.query_params.get('msg')|replace('%20', ' ') }}</div>
+        {% endif %}
         <form method="post" action="/login">
             <div class="field">
                 <label>Username</label>
