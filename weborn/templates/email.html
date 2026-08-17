@@ -1,169 +1,115 @@
 {% extends "base.html" %}
-{% block title %}Email Server - Weborn{% endblock %}
+{% block title %}Email Server — Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">📧 Mail Server</div>
-<div class="page-sub text-t3 text-[13px] mb-5">Postfix + Dovecot + Rspamd + OpenDKIM + Roundcube</div>
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <h1 class="text-xl font-bold">📧 Mail Server</h1>
+        <div class="text-t3 text-xs mt-0.5">Postfix + Dovecot + Rspamd + OpenDKIM + Roundcube</div>
+    </div>
+</div>
 
 {% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
 
 {# ─── Setup Wizard ─── #}
 {% if not all_installed %}
 <div class="card mb-4 border border-[var(--accent)]/30">
-    <h3 class="text-sm font-bold mb-3">🚀 Mail Server Setup Wizard</h3>
-    <p class="text-[12px] text-t3 mb-3">
-        Instalasi otomatis: Postfix (SMTP) + Dovecot (IMAP/POP3) + Rspamd (anti-spam) + OpenDKIM + Roundcube (webmail).
+    <div class="flex items-center justify-between mb-2">
+        <h3 class="text-xs font-bold">🚀 Mail Server Setup Wizard</h3>
+    </div>
+    <p class="text-[11px] text-t3 mb-3">
+        Instalasi: Postfix (SMTP) + Dovecot (IMAP/POP3) + Rspamd (anti-spam) + OpenDKIM + Roundcube.
         Butuh domain yang sudah terdaftar di panel.
     </p>
     {% if domains %}
-    <form method="post" action="/email/setup" class="flex gap-2 items-end"
-          onsubmit="return confirm('Install & konfigurasi mail server untuk domain ini? Proses membutuhkan beberapa menit.')">
+    <div class="flex gap-2 items-end">
         <div class="flex-1">
-            <label class="text-[11px] text-t3">Pilih Domain</label>
-            <select name="domain" class="w-full text-[13px]">
+            <label class="text-[11px]">Pilih Domain</label>
+            <select id="mail-domain" class="sm">
                 {% for d in domains %}
                 <option value="{{ d.name }}">{{ d.name }}</option>
                 {% endfor %}
             </select>
         </div>
-        <button type="submit" class="btn primary">🚀 Install & Konfigurasi</button>
-    </form>
+        <button onclick="mailSetup()" class="btn primary sm">🚀 Install & Konfigurasi</button>
+    </div>
     {% else %}
-    <div class="msg err">Buat domain dulu di <a href="/domains" class="text-accent">Domain Manager</a> sebelum setup mail server.</div>
+    <div class="msg err text-xs">Buat domain dulu di <a href="/domains" class="text-accent">Domain Manager</a>.</div>
     {% endif %}
 </div>
 {% endif %}
 
-{# ─── Service Status Cards ─── #}
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-    {# Postfix #}
+{# ─── Service Status ─── #}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+    {% for svc_key, svc_name, svc_port, svc_desc in [
+        ('postfix', 'Postfix (SMTP)', '25/587/465', 'Kirim & terima email'),
+        ('dovecot', 'Dovecot (IMAP/POP3)', '143/993/110/995', 'Akses mailbox'),
+        ('rspamd', 'Rspamd (Anti-Spam)', '11332', 'Filter spam & virus'),
+    ] %}
     <div class="card">
-        <h3 class="text-sm font-bold mb-2">📬 Postfix (SMTP)</h3>
-        <div class="text-[13px] mb-2">
-            {% if stack.postfix.active %}<span class="badge ok">🟢 Running</span>
-            {% elif stack.postfix.installed %}<span class="badge warn">⚪ Stopped</span>
-            {% else %}<span class="badge err">❌ Not Installed</span>{% endif %}
+        <div class="flex items-center justify-between mb-1.5">
+            <h3 class="text-xs font-bold">{{ svc_name }}</h3>
+            <span class="st {{ 'active' if stack[svc_key].active else ('inactive' if stack[svc_key].installed else 'failed') }}">{{ 'active' if stack[svc_key].active else ('stopped' if stack[svc_key].installed else 'not installed') }}</span>
         </div>
-        <div class="text-[11px] text-t3 mb-2">Port 25/587/465 — Kirim & terima email</div>
-        {% if stack.postfix.installed %}
-        <div class="flex gap-2">
-            {% if not stack.postfix.active %}
-            <form method="post" action="/email/service/postfix/start"><button class="btn primary flex-1">▶ Start</button></form>
+        <div class="text-[10px] text-t3 mb-2">Port {{ svc_port }} — {{ svc_desc }}</div>
+        {% if stack[svc_key].installed %}
+        <div class="flex gap-1.5">
+            {% if not stack[svc_key].active %}
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/start','Start {{ svc_name }}',false)" class="btn primary sm">▶ Start</button>
             {% else %}
-            <form method="post" action="/email/service/postfix/stop"><button class="btn danger flex-1">⏹ Stop</button></form>
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/stop','Stop {{ svc_name }}',false)" class="btn danger sm">⏹ Stop</button>
             {% endif %}
-            <form method="post" action="/email/service/postfix/restart"><button class="btn">🔄</button></form>
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/restart','Restart {{ svc_name }}',false)" class="btn sm">🔄</button>
         </div>
         {% endif %}
     </div>
-
-    {# Dovecot #}
-    <div class="card">
-        <h3 class="text-sm font-bold mb-2">📨 Dovecot (IMAP/POP3)</h3>
-        <div class="text-[13px] mb-2">
-            {% if stack.dovecot.active %}<span class="badge ok">🟢 Running</span>
-            {% elif stack.dovecot.installed %}<span class="badge warn">⚪ Stopped</span>
-            {% else %}<span class="badge err">❌ Not Installed</span>{% endif %}
-        </div>
-        <div class="text-[11px] text-t3 mb-2">Port 143/993/110/995 — Akses mailbox</div>
-        {% if stack.dovecot.installed %}
-        <div class="flex gap-2">
-            {% if not stack.dovecot.active %}
-            <form method="post" action="/email/service/dovecot/start"><button class="btn primary flex-1">▶ Start</button></form>
-            {% else %}
-            <form method="post" action="/email/service/dovecot/stop"><button class="btn danger flex-1">⏹ Stop</button></form>
-            {% endif %}
-            <form method="post" action="/email/service/dovecot/restart"><button class="btn">🔄</button></form>
-        </div>
-        {% endif %}
-    </div>
-
-    {# Rspamd #}
-    <div class="card">
-        <h3 class="text-sm font-bold mb-2">🛡️ Rspamd (Anti-Spam)</h3>
-        <div class="text-[13px] mb-2">
-            {% if stack.rspamd.active %}<span class="badge ok">🟢 Running</span>
-            {% elif stack.rspamd.installed %}<span class="badge warn">⚪ Stopped</span>
-            {% else %}<span class="badge err">❌ Not Installed</span>{% endif %}
-        </div>
-        <div class="text-[11px] text-t3 mb-2">Port 11332 — Filter spam & virus</div>
-        {% if stack.rspamd.installed %}
-        <div class="flex gap-2">
-            {% if not stack.rspamd.active %}
-            <form method="post" action="/email/service/rspamd/start"><button class="btn primary flex-1">▶ Start</button></form>
-            {% else %}
-            <form method="post" action="/email/service/rspamd/stop"><button class="btn danger flex-1">⏹ Stop</button></form>
-            {% endif %}
-            <form method="post" action="/email/service/rspamd/restart"><button class="btn">🔄</button></form>
-        </div>
-        {% endif %}
-    </div>
+    {% endfor %}
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    {# OpenDKIM #}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+    {% for svc_key, svc_name, svc_desc in [
+        ('opendkim', 'OpenDKIM', 'Tanda tangan DKIM — validasi email'),
+        ('roundcube', 'Roundcube (Webmail)', 'Web-based email client'),
+        ('spamc', 'SpamAssassin', 'Backup spam filter'),
+    ] %}
     <div class="card">
-        <h3 class="text-sm font-bold mb-2">🔑 OpenDKIM</h3>
-        <div class="text-[13px] mb-2">
-            {% if stack.opendkim.active %}<span class="badge ok">🟢 Running</span>
-            {% elif stack.opendkim.installed %}<span class="badge warn">⚪ Stopped</span>
-            {% else %}<span class="badge err">❌ Not Installed</span>{% endif %}
+        <div class="flex items-center justify-between mb-1.5">
+            <h3 class="text-xs font-bold">{{ svc_name }}</h3>
+            <span class="st {{ 'active' if stack[svc_key].active else ('inactive' if stack[svc_key].installed else 'failed') }}">{{ 'active' if stack[svc_key].active else ('stopped' if stack[svc_key].installed else 'not installed') }}</span>
         </div>
-        <div class="text-[11px] text-t3 mb-2">Tanda tangan DKIM — validasi email</div>
-        {% if stack.opendkim.installed %}
-        <div class="flex gap-2">
-            {% if not stack.opendkim.active %}
-            <form method="post" action="/email/service/opendkim/start"><button class="btn primary flex-1">▶ Start</button></form>
+        <div class="text-[10px] text-t3 mb-2">{{ svc_desc }}</div>
+        {% if stack[svc_key].installed %}
+        <div class="flex gap-1.5">
+            {% if not stack[svc_key].active %}
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/start','Start {{ svc_name }}',false)" class="btn primary sm">▶ Start</button>
             {% else %}
-            <form method="post" action="/email/service/opendkim/stop"><button class="btn danger flex-1">⏹ Stop</button></form>
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/stop','Stop {{ svc_name }}',false)" class="btn danger sm">⏹ Stop</button>
             {% endif %}
-            <form method="post" action="/email/service/opendkim/restart"><button class="btn">🔄</button></form>
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/restart','Restart {{ svc_name }}',false)" class="btn sm">🔄</button>
         </div>
         {% endif %}
     </div>
-
-    {# Roundcube #}
-    <div class="card">
-        <h3 class="text-sm font-bold mb-2">📮 Roundcube (Webmail)</h3>
-        <div class="text-[13px] mb-2">
-            {% if stack.roundcube.active %}<span class="badge ok">🟢 Running</span>
-            {% elif stack.roundcube.installed %}<span class="badge warn">⚪ Stopped</span>
-            {% else %}<span class="badge err">❌ Not Installed</span>{% endif %}
-        </div>
-        <div class="text-[11px] text-t3 mb-2">Web-based email client</div>
-    </div>
-
-    {# SpamAssassin #}
-    <div class="card">
-        <h3 class="text-sm font-bold mb-2">🚧 SpamAssassin</h3>
-        <div class="text-[13px] mb-2">
-            {% if stack.spamc.active %}<span class="badge ok">🟢 Running</span>
-            {% elif stack.spamc.installed %}<span class="badge warn">⚪ Stopped</span>
-            {% else %}<span class="badge err">❌ Not Installed</span>{% endif %}
-        </div>
-        <div class="text-[11px] text-t3 mb-2">Backup spam filter</div>
-        {% if stack.spamc.installed %}
-        <div class="flex gap-2">
-            {% if not stack.spamc.active %}
-            <form method="post" action="/email/service/spamc/start"><button class="btn primary flex-1">▶ Start</button></form>
-            {% else %}
-            <form method="post" action="/email/service/spamc/stop"><button class="btn danger flex-1">⏹ Stop</button></form>
-            {% endif %}
-            <form method="post" action="/email/service/spamc/restart"><button class="btn">🔄</button></form>
-        </div>
-        {% endif %}
-    </div>
+    {% endfor %}
 </div>
 
 {% if all_installed and domains %}
-{# ─── Info Koneksi ─── #}
 <div class="card mt-4">
-    <h3 class="text-sm mb-2 font-bold">ℹ️ Info Koneksi</h3>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-[13px]">
-        <div><span class="text-t3">SMTP:</span> <code class="mono text-[11px]">mail.{{ domains[0].name }}:587</code></div>
-        <div><span class="text-t3">IMAP:</span> <code class="mono text-[11px]">mail.{{ domains[0].name }}:993</code></div>
-        <div><span class="text-t3">POP3:</span> <code class="mono text-[11px]">mail.{{ domains[0].name }}:995</code></div>
-        <div><span class="text-t3">Webmail:</span> <code class="mono text-[11px]">/roundcube</code></div>
+    <h3 class="text-xs mb-2 font-bold">ℹ️ Info Koneksi</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
+        <div><span class="text-t3">SMTP:</span> <code class="mono">mail.{{ domains[0].name }}:587</code></div>
+        <div><span class="text-t3">IMAP:</span> <code class="mono">mail.{{ domains[0].name }}:993</code></div>
+        <div><span class="text-t3">POP3:</span> <code class="mono">mail.{{ domains[0].name }}:995</code></div>
+        <div><span class="text-t3">Webmail:</span> <code class="mono">/roundcube</code></div>
     </div>
 </div>
 {% endif %}
+
+<script>
+function mailSetup() {
+    var domain = document.getElementById('mail-domain').value;
+    if (!domain) { weborn.toast('Pilih domain', 'err'); return; }
+    var fd = new FormData();
+    fd.append('domain', domain);
+    weborn.streamPost('/email/setup', 'Setup Mail Server untuk ' + domain, false);
+}
+</script>
 {% endblock %}

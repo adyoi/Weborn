@@ -1,72 +1,56 @@
 {% extends "base.html" %}
 {% block title %}Cache — Weborn{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-5">
-    <h1 class="text-xl font-bold">⚡ Cache & Session Store</h1>
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <h1 class="text-xl font-bold">⚡ Cache & Session Store</h1>
+        <div class="text-t3 text-xs mt-0.5">Redis + Memcached — object cache & session management</div>
+    </div>
 </div>
 
-<div class="grid grid-cols-2 gap-4 mb-6">
+<div class="grid grid-cols-2 gap-3">
     {# ── Redis ── #}
-    <div class="card p-5">
-        <div class="flex items-center justify-between mb-3">
-            <h2 class="font-bold text-sm">🔴 Redis</h2>
-            {% if redis_status == 'active' %}
-            <span class="px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs font-mono">● running</span>
-            {% else %}
-            <span class="px-2 py-1 rounded bg-red-500/20 text-red-400 text-xs font-mono">● {{ redis_status }}</span>
-            {% endif %}
+    <div class="card">
+        <div class="flex items-center justify-between mb-2">
+            <h2 class="font-bold text-xs">🔴 Redis</h2>
+            <span class="st {{ 'active' if redis_status == 'active' else 'inactive' }}">{{ redis_status }}</span>
         </div>
-
-        <div class="text-t3 text-xs mb-2">Server Info</div>
         {% if redis_info %}
-        <pre class="bg-pane2 rounded p-3 text-xs font-mono overflow-auto max-h-48">{{ redis_info }}</pre>
+        <pre class="bg-black/10 rounded p-2 text-[10px] font-mono overflow-auto max-h-32 mb-2">{{ redis_info }}</pre>
         {% else %}
-        <div class="bg-pane2 rounded p-3 text-t3 text-xs font-mono">Redis tidak aktif</div>
+        <div class="bg-black/10 rounded p-2 text-t3 text-[10px] font-mono">Redis tidak aktif</div>
         {% endif %}
-
-        <div class="flex gap-2 mt-3">
-            <button onclick="weborn.action('/web-server/redis/start','POST')" class="btn text-xs">Start</button>
-            <button onclick="weborn.action('/web-server/redis/restart','POST')" class="btn text-xs">Restart</button>
-            <button onclick="weborn.action('/web-server/redis/stop','POST')" class="btn danger text-xs">Stop</button>
+        <div class="flex gap-1.5">
+            <button onclick="weborn.simplePost('/web-server/redis/start','Start Redis',false)" class="btn sm">▶ Start</button>
+            <button onclick="weborn.simplePost('/web-server/redis/restart','Restart Redis',false)" class="btn sm">🔄 Restart</button>
+            <button onclick="weborn.simplePost('/web-server/redis/stop','Stop Redis',false)" class="btn danger sm">⏹ Stop</button>
         </div>
     </div>
 
     {# ── Memcached ── #}
-    <div class="card p-5">
-        <div class="flex items-center justify-between mb-3">
-            <h2 class="font-bold text-sm">⚡ Memcached</h2>
-            {% if memcached_status == 'active' %}
-            <span class="px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs font-mono">● running</span>
-            {% else %}
-            <span class="px-2 py-1 rounded bg-red-500/20 text-red-400 text-xs font-mono">● {{ memcached_status }}</span>
-            {% endif %}
+    <div class="card">
+        <div class="flex items-center justify-between mb-2">
+            <h2 class="font-bold text-xs">⚡ Memcached</h2>
+            <span class="st {{ 'active' if memcached_status == 'active' else 'inactive' }}">{{ memcached_status }}</span>
         </div>
-
-        <div class="bg-pane2 rounded p-3 text-xs font-mono mb-3">
+        <div class="bg-black/10 rounded p-2 text-[10px] font-mono mb-2">
+            <div class="text-t3">Port: 11211 · Default memory: 64MB</div>
             <div class="text-t3">Use case: Session store, object cache</div>
-            <div>Port: 11211</div>
-            <div>Default memory: 64MB</div>
         </div>
-
-        <div class="flex gap-2">
-            <button onclick="weborn.action('/web-server/memcached/start','POST')" class="btn text-xs">Start</button>
-            <button onclick="weborn.action('/web-server/memcached/restart','POST')" class="btn text-xs">Restart</button>
-            <button onclick="weborn.action('/web-server/memcached/stop','POST')" class="btn danger text-xs">Stop</button>
+        <div class="flex gap-1.5">
+            <button onclick="weborn.simplePost('/web-server/memcached/start','Start Memcached',false)" class="btn sm">▶ Start</button>
+            <button onclick="weborn.simplePost('/web-server/memcached/restart','Restart Memcached',false)" class="btn sm">🔄 Restart</button>
+            <button onclick="weborn.simplePost('/web-server/memcached/stop','Stop Memcached',false)" class="btn danger sm">⏹ Stop</button>
         </div>
     </div>
 </div>
 
-<div class="card p-5">
-    <h2 class="font-bold text-sm mb-3">Cache Architecture</h2>
-    <div class="bg-pane2 rounded p-4 font-mono text-xs leading-relaxed">
-        <div class="text-t3 mb-2">Weborn Cache Stack:</div>
-        <div>├─ <span class="text-yellow-400">Redis</span> — Object cache + Session store + Queue</div>
-        <div>├─ <span class="text-blue-400">Memcached</span> — Lightweight cache + Session store</div>
-        <div>└─ <span class="text-green-400">OPcache</span> — PHP bytecode cache (built-in PHP 5.5+)</div>
-        <div class="text-t3 mt-2">Use cases:</div>
-        <div>├─ Django/Flask: Redis for session + cache</div>
-        <div>├─ Laravel: Redis for cache + session + queue</div>
-        <div>└─ WordPress: Redis/Memcached for object cache</div>
+<div class="card mt-3">
+    <h2 class="font-bold text-xs mb-2">Cache Architecture</h2>
+    <div class="bg-black/10 rounded p-3 font-mono text-[10px] leading-relaxed">
+        <div>├─ <span class="text-[var(--warn)]">Redis</span> — Object cache + Session + Queue</div>
+        <div>├─ <span class="text-[var(--accent)]">Memcached</span> — Lightweight cache + Session</div>
+        <div>└─ <span class="text-[var(--ok)]">OPcache</span> — PHP bytecode cache (built-in)</div>
     </div>
 </div>
 {% endblock %}

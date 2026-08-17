@@ -1,53 +1,83 @@
 {% extends "base.html" %}
-{% block title %}Firewall - Weborn{% endblock %}
+{% block title %}Firewall — Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">🛡️ UFW Firewall</div>
-<div class="page-sub text-t3 text-[13px] mb-5">Manage firewall rules — allow/deny port & protocol</div>
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <h1 class="text-xl font-bold">🛡️ UFW Firewall</h1>
+        <div class="text-t3 text-xs mt-0.5">Manage firewall rules — allow/deny port & protocol</div>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="st {{ 'active' if service_active else 'inactive' }}">{{ 'active' if service_active else 'inactive' }}</span>
+        <button onclick="weborn.confirmAction('/security/firewall/toggle','{{ "Nonaktifkan" if service_active else "Aktifkan" }} Firewall',true,'{{ "Nonaktifkan firewall?" if service_active else "Aktifkan firewall?" }}')"
+                class="btn {{ 'danger' if service_active else 'primary' }} sm">
+            {{ '⏹ Disable' if service_active else '▶ Enable' }}
+        </button>
+    </div>
+</div>
 
 {% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
 
-<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] gap-4 items-start">
+<div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 items-start">
+    {# ── Add Rule Form ── #}
     <div class="card">
-        <h3 class="text-sm mb-3 font-bold">ℹ️ Status</h3>
-        <div class="mb-3">
-            {% if service_active %}<span class="badge ok">🟢 ACTIVE</span>
-            {% else %}<span class="badge warn">⚪ INACTIVE</span>{% endif %}
-        </div>
-        <form method="post" action="/security/firewall/toggle">
-            {% if service_active %}
-            <button class="btn danger w-full justify-center">⏹ Disable Firewall</button>
-            {% else %}
-            <button class="btn primary w-full justify-center">▶ Enable Firewall</button>
-            {% endif %}
-        </form>
-
-        <div class="border-t border-line mt-4 pt-4">
-            <h4 class="text-[12px] font-bold mb-2">➕ Tambah Rule</h4>
-            <form method="post" action="/security/firewall/allow" class="space-y-2">
-                <input name="port" placeholder="Port (22, 80, 443)" required class="w-full text-[13px]">
-                <select name="proto" class="w-full text-[13px]">
+        <h3 class="text-xs font-bold mb-3">➕ Tambah Rule</h3>
+        <form id="ufw-add-form" class="space-y-2">
+            <div><label class="text-[11px]">Port</label>
+                <input name="port" placeholder="22, 80, 443, 8000:8100" required class="sm"></div>
+            <div><label class="text-[11px]">Protocol</label>
+                <select name="proto" class="sm">
                     <option value="tcp">TCP</option>
                     <option value="udp">UDP</option>
-                    <option value="any">ANY</option>
-                </select>
-                <div class="flex gap-2">
-                    <button type="submit" class="btn primary flex-1">✅ Allow</button>
-                </div>
-            </form>
+                </select></div>
+            <div class="flex gap-2">
+                <button type="button" onclick="ufwAction('allow')" class="btn primary sm flex-1">✅ Allow</button>
+                <button type="button" onclick="ufwAction('deny')" class="btn danger sm flex-1">🚫 Block</button>
+            </div>
+        </form>
+        <div class="border-t border-line/40 mt-3 pt-3">
+            <h4 class="text-[11px] font-bold mb-2">Quick Actions</h4>
+            <div class="flex flex-wrap gap-1">
+                <button onclick="quickAllow('22')" class="btn sm">SSH</button>
+                <button onclick="quickAllow('80')" class="btn sm">HTTP</button>
+                <button onclick="quickAllow('443')" class="btn sm">HTTPS</button>
+                <button onclick="quickAllow('2025')" class="btn sm">Panel</button>
+            </div>
         </div>
     </div>
 
+    {# ── Rules List ── #}
     <div class="card !p-0 overflow-hidden">
-        <table>
-            <thead><tr><th>Rule</th></tr></thead>
-            <tbody>
+        <div class="px-4 py-2.5 border-b border-line/40 flex items-center justify-between">
+            <h3 class="text-xs font-bold">📋 Rules</h3>
+            <span class="text-t3 text-[10px]">{{ rules|length }} rules</span>
+        </div>
+        {% if rules %}
+        <div class="max-h-[400px] overflow-y-auto">
             {% for rule in rules %}
-            <tr><td class="mono text-[12px]">{{ rule }}</td></tr>
-            {% else %}
-            <tr><td class="text-t3 text-center py-7">Tidak ada rule</td></tr>
+            <div class="px-4 py-2 border-b border-line/20 flex items-center gap-3 hover:bg-white/[.02]">
+                <code class="mono text-[11px] flex-1">{{ rule }}</code>
+            </div>
             {% endfor %}
-            </tbody>
-        </table>
+        </div>
+        {% else %}
+        <div class="text-t3 text-center py-8 text-xs">Tidak ada rule</div>
+        {% endif %}
     </div>
 </div>
+
+<script>
+function ufwAction(action) {
+    var form = document.getElementById('ufw-add-form');
+    var port = form.port.value.trim();
+    var proto = form.proto.value;
+    if (!port) { weborn.toast('Masukkan port', 'err'); return; }
+    var fd = new FormData();
+    fd.append('port', port);
+    fd.append('proto', proto);
+    weborn.simplePost('/security/firewall/' + action, action.toUpperCase() + ' port ' + port, true);
+}
+function quickAllow(port) {
+    weborn.simplePost('/security/firewall/allow', 'Allow port ' + port, true);
+}
+</script>
 {% endblock %}

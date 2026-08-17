@@ -1,72 +1,84 @@
 {% extends "base.html" %}
-{% block title %}Fail2Ban - Weborn{% endblock %}
+{% block title %}Fail2Ban — Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">⛔ Fail2Ban</div>
-<div class="page-sub text-t3 text-[13px] mb-5">Intrusion prevention — blok IP setelah percobaan login gagal</div>
-
-{% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
-
-{% if not installed %}
-<div class="msg err">Fail2Ban belum terpasang. Install via <a href="/addons/fail2ban" class="text-accent">Addon Store</a>.</div>
-{% endif %}
-
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-    <div class="card">
-        <h3 class="text-sm mb-3 font-bold">ℹ️ Status</h3>
-        <div class="space-y-2 text-[13px]">
-            <div><span class="text-t3">Status:</span>
-                {% if service_active %}<span class="badge ok">🟢 RUNNING</span>
-                {% else %}<span class="badge warn">⚪ STOPPED</span>{% endif %}
-            </div>
-            <div><span class="text-t3">Jails aktif:</span> <b>{{ jails|length }}</b></div>
-            <div class="text-[11px] text-t3">Jails: {{ jails|join(', ') or '—' }}</div>
-        </div>
-        <div class="flex gap-2 mt-3">
-            {% if not service_active %}
-            <form method="post" action="/security/fail2ban/start" class="flex-1">
-                <button class="btn primary w-full justify-center">▶ Start</button>
-            </form>
-            {% else %}
-            <form method="post" action="/security/fail2ban/stop" class="flex-1">
-                <button class="btn danger w-full justify-center">⏹ Stop</button>
-            </form>
-            {% endif %}
-        </div>
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <h1 class="text-xl font-bold">⛔ Fail2Ban</h1>
+        <div class="text-t3 text-xs mt-0.5">Intrusion prevention — blok IP setelah percobaan login gagal</div>
     </div>
-
-    <div class="card lg:col-span-2">
-        <h3 class="text-sm mb-3 font-bold">🚫 Banned IPs</h3>
-        {% if banned %}
-        <table>
-            <thead><tr><th>IP Address</th><th>Jail</th><th></th></tr></thead>
-            <tbody>
-            {% for b in banned %}
-            <tr>
-                <td class="mono text-[13px]">{{ b.ip }}</td>
-                <td class="text-[11px]">{{ b.jail }}</td>
-                <td class="text-right">
-                    <form method="post" action="/security/fail2ban/unban" style="display:inline">
-                        <input type="hidden" name="ip" value="{{ b.ip }}">
-                        <input type="hidden" name="jail" value="{{ b.jail }}">
-                        <button class="btn !py-0.5 !px-2 text-[11px]">🔓 Unban</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+    <div class="flex items-center gap-3">
+        <span class="st {{ 'active' if service_active else 'inactive' }}">{{ 'active' if service_active else 'inactive' }}</span>
+        {% if installed %}
+        {% if not service_active %}
+        <button onclick="weborn.confirmAction('/security/fail2ban/start','Start Fail2Ban',true)" class="btn primary sm">▶ Start</button>
         {% else %}
-        <div class="text-t3 text-center py-4 text-[13px]">Tidak ada IP yang dibanned</div>
+        <button onclick="weborn.confirmAction('/security/fail2ban/stop','Stop Fail2Ban',true,'Stop Fail2Ban?')" class="btn danger sm">⏹ Stop</button>
         {% endif %}
-
-        <div class="border-t border-line mt-3 pt-3">
-            <h4 class="text-[12px] font-bold mb-2">Manual Ban/Unban</h4>
-            <form method="post" action="/security/fail2ban/ban" class="flex gap-2">
-                <input name="ip" placeholder="IP address" required class="flex-1 text-[13px]">
-                <input name="jail" value="sshd" class="w-24 text-[13px]">
-                <button type="submit" class="btn danger">🚫 Ban</button>
-            </form>
-        </div>
+        {% endif %}
     </div>
 </div>
+
+{% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
+{% if not installed %}
+<div class="msg err">Fail2Ban belum terpasang. Install via <a href="/addons" class="text-accent">Addon Store</a>.</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 items-start">
+    {# ── Info + Ban Form ── #}
+    <div class="card">
+        <h3 class="text-xs font-bold mb-3">ℹ️ Status</h3>
+        <div class="space-y-1.5 text-[12px] mb-3">
+            <div class="flex justify-between"><span class="text-t3">Jails aktif:</span><b>{{ jails|length }}</b></div>
+            <div class="text-[11px] text-t3">Jails: {{ jails|join(', ') or '—' }}</div>
+        </div>
+
+        <div class="border-t border-line/40 pt-3">
+            <h4 class="text-[11px] font-bold mb-2">🚫 Manual Ban</h4>
+            <form id="f2b-ban-form" class="space-y-2">
+                <div><label class="text-[11px]">IP Address</label>
+                    <input name="ip" placeholder="192.168.1.100" required class="sm" id="f2b-ip"></div>
+                <div><label class="text-[11px]">Jail</label>
+                    <input name="jail" value="sshd" class="sm" id="f2b-jail"></div>
+                <button type="button" onclick="f2bBan()" class="btn danger sm w-full justify-center">🚫 Ban IP</button>
+            </form>
+        </div>
+    </div>
+
+    {# ── Banned IPs List ── #}
+    <div class="card !p-0 overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-line/40 flex items-center justify-between">
+            <h3 class="text-xs font-bold">🚫 Banned IPs</h3>
+            <span class="text-t3 text-[10px]">{{ banned|length }} banned</span>
+        </div>
+        {% if banned %}
+        <div class="max-h-[350px] overflow-y-auto">
+            {% for b in banned %}
+            <div class="px-4 py-2 border-b border-line/20 flex items-center gap-3 hover:bg-white/[.02]">
+                <code class="mono text-[11px] flex-1">{{ b.ip }}</code>
+                <span class="text-t3 text-[10px]">{{ b.jail }}</span>
+                <button onclick="f2bUnban('{{ b.ip }}','{{ b.jail }}')" class="btn sm">🔓 Unban</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-t3 text-center py-8 text-xs">Tidak ada IP yang dibanned</div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function f2bBan() {
+    var ip = document.getElementById('f2b-ip').value.trim();
+    var jail = document.getElementById('f2b-jail').value.trim();
+    if (!ip) { weborn.toast('Masukkan IP', 'err'); return; }
+    weborn.simplePost('/security/fail2ban/ban', 'Ban ' + ip, true);
+}
+function f2bUnban(ip, jail) {
+    var fd = new FormData();
+    fd.append('ip', ip);
+    fd.append('jail', jail);
+    fetch('/security/fail2ban/unban', { method: 'POST', body: fd })
+        .then(function() { location.reload(); });
+}
+</script>
 {% endblock %}

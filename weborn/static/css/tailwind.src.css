@@ -24,11 +24,17 @@
         background: var(--bg-1);
         border: 1px solid var(--panel-border);
         color: var(--text-1);
-        padding: 9px 12px;
-        border-radius: 10px;
+        padding: 6px 10px;
+        border-radius: 8px;
         outline: none;
         width: 100%;
+        font-size: 12.5px;
         transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    input.sm, select.sm, textarea.sm {
+        padding: 4px 8px;
+        font-size: 11.5px;
+        border-radius: 6px;
     }
     input::placeholder, textarea::placeholder { color: var(--text-3); opacity: .7; }
     input:focus, select:focus, textarea:focus {
@@ -109,18 +115,21 @@
     .btn {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 5px;
         cursor: pointer;
         border: 1px solid var(--panel-border);
         background: var(--bg-2);
         color: var(--text-1);
-        padding: 6px 12px;
-        border-radius: 10px;
-        font-size: 12.5px;
+        padding: 5px 10px;
+        border-radius: 8px;
+        font-size: 11.5px;
         font: inherit;
         text-decoration: none;
         transition: all .15s ease;
+        white-space: nowrap;
     }
+    .btn.sm { padding: 3px 8px; font-size: 10.5px; border-radius: 6px; }
+    .btn.lg { padding: 7px 16px; font-size: 13px; }
     .btn:hover { border-color: var(--accent); box-shadow: var(--glow-cyan); }
     .btn:active { transform: translateY(1px); }
     .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
@@ -184,6 +193,13 @@
     .badge.warn { background: rgba(251, 191, 36, 0.15); color: var(--warn); border: 1px solid rgba(251, 191, 36, 0.35); }
     .badge.err { background: rgba(248, 113, 113, 0.15); color: var(--err); border: 1px solid rgba(248, 113, 113, 0.35); }
     .badge.info { background: rgba(34, 211, 238, 0.12); color: var(--accent); border: 1px solid rgba(34, 211, 238, 0.3); }
+
+    /* status indicators */
+    .st { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; }
+    .st::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; }
+    .st.active::before, .st.running::before { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+    .st.inactive::before, .st.stopped::before { background: var(--text-3); }
+    .st.failed::before, .st.error::before { background: var(--err); box-shadow: 0 0 6px var(--err); }
 
     /* pesan sukses/error */
     .msg {

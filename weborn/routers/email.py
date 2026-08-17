@@ -248,11 +248,12 @@ async def email_service_action(service: str, action: str,
                                user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    from starlette.responses import JSONResponse
     if service not in MAIL_STACK or action not in ("start", "stop", "restart"):
-        return RedirectResponse("/email?msg=Invalid%20action", status_code=303)
+        return JSONResponse({"ok": False, "error": "Invalid action"})
     unit = MAIL_STACK[service]["unit"]
-    await get_executor().run("systemctl", action, unit)
-    return RedirectResponse(f"/email?msg={service.title()}%20{action}d", status_code=303)
+    await get_executor().run("bash", "-c", f"sudo systemctl {action} {unit}")
+    return JSONResponse({"ok": True, "output": f"{service} {action}d"})
 
 
 # ────────────────────────────────── Mailbox ────────────────────────────────────
@@ -418,6 +419,21 @@ async def email_webmail_page(request: Request, msg: str = "",
     })
 
 
+@router.post("/email/webmail/install")
+async def email_webmail_install(user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    from starlette.responses import JSONResponse
+    ex = get_executor()
+    if ex.mode in ("local", "wsl"):
+        await ex.run("bash", "-c",
+                     "DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "
+                     "roundcube-core roundcube-mysql roundcube-plugins")
+        await ex.run("bash", "-c", "sudo systemctl enable roundcube 2>/dev/null || true")
+        await ex.run("bash", "-c", "sudo systemctl restart roundcube 2>/dev/null || true")
+    return JSONResponse({"ok": True, "output": "Roundcube dipasang"})
+
+
 # ────────────────────────────────── Spam & Virus ───────────────────────────────
 
 @router.get("/email/security", response_class=HTMLResponse)
@@ -428,21 +444,46 @@ async def email_security_page(request: Request, msg: str = "",
     ex = get_executor()
     rspamd_installed, rspamd_active = False, False
     clamav_installed, clamav_active = False, False
+    spamassassin_installed, spamassassin_active = False, False
+    opendkim_installed, opendkim_active = False, False
     if ex.mode in ("local", "wsl"):
-        r = await ex.run("bash", "-c", "command -v rspamd && echo yes || echo no")
-        rspamd_installed = "yes" in r.stdout
-        r = await ex.run("bash", "-c", "systemctl is-active rspamd 2>/dev/null || echo inactive")
-        rspamd_active = r.stdout.strip() == "active"
-        r = await ex.run("bash", "-c", "command -v clamscan && echo yes || echo no")
-        clamav_installed = "yes" in r.stdout
-        r = await ex.run("bash", "-c", "systemctl is-active clamav-daemon 2>/dev/null || echo inactive")
-        clamav_active = r.stdout.strip() == "active"
+        for svc, info in [("rspamd", "rspamd"), ("clamav", "clamav-daemon"),
+                          ("spamassassin", "spamassassin"), ("opendkim", "opendkim")]:
+            r = await ex.run("bash", "-c", f"command -v {info} && echo yes || echo no")
+            is_installed = "yes" in r.stdout
+            r2 = await ex.run("bash", "-c", f"systemctl is-active {info} 2>/dev/null || echo inactive")
+            is_active = r2.stdout.strip() == "active"
+            if svc == "rspamd":
+                rspamd_installed, rspamd_active = is_installed, is_active
+            elif svc == "clamav":
+                clamav_installed, clamav_active = is_installed, is_active
+            elif svc == "spamassassin":
+                spamassassin_installed, spamassassin_active = is_installed, is_active
+            elif svc == "opendkim":
+                opendkim_installed, opendkim_active = is_installed, is_active
     return render(request, "email_security.html", {
         "user": user, "msg": msg,
         "rspamd_installed": rspamd_installed, "rspamd_active": rspamd_active,
         "clamav_installed": clamav_installed, "clamav_active": clamav_active,
+        "spamassassin_installed": spamassassin_installed, "spamassassin_active": spamassassin_active,
+        "opendkim_installed": opendkim_installed, "opendkim_active": opendkim_active,
         "active": "email-security",
     })
+
+
+@router.post("/email/security/install")
+async def email_security_install(user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    ex = get_executor()
+    from starlette.responses import JSONResponse
+    if ex.mode in ("local", "wsl"):
+        pkgs = "rspamd opendkim opendkim-tools spamassassin spamc clamav clamav-daemon"
+        await ex.run("bash", "-c", f"DEBIAN_FRONTEND=noninteractive apt-get install -y -qq {pkgs}")
+        for svc in ["rspamd", "opendkim", "spamassassin", "clamav-daemon"]:
+            await ex.run("bash", "-c", f"sudo systemctl enable {svc} 2>/dev/null || true")
+            await ex.run("bash", "-c", f"sudo systemctl restart {svc} 2>/dev/null || true")
+    return JSONResponse({"ok": True, "output": "Spam & DKIM stack dipasang"})
 
 
 @router.post("/email/security/service/{service}/{action}")
@@ -450,9 +491,11 @@ async def email_security_service(service: str, action: str,
                                  user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
-    service_map = {"rspamd": "rspamd", "clamav": "clamav-daemon"}
+    from starlette.responses import JSONResponse
+    service_map = {"rspamd": "rspamd", "clamav": "clamav-daemon",
+                   "spamassassin": "spamassassin", "opendkim": "opendkim"}
     svc = service_map.get(service)
     if not svc or action not in ("start", "stop", "restart"):
-        return RedirectResponse("/email/security?msg=Invalid%20action", status_code=303)
-    await get_executor().run("systemctl", action, svc)
-    return RedirectResponse(f"/email/security?msg={service}%20{action}d", status_code=303)
+        return JSONResponse({"ok": False, "error": "Invalid action"})
+    await get_executor().run("bash", "-c", f"sudo systemctl {action} {svc}")
+    return JSONResponse({"ok": True, "output": f"{service} {action}d"})

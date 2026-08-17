@@ -1,60 +1,58 @@
 {% extends "base.html" %}
 {% block title %}PHP-FPM — Weborn{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-5">
-    <h1 class="text-xl font-bold">🐘 PHP-FPM</h1>
-    <div class="flex gap-2">
-        {% if fpm_status == 'active' %}
-        <span class="px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs font-mono">● running</span>
-        {% else %}
-        <span class="px-2 py-1 rounded bg-red-500/20 text-red-400 text-xs font-mono">● {{ fpm_status }}</span>
-        {% endif %}
-        <button onclick="weborn.action('/web-server/php-fpm/restart','POST')" class="btn primary text-xs">Restart</button>
-        <button onclick="weborn.action('/web-server/php-fpm/reload','POST')" class="btn text-xs">Reload</button>
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <h1 class="text-xl font-bold">🐘 PHP-FPM</h1>
+        <div class="text-t3 text-xs mt-0.5">FastCGI Process Manager untuk PHP applications</div>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="st {{ 'active' if fpm_status == 'active' else 'inactive' }}">{{ fpm_status }}</span>
+        <button onclick="weborn.simplePost('/web-server/php-fpm/restart','Restart PHP-FPM',false)" class="btn primary sm">🔄 Restart</button>
+        <button onclick="weborn.simplePost('/web-server/php-fpm/reload','Reload PHP-FPM',false)" class="btn sm">↻ Reload</button>
     </div>
 </div>
 
-<div class="grid grid-cols-3 gap-4 mb-6">
-    <div class="card p-4">
-        <div class="text-t3 text-xs mb-1">PHP Version</div>
-        <div class="font-mono text-sm">{{ php_version or 'not installed' }}</div>
+<div class="grid grid-cols-3 gap-3 mb-4">
+    <div class="card">
+        <div class="text-t3 text-[10px] mb-1">PHP Version</div>
+        <div class="font-mono text-[12px]">{{ php_version or 'not installed' }}</div>
     </div>
-    <div class="card p-4">
-        <div class="text-t3 text-xs mb-1">FPM Status</div>
-        <div class="font-mono text-sm">{{ fpm_status }}</div>
+    <div class="card">
+        <div class="text-t3 text-[10px] mb-1">FPM Status</div>
+        <div class="font-mono text-[12px]">{{ fpm_status }}</div>
     </div>
-    <div class="card p-4">
-        <div class="text-t3 text-xs mb-1">Active Pools</div>
-        <div class="font-mono text-sm">{{ pools | length }}</div>
+    <div class="card">
+        <div class="text-t3 text-[10px] mb-1">Active Pools</div>
+        <div class="font-mono text-[12px]">{{ pools | length }}</div>
     </div>
 </div>
 
-<div class="card p-5 mb-6">
-    <h2 class="font-bold text-sm mb-3">PHP-FPM Pools</h2>
+<div class="card mb-4">
+    <h2 class="font-bold text-xs mb-2">PHP-FPM Pools</h2>
     {% if pools %}
     <div class="space-y-1">
         {% for pool in pools %}
-        <div class="flex items-center justify-between p-2 bg-pane2 rounded text-sm">
-            <span class="font-mono">{{ pool }}</span>
-            <span class="text-t3 text-xs">socket: /run/php/php*-fpm-*.sock</span>
+        <div class="flex items-center justify-between p-2 bg-black/10 rounded text-[11px]">
+            <code class="mono">{{ pool }}</code>
+            <span class="text-t3 text-[10px]">socket</span>
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="text-t3 text-sm">Belum ada pool config</div>
+    <div class="text-t3 text-[11px]">Belum ada pool config</div>
     {% endif %}
 </div>
 
-<div class="card p-5">
-    <h2 class="font-bold text-sm mb-3">How PHP-FPM Works</h2>
-    <div class="bg-pane2 rounded p-4 font-mono text-xs leading-relaxed">
-        <div class="text-t3 mb-2">PHP-FPM (FastCGI Process Manager):</div>
+<div class="card">
+    <h2 class="font-bold text-xs mb-2">How PHP-FPM Works</h2>
+    <div class="bg-black/10 rounded p-3 font-mono text-[10px] leading-relaxed">
         <div>1. Nginx menerima request untuk file .php</div>
-        <div>2. Nginx meneruskan ke PHP-FPM via <span class="text-purple-400">unix socket</span></div>
+        <div>2. Nginx meneruskan ke PHP-FPM via <span class="text-[var(--accent-2)]">unix socket</span></div>
         <div>3. PHP-FPM memproses file PHP → output HTML/JSON</div>
         <div>4. Nginx mengembalikan response ke client</div>
-        <div class="text-t3 mt-2">Pool config: /etc/php/*/fpm/pool.d/</div>
-        <div>Socket: /run/php/php{version}-fpm.sock</div>
+        <div class="text-t3 mt-1">Config: /etc/php/*/fpm/pool.d/</div>
+        <div class="text-t3">Socket: /run/php/php{version}-fpm.sock</div>
     </div>
 </div>
 {% endblock %}
