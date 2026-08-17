@@ -1,0 +1,21 @@
+{
+  "id": "docker",
+  "name": "Docker",
+  "description": "Container runtime untuk aplikasi sandboxed (compose, image, volume)",
+  "category": "runtime",
+  "type": "system",
+  "packages": ["docker.io", "docker-compose-plugin"],
+  "systemd_unit": "docker",
+  "bin": "docker",
+  "ports": [2375, 2376],
+  "icon": "🐳",
+  "config": {
+    "path": "/etc/docker/daemon.json",
+    "template": "docker-daemon.json.j2"
+  },
+  "fields": [
+    {"name": "storage_driver", "label": "Storage Driver", "default": "overlay2"},
+    {"name": "log_driver", "label": "Log Driver", "default": "json-file"},
+    {"name": "max_log_size", "label": "Max Log Size", "default": "10m"}
+  ]
+}

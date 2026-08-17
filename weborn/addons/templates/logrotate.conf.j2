@@ -1,0 +1,10 @@
+# /etc/logrotate.conf — Weborn managed
+daily
+rotate {{ values.get('rotate_days', '14') }}
+{{ values.get('compress', 'yes') }}
+delaycompress
+missingok
+notifempty
+create 0640 root adm
+
+include /etc/logrotate.d

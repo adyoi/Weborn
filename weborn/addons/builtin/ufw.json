@@ -1,0 +1,14 @@
+{
+  "id": "ufw",
+  "name": "UFW Firewall",
+  "description": "Uncomplicated Firewall — frontend simpel untuk iptables (allow/deny port)",
+  "category": "security",
+  "type": "system",
+  "packages": ["ufw"],
+  "systemd_unit": "ufw",
+  "bin": "ufw",
+  "ports": [],
+  "icon": "🧱",
+  "config": {},
+  "fields": []
+}

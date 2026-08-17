@@ -1,64 +1,118 @@
 {% extends "base.html" %}
-{% block title %}Dashboard - Weborn{% endblock %}
+{% block title %}Dashboard — Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">Dashboard</div>
-<div class="page-sub text-t3 text-[13px] mb-5">Ringkasan server &amp; layanan Weborn</div>
-
-<div class="card mb-4 flex items-center gap-4 flex-wrap">
-    <span class="badge info text-xs px-3.5 py-1.5">🐧 {{ os }}</span>
-    <a class="btn" href="/packages" data-tip="Lihat daftar lengkap paket">📦 {{ packages_total }} paket</a>
-    {% if updates and updates > 0 %}
-    <a class="btn danger" href="/packages" data-tip="Jalankan: apt update && apt upgrade">{{ updates }} update tersedia ⚠️</a>
-    {% else %}
-    <span class="badge ok text-xs px-3.5 py-1.5">✅ Sistem up-to-date</span>
-    {% endif %}
-    <span class="text-t3 text-xs ml-auto">
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <h1 class="text-xl font-bold">📊 Dashboard</h1>
+        <div class="text-t3 text-xs mt-0.5">Ringkasan server & layanan Weborn</div>
+    </div>
+    <span class="text-t3 text-[10px]">
         {{ stats.cores }} core • uptime {{ uptime_days }} hari
     </span>
 </div>
 
-<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-    <div class="card stat-shine">
-        <div class="label text-t3 text-[11px] uppercase tracking-wide">CPU</div>
-        <div class="value text-[28px] font-bold mt-1.5">{{ stats.cpu }}<small class="text-xs text-t2 font-normal">%</small></div>
-        <div class="stat-bar mt-2.5"><span style="width:{{ stats.cpu }}%"></span></div>
+{# ── System Bar ── #}
+<div class="card mb-3 flex items-center gap-3 flex-wrap">
+    <span class="badge info text-[11px] px-3 py-1">🐧 {{ os }}</span>
+    <a class="btn sm" href="/packages">📦 {{ packages_total }} paket</a>
+    {% if updates and updates > 0 %}
+    <a class="btn danger sm" href="/packages">{{ updates }} update tersedia ⚠️</a>
+    {% else %}
+    <span class="badge ok text-[11px] px-3 py-1">✅ Up-to-date</span>
+    {% endif %}
+</div>
+
+{# ── Stats Row ── #}
+<div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 mb-4">
+    <div class="card">
+        <div class="text-t3 text-[10px] uppercase tracking-wide">CPU</div>
+        <div class="text-[24px] font-bold mt-1">{{ stats.cpu }}<small class="text-[10px] text-t2 font-normal">%</small></div>
+        <div class="stat-bar mt-2"><span style="width:{{ stats.cpu }}%"></span></div>
     </div>
-    <div class="card stat-shine">
-        <div class="label text-t3 text-[11px] uppercase tracking-wide">RAM</div>
-        <div class="value text-[28px] font-bold mt-1.5">{{ stats.ram }}<small class="text-xs text-t2 font-normal">%</small></div>
-        <div class="stat-bar mt-2.5"><span style="width:{{ stats.ram }}%"></span></div>
-        <div class="mt-2 text-t3 text-[11px]">{{ stats.ram_used }} / {{ stats.ram_total }} GB</div>
+    <div class="card">
+        <div class="text-t3 text-[10px] uppercase tracking-wide">RAM</div>
+        <div class="text-[24px] font-bold mt-1">{{ stats.ram }}<small class="text-[10px] text-t2 font-normal">%</small></div>
+        <div class="stat-bar mt-2"><span style="width:{{ stats.ram }}%"></span></div>
+        <div class="text-t3 text-[9px] mt-1">{{ stats.ram_used }} / {{ stats.ram_total }} GB</div>
     </div>
-    <div class="card stat-shine">
-        <div class="label text-t3 text-[11px] uppercase tracking-wide">Disk</div>
-        <div class="value text-[28px] font-bold mt-1.5">{{ stats.disk }}<small class="text-xs text-t2 font-normal">%</small></div>
-        <div class="stat-bar mt-2.5"><span style="width:{{ stats.disk }}%"></span></div>
+    <div class="card">
+        <div class="text-t3 text-[10px] uppercase tracking-wide">Disk</div>
+        <div class="text-[24px] font-bold mt-1">{{ stats.disk }}<small class="text-[10px] text-t2 font-normal">%</small></div>
+        <div class="stat-bar mt-2"><span style="width:{{ stats.disk }}%"></span></div>
     </div>
-    <div class="card stat-shine">
-        <div class="label text-t3 text-[11px] uppercase tracking-wide">Akun OS</div>
-        <div class="value text-[28px] font-bold mt-1.5">{{ account_count }}<small class="text-xs text-t2 font-normal">user</small></div>
-        <div class="stat-bar mt-2.5"><span style="width:100%"></span></div>
+    <div class="card">
+        <div class="text-t3 text-[10px] uppercase tracking-wide">Aplikasi</div>
+        <div class="text-[24px] font-bold mt-1">{{ apps_total }}</div>
+        <div class="text-[9px] mt-1">
+            <span class="text-[var(--ok)]">● {{ apps_running }} running</span>
+            <span class="text-t3 mx-1">·</span>
+            <span class="text-t3">● {{ apps_stopped }} stopped</span>
+        </div>
+    </div>
+    <div class="card">
+        <div class="text-t3 text-[10px] uppercase tracking-wide">Akun Panel</div>
+        <div class="text-[24px] font-bold mt-1">{{ panel_users_count }}</div>
+        <a href="/panel-accounts" class="text-[9px] text-accent hover:underline">Kelola →</a>
+    </div>
+    <div class="card">
+        <div class="text-t3 text-[10px] uppercase tracking-wide">Layanan</div>
+        <div class="text-[24px] font-bold mt-1">{{ installed_count }}<small class="text-[10px] text-t2 font-normal">/{{ total_addons }}</small></div>
+        <div class="text-[9px] text-t3 mt-1">terpasang</div>
     </div>
 </div>
 
-<h3 class="mt-6 mb-3 text-[15px] text-t2">Status Layanan</h3>
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-    {% for s in services %}
-    <div class="card flex flex-col gap-2.5 transition-all hover:-translate-y-[3px] hover:shadow-glow">
-        <div class="flex justify-between items-center">
-            <span class="text-[26px]">{{ s.addon.icon }}</span>
-            {% if s.installed %}
-                <span class="badge {{ 'ok' if s.active else 'warn' }}">{{ 'ACTIVE' if s.active else s.state|upper }}</span>
-            {% else %}
-                <span class="badge err">NOT INSTALLED</span>
-            {% endif %}
-        </div>
-        <h3 class="text-[15px]">{{ s.addon.name }}</h3>
-        <div class="meta text-t3 text-[11px]"><span class="lamp {{ 'ok' if s.active else 'err' }}"></span>{% if s.installed and s.version and s.version != '—' %}v{{ s.version }} •{% endif %} {{ 'Aktif' if s.active else 'Tidak aktif' }}</div>
-        <div class="actions flex flex-wrap gap-1.5 mt-auto">
-            <a class="btn" href="/addons/{{ s.addon.id }}">Kelola</a>
-        </div>
+{# ── Status Layanan (table) ── #}
+<div class="card">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-xs font-bold">⚙️ Status Layanan</h3>
+        <a href="/addons" class="text-[10px] text-accent hover:underline">Addon Store →</a>
     </div>
-    {% endfor %}
+    {% if services %}
+    <div class="overflow-auto">
+        <table class="text-[11px]">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Layanan</th>
+                    <th>Versi</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for s in services %}
+                <tr>
+                    <td class="text-center text-[16px]">{{ s.addon.icon }}</td>
+                    <td>
+                        <div class="font-bold">{{ s.addon.name }}</div>
+                        <div class="text-t3 text-[9px]">{{ s.addon.category }} • {{ s.addon.packages|join(', ') }}</div>
+                    </td>
+                    <td class="mono text-[10px]">{{ s.version[:30] if s.version and s.version != '—' else '—' }}</td>
+                    <td>
+                        <span class="st {{ 'active' if s.active else ('inactive' if s.installed else 'failed') }}">
+                            {{ 'active' if s.active else (s.state if s.state != 'not-installed' else 'not installed') }}
+                        </span>
+                    </td>
+                    <td class="whitespace-nowrap">
+                        <div class="flex gap-1">
+                            {% if s.installed and s.addon.systemd_unit %}
+                            <button class="btn sm" title="Start"
+                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }}/start','Start {{ s.addon.name }}',true)">▶</button>
+                            <button class="btn sm" title="Stop"
+                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }}/stop','Stop {{ s.addon.name }}',true)">⏹</button>
+                            <button class="btn sm" title="Restart"
+                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }}/restart','Restart {{ s.addon.name }}',true)">🔄</button>
+                            {% endif %}
+                            <a href="/addons/{{ s.addon.id }}" class="btn sm" title="Kelola">⚙️</a>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-t3 text-[11px] text-center py-4">Belum ada layanan terinstall</div>
+    {% endif %}
 </div>
 {% endblock %}

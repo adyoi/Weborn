@@ -1,0 +1,19 @@
+{
+  "id": "logrotate",
+  "name": "Logrotate",
+  "description": "Rotasi & kompresi log otomatis — cegah disk penuh karena log",
+  "category": "monitoring",
+  "type": "system",
+  "packages": ["logrotate"],
+  "bin": "logrotate",
+  "ports": [],
+  "icon": "📄",
+  "config": {
+    "path": "/etc/logrotate.conf",
+    "template": "logrotate.conf.j2"
+  },
+  "fields": [
+    {"name": "compress", "label": "Compress logs", "default": "yes"},
+    {"name": "rotate_days", "label": "Keep logs (days)", "default": "14"}
+  ]
+}

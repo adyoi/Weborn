@@ -1,0 +1,20 @@
+{
+  "id": "supervisor",
+  "name": "Supervisor",
+  "description": "Process manager — monitor & auto-restart aplikasi (alternatif systemd untuk app)",
+  "category": "runtime",
+  "type": "system",
+  "packages": ["supervisor"],
+  "systemd_unit": "supervisor",
+  "bin": "supervisord",
+  "ports": [9001],
+  "icon": "📋",
+  "config": {
+    "path": "/etc/supervisor/supervisord.conf",
+    "template": "supervisord.conf.j2"
+  },
+  "fields": [
+    {"name": "logfile_maxbytes", "label": "Log Max Size", "default": "50MB"},
+    {"name": "childlogdir", "label": "Child Log Dir", "default": "/var/log/supervisor"}
+  ]
+}

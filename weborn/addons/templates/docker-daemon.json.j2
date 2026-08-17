@@ -1,0 +1,10 @@
+{
+    "storage-driver": "{{ values.get('storage_driver', 'overlay2') }}",
+    "log-driver": "{{ values.get('log_driver', 'json-file') }}",
+    "log-opts": {
+        "max-size": "{{ values.get('max_log_size', '10m') }}",
+        "max-file": "3"
+    },
+    "live-restore": true,
+    "userland-proxy": false
+}

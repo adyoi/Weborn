@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from datetime import datetime
 
 from ..auth import require_user
+from ..db import list_apps, list_panel_users
 from ..executors import get_executor
 from ..managers.accounts import AccountManager
 from ..ui import render
@@ -29,29 +30,42 @@ def system_stats() -> dict:
 
 @router.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request, user: dict = Depends(require_user)):
-    if hasattr(user, "headers"):  # RedirectResponse dari dependency
+    if hasattr(user, "headers"):
         return user
     from ..addons import AddonManager
     from ..routers.system import os_update_info_cached
     manager = AddonManager(get_executor())
-    ids = ("nginx", "apache", "mysql", "postgresql", "dovecot", "ssh")
+
+    all_addons = manager.list_addons()
     services = []
-    for addon_id in ids:
-        addon = manager.get(addon_id)
-        if addon:
-            status = await manager.status(addon)
-            status["addon"] = addon
+    installed_count = 0
+    for addon in all_addons:
+        status = await manager.status(addon)
+        status["addon"] = addon
+        if status["installed"]:
+            installed_count += 1
             services.append(status)
-    accounts = await AccountManager(get_executor()).list_users()
+
+    apps = list_apps()
+    apps_running = sum(1 for a in apps if a.get("status") == "running")
+    apps_stopped = sum(1 for a in apps if a.get("status") != "running")
+
+    panel_users = list_panel_users()
     ex = get_executor()
     updates = await os_update_info_cached(ex)
     stats = system_stats()
+
     return render(request, "dashboard.html", {
         "user": user,
         "stats": stats,
         "uptime_days": int((datetime.now().timestamp() - stats["uptime"]) // 86400) if stats["uptime"] else 0,
         "services": services,
-        "account_count": len(accounts),
+        "apps_total": len(apps),
+        "apps_running": apps_running,
+        "apps_stopped": apps_stopped,
+        "panel_users_count": len(panel_users),
+        "installed_count": installed_count,
+        "total_addons": len(all_addons),
         "os": updates["os"],
         "updates": updates["updates"],
         "packages_total": updates["packages"],

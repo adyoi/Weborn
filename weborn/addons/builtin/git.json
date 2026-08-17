@@ -1,0 +1,13 @@
+{
+  "id": "git",
+  "name": "Git",
+  "description": "Version control system — clone, pull, push repository untuk deployment",
+  "category": "runtime",
+  "type": "system",
+  "packages": ["git"],
+  "bin": "git",
+  "ports": [],
+  "icon": "📂",
+  "config": {},
+  "fields": []
+}
