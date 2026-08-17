@@ -1,0 +1,21 @@
+{
+  "id": "spamassassin",
+  "name": "SpamAssassin",
+  "description": "Anti-spam filter untuk email",
+  "category": "mail",
+  "type": "system",
+  "packages": ["spamassassin", "spamc"],
+  "systemd_unit": "spamassassin",
+  "bin": "spamassassin",
+  "ports": [783],
+  "icon": "🛡️",
+  "config": {
+    "path": "/etc/spamassassin/local.cf",
+    "template": "spamassassin.conf.j2"
+  },
+  "fields": [
+    {"name": "required_score", "label": "Required Score", "default": "5.0"},
+    {"name": "report_safe", "label": "Report Safe", "default": "1"},
+    {"name": "rewrite_header", "label": "Rewrite Header", "default": "Subject [SPAM]"}
+  ]
+}

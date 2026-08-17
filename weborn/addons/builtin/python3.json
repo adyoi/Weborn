@@ -1,0 +1,19 @@
+{
+  "id": "python3",
+  "name": "Python 3",
+  "description": "Python interpreter & pip package manager",
+  "category": "runtime",
+  "type": "runtime",
+  "packages": ["python3", "python3-pip", "python3-venv"],
+  "bin": "python3",
+  "ports": [],
+  "icon": "🐍",
+  "config": {
+    "path": "/etc/python3/debian_config",
+    "template": "python3.conf.j2"
+  },
+  "fields": [
+    {"name": "version", "label": "Version", "default": "3.11"},
+    {"name": "break_system_packages", "label": "Break System Packages", "default": "true"}
+  ]
+}

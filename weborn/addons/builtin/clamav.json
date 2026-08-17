@@ -1,0 +1,21 @@
+{
+  "id": "clamav",
+  "name": "ClamAV",
+  "description": "Antivirus open source untuk email & file scanning",
+  "category": "security",
+  "type": "system",
+  "packages": ["clamav", "clamav-daemon"],
+  "systemd_unit": "clamav-daemon",
+  "bin": "clamscan",
+  "ports": [3310],
+  "icon": "🦠",
+  "config": {
+    "path": "/etc/clamav/clamd.conf",
+    "template": "clamav.conf.j2"
+  },
+  "fields": [
+    {"name": "max_file_size", "label": "Max File Size (MB)", "default": "100"},
+    {"name": "scan_pdf", "label": "Scan PDF", "default": "true"},
+    {"name": "scan_archive", "label": "Scan Archives", "default": "true"}
+  ]
+}

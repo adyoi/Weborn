@@ -1,0 +1,22 @@
+{
+  "id": "openvpn",
+  "name": "OpenVPN",
+  "description": "VPN server untuk akses remote aman",
+  "category": "remote-access",
+  "type": "system",
+  "packages": ["openvpn", "easy-rsa"],
+  "systemd_unit": "openvpn@server",
+  "bin": "openvpn",
+  "ports": [1194],
+  "icon": "🔒",
+  "config": {
+    "path": "/etc/openvpn/server.conf",
+    "template": "openvpn.conf.j2"
+  },
+  "fields": [
+    {"name": "port", "label": "Port", "default": "1194"},
+    {"name": "proto", "label": "Protocol", "default": "udp"},
+    {"name": "dev", "label": "Device", "default": "tun"},
+    {"name": "server_subnet", "label": "Server Subnet", "default": "10.8.0.0 255.255.255.0"}
+  ]
+}

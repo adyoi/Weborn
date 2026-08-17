@@ -1,0 +1,21 @@
+{
+  "id": "lighttpd",
+  "name": "Lighttpd",
+  "description": "Web server ringan & cepat untuk resource terbatas",
+  "category": "web-server",
+  "type": "system",
+  "packages": ["lighttpd"],
+  "systemd_unit": "lighttpd",
+  "bin": "lighttpd",
+  "ports": [80, 443],
+  "icon": "🌐",
+  "config": {
+    "path": "/etc/lighttpd/lighttpd.conf",
+    "template": "lighttpd.conf.j2"
+  },
+  "fields": [
+    {"name": "server_port", "label": "Server Port", "default": "80"},
+    {"name": "server_max_connections", "label": "Max Connections", "default": "1024"},
+    {"name": "server_document_root", "label": "Document Root", "default": "/var/www/html"}
+  ]
+}

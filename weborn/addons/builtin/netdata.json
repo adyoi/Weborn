@@ -1,0 +1,21 @@
+{
+  "id": "netdata",
+  "name": "Netdata",
+  "description": "Real-time performance & health monitoring dashboard",
+  "category": "monitoring",
+  "type": "system",
+  "packages": ["netdata"],
+  "systemd_unit": "netdata",
+  "bin": "netdata",
+  "ports": [19999],
+  "icon": "📈",
+  "config": {
+    "path": "/etc/netdata/netdata.conf",
+    "template": "netdata.conf.j2"
+  },
+  "fields": [
+    {"name": "port", "label": "Port", "default": "19999"},
+    {"name": "bind", "label": "Bind To", "default": "0.0.0.0"},
+    {"name": "memory_mode", "label": "Memory Mode", "default": "dbengine"}
+  ]
+}

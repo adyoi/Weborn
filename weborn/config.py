@@ -37,6 +37,8 @@ WSL_DISTRO = _os.environ.get("WEBORN_WSL_DISTRO", "Debian")
 
 APP_TYPES = {
     "static": {"label": "Static Site", "command": None},
+    "wsgi": {"label": "WSGI (Gunicorn)", "command": "gunicorn main:app"},
+    "asgi": {"label": "ASGI (Uvicorn)", "command": "uvicorn main:app"},
     "django": {"label": "Django", "command": "uvicorn main:app"},
     "fastapi": {"label": "FastAPI", "command": "uvicorn main:app"},
     "laravel": {"label": "Laravel (PHP)", "command": "php artisan serve"},

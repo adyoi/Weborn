@@ -1,0 +1,21 @@
+{
+  "id": "memcached",
+  "name": "Memcached",
+  "description": "Distributed memory caching system untuk database & API",
+  "category": "database",
+  "type": "system",
+  "packages": ["memcached"],
+  "systemd_unit": "memcached",
+  "bin": "memcached",
+  "ports": [11211],
+  "icon": "⚡",
+  "config": {
+    "path": "/etc/memcached.conf",
+    "template": "memcached.conf.j2"
+  },
+  "fields": [
+    {"name": "memory", "label": "Memory (MB)", "default": "64"},
+    {"name": "port", "label": "Port", "default": "11211"},
+    {"name": "listen", "label": "Listen IP", "default": "127.0.0.1"}
+  ]
+}

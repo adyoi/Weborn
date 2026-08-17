@@ -1,0 +1,21 @@
+{
+  "id": "mongodb",
+  "name": "MongoDB",
+  "description": "NoSQL database berbasis dokumen JSON",
+  "category": "database",
+  "type": "system",
+  "packages": ["mongosh", "mongod"],
+  "systemd_unit": "mongod",
+  "bin": "mongosh",
+  "ports": [27017],
+  "icon": "🍃",
+  "config": {
+    "path": "/etc/mongod.conf",
+    "template": "mongodb.conf.j2"
+  },
+  "fields": [
+    {"name": "dbPath", "label": "Data Directory", "default": "/var/lib/mongodb"},
+    {"name": "port", "label": "Port", "default": "27017"},
+    {"name": "bindIp", "label": "Bind IP", "default": "127.0.0.1"}
+  ]
+}

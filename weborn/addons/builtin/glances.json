@@ -1,0 +1,21 @@
+{
+  "id": "glances",
+  "name": "Glances",
+  "description": "Cross-platform system monitoring tool with web interface",
+  "category": "monitoring",
+  "type": "runtime",
+  "packages": ["glances"],
+  "systemd_unit": "glances",
+  "bin": "glances",
+  "ports": [61208],
+  "icon": "📡",
+  "config": {
+    "path": "/etc/glances/glances.conf",
+    "template": "glances.conf.j2"
+  },
+  "fields": [
+    {"name": "port", "label": "Web Port", "default": "61208"},
+    {"name": "bind", "label": "Bind Address", "default": "0.0.0.0"},
+    {"name": "webserver", "label": "Web Server", "default": "true"}
+  ]
+}

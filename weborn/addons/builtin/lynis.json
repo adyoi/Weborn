@@ -1,0 +1,20 @@
+{
+  "id": "lynis",
+  "name": "Lynis",
+  "description": "Security auditing & hardening tool untuk Linux",
+  "category": "security",
+  "type": "system",
+  "packages": ["lynis"],
+  "bin": "lynis",
+  "ports": [],
+  "icon": "🔎",
+  "config": {
+    "path": "/etc/lynis/lynis.conf",
+    "template": "lynis.conf.j2"
+  },
+  "fields": [
+    {"name": "logfile", "label": "Log File", "default": "/var/log/lynis.log"},
+    {"name": "report_file", "label": "Report File", "default": "/var/log/lynis-report.dat"},
+    {"name": "cron_scheduling", "label": "Cron Scheduling", "default": "weekly"}
+  ]
+}

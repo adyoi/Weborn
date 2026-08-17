@@ -1,0 +1,22 @@
+{
+  "id": "fail2ban",
+  "name": "Fail2Ban",
+  "description": "Intrusion prevention - blok IP setelah percobaan login gagal",
+  "category": "security",
+  "type": "system",
+  "packages": ["fail2ban"],
+  "systemd_unit": "fail2ban",
+  "bin": "fail2ban-client",
+  "ports": [],
+  "icon": "🛡️",
+  "config": {
+    "path": "/etc/fail2ban/jail.local",
+    "template": "fail2ban.conf.j2"
+  },
+  "fields": [
+    {"name": "bantime", "label": "Ban Time (s)", "default": "600"},
+    {"name": "findtime", "label": "Find Time (s)", "default": "600"},
+    {"name": "maxretry", "label": "Max Retry", "default": "5"},
+    {"name": "destemail", "label": "Dest Email", "default": "root@localhost"}
+  ]
+}

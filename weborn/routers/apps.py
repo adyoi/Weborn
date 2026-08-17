@@ -1,5 +1,5 @@
 """Router aplikasi: kelola environment app (Node/PHP/Python/Go/Ruby/Rust)."""
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, Request, WebSocket
 from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.responses import JSONResponse
 
@@ -78,7 +78,8 @@ async def apps_create(name: str = Form(...), language: str = Form(...),
                             status_code=400)
     if not result.get("ok"):
         return JSONResponse({"ok": False, "error": result.get("error")}, status_code=400)
-    return RedirectResponse("/apps?created=1", status_code=303)
+    port = result.get("port", 8000)
+    return RedirectResponse(f"/apps?created=1&port={port}", status_code=303)
 
 
 @router.post("/apps/{app_id}/{action}")
@@ -92,3 +93,68 @@ async def apps_control(app_id: int, action: str, user: dict = Depends(require_ad
         return JSONResponse(result)
     result = await AppManager(get_executor()).control(app_id, action)
     return JSONResponse(result)
+
+
+@router.get("/apps/{app_id}/logs", response_class=HTMLResponse)
+async def apps_logs_page(request: Request, app_id: int, user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    app = get_app(app_id)
+    if not app:
+        return RedirectResponse("/apps?msg=App%20tidak%20ditemukan", status_code=303)
+    return render(request, "app_logs.html", {
+        "user": user, "app": app, "active": "apps",
+    })
+
+
+@router.get("/apps/{app_id}/logs/stream")
+async def apps_logs_stream(app_id: int, user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    app = get_app(app_id)
+    if not app:
+        return JSONResponse({"ok": False}, status_code=404)
+    from fastapi.responses import StreamingResponse
+    async def gen():
+        ex = get_executor()
+        if ex.mode in ("local", "wsl"):
+            proc = await ex.run_raw("journalctl", "-u", app["unit"], "-f", "--no-pager", "-n", "100")
+            while True:
+                line = await proc.stdout.readline()
+                if not line:
+                    break
+                yield line.decode("utf-8", errors="replace")
+        else:
+            yield "[dry-run] journal logs simulasi\n"
+    return StreamingResponse(gen(), media_type="text/plain")
+
+
+@router.websocket("/ws/apps/{app_id}/logs")
+async def apps_logs_ws(websocket: WebSocket, app_id: int):
+    await websocket.accept()
+    app = get_app(app_id)
+    if not app:
+        await websocket.send_text("[error] App tidak ditemukan\n")
+        await websocket.close()
+        return
+    ex = get_executor()
+    if ex.mode not in ("local", "wsl"):
+        await websocket.send_text("[dry-run] Log simulasi\n")
+        await websocket.close()
+        return
+    try:
+        import asyncio
+        proc = await asyncio.create_subprocess_exec(
+            "journalctl", "-u", app["unit"], "-f", "--no-pager", "-n", "50",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        while True:
+            line = await proc.stdout.readline()
+            if not line:
+                break
+            await websocket.send_text(line.decode("utf-8", errors="replace"))
+    except Exception:
+        pass
+    finally:
+        await websocket.close()

@@ -1,18 +1,49 @@
 {% extends "base.html" %}
 {% block title %}Terminal - Weborn{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+{% endblock %}
 {% block content %}
 <div class="page-title text-[22px] font-bold mb-1">💻 Terminal Web</div>
-<div class="page-sub text-t3 text-[13px] mb-5">Jalankan perintah shell di server (hanya admin)</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Interactive shell via WebSocket (hanya admin)</div>
 
 <div class="card">
-    <form method="post" action="/terminal/run"
-          onsubmit="event.preventDefault(); weborn.formPost(this.action, this, 'Menjalankan perintah', false)">
-        <div class="field">
-            <label>Perintah</label>
-            <input name="cmd" placeholder="contoh: uptime && free -h" required>
-        </div>
-        <button type="submit" class="btn primary">▶ Jalankan</button>
-    </form>
-    <pre id="term-out" class="output mt-3.5"></pre>
+    <div id="terminal" style="height:500px; background:#1a1a2e; border-radius:8px; padding:8px;"></div>
 </div>
+
+<script>
+(function(){
+    var term = new Terminal({
+        cursorBlink: true,
+        fontSize: 14,
+        fontFamily: 'Cascadia Code, Fira Code, monospace',
+        theme: {
+            background: '#1a1a2e',
+            foreground: '#e0e0e0',
+            cursor: '#00ff88',
+            selectionBackground: '#264f78'
+        }
+    });
+    var fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(document.getElementById('terminal'));
+    fitAddon.fit();
+
+    var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    var ws = new WebSocket(proto + '//' + location.host + '/ws/terminal');
+    ws.onmessage = function(e) { term.write(e.data); };
+    ws.onclose = function() { term.write('\r\n\033[1;31m[Koneksi terputus]\033[0m'); };
+    ws.onerror = function() { term.write('\r\n\033[1;31m[Error koneksi]\033[0m'); };
+
+    term.onData(function(data) {
+        if (ws.readyState === 1) ws.send(data);
+    });
+    term.onResize(function(size) {
+        if (ws.readyState === 1) ws.send('\x1b[' + size.rows + ';' + size.cols + 'R');
+    });
+    window.addEventListener('resize', function() { fitAddon.fit(); });
+})();
+</script>
 {% endblock %}

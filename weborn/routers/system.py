@@ -15,7 +15,7 @@ if os.name == "posix":
 else:
     grp = pwd = None
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 
 from ..auth import require_admin, require_user
@@ -619,6 +619,74 @@ async def terminal_run(cmd: str = Form(...), user: dict = Depends(require_admin)
         return JSONResponse({"ok": False, "error": "perintah terlalu panjang"}, status_code=400)
     r = await get_executor().run("bash", "-c", cmd)
     return {"ok": r.ok, "returncode": r.returncode, "output": r.output}
+
+
+@router.websocket("/ws/terminal")
+async def terminal_ws(websocket: WebSocket):
+    await websocket.accept()
+    ex = get_executor()
+    if ex.mode not in ("local", "wsl"):
+        await websocket.send_text("[error] Terminal WebSocket hanya tersedia di mode local/WSL\r\n")
+        await websocket.close()
+        return
+    try:
+        import pty
+        import fcntl
+        import struct
+        import termios
+        master_fd, slave_fd = pty.openpty()
+        # Set non-blocking
+        flags = fcntl.fcntl(master_fd, fcntl.F_GETFL)
+        fcntl.fcntl(master_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+        pid = os.fork()
+        if pid == 0:
+            os.close(master_fd)
+            os.setsid()
+            fcntl.ioctl(slave_fd, termios.TIOCSCTTY, 0)
+            os.dup2(slave_fd, 0)
+            os.dup2(slave_fd, 1)
+            os.dup2(slave_fd, 2)
+            os.close(slave_fd)
+            os.execvp("/bin/bash", ["/bin/bash", "--login"])
+        os.close(slave_fd)
+        await websocket.send_text("\033[1;32m[Terminal Weborn]\033[0m Siap.\r\n")
+        async def read_pty():
+            while True:
+                try:
+                    data = os.read(master_fd, 4096)
+                    if data:
+                        await websocket.send_text(data.decode("utf-8", errors="replace"))
+                except (OSError, BlockingIOError):
+                    await asyncio.sleep(0.01)
+        async def read_ws():
+            while True:
+                data = await websocket.receive_text()
+                if data.startswith("\x1b["):
+                    # Resize event: \x1b[rows;colsR
+                    import re as _re
+                    m = _re.match(r"\x1b\[(\d+);(\d+)R", data)
+                    if m:
+                        rows, cols = int(m.group(1)), int(m.group(2))
+                        winsize = struct.pack("HHHH", rows, cols, 0, 0)
+                        fcntl.ioctl(slave_fd, termios.TIOCSWINSZ, winsize)
+                        continue
+                os.write(master_fd, data.encode("utf-8"))
+        done, pending = await asyncio.wait(
+            [asyncio.create_task(read_pty()), asyncio.create_task(read_ws())],
+            return_when=asyncio.FIRST_COMPLETED
+        )
+        for t in pending:
+            t.cancel()
+    except Exception as e:
+        try:
+            await websocket.send_text(f"\r\n[error] {e}\r\n")
+        except Exception:
+            pass
+    finally:
+        try:
+            os.close(master_fd)
+        except Exception:
+            pass
 
 
 # ---------------------------------------------------------------- DNS

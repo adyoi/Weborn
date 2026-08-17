@@ -1,0 +1,20 @@
+{
+  "id": "cockpit",
+  "name": "Cockpit",
+  "description": "Web-based system admin dashboard",
+  "category": "remote-access",
+  "type": "system",
+  "packages": ["cockpit"],
+  "systemd_unit": "cockpit.socket",
+  "bin": "cockpit",
+  "ports": [9090],
+  "icon": "🖥️",
+  "config": {
+    "path": "/etc/cockpit/cockpit.conf",
+    "template": "cockpit.conf.j2"
+  },
+  "fields": [
+    {"name": "port", "label": "Port", "default": "9090"},
+    {"name": "allow_unsupported", "label": "Allow Unsupported", "default": "true"}
+  ]
+}

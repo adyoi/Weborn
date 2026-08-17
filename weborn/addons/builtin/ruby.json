@@ -1,0 +1,19 @@
+{
+  "id": "ruby",
+  "name": "Ruby",
+  "description": "Ruby interpreter & Bundler package manager",
+  "category": "runtime",
+  "type": "runtime",
+  "packages": ["ruby", "ruby-dev", "bundler"],
+  "bin": "ruby",
+  "ports": [],
+  "icon": "💎",
+  "config": {
+    "path": "/etc/ruby",
+    "template": "ruby.conf.j2"
+  },
+  "fields": [
+    {"name": "version", "label": "Version", "default": "3.1"},
+    {"name": "gems_dir", "label": "Gems Directory", "default": "/var/lib/gems"}
+  ]
+}

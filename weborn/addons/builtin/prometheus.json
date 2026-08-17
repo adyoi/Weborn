@@ -1,0 +1,21 @@
+{
+  "id": "prometheus",
+  "name": "Prometheus",
+  "description": "Monitoring & alerting toolkit untuk metrics collection",
+  "category": "monitoring",
+  "type": "system",
+  "packages": ["prometheus"],
+  "systemd_unit": "prometheus",
+  "bin": "prometheus",
+  "ports": [9090],
+  "icon": "📊",
+  "config": {
+    "path": "/etc/prometheus/prometheus.yml",
+    "template": "prometheus.conf.j2"
+  },
+  "fields": [
+    {"name": "scrape_interval", "label": "Scrape Interval", "default": "15s"},
+    {"name": "retention", "label": "Data Retention", "default": "15d"},
+    {"name": "web_listen", "label": "Web Listen Address", "default": "0.0.0.0:9090"}
+  ]
+}

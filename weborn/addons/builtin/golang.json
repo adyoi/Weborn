@@ -1,0 +1,20 @@
+{
+  "id": "golang",
+  "name": "Go",
+  "description": "Go programming language compiler & tools",
+  "category": "runtime",
+  "type": "runtime",
+  "packages": ["golang-go"],
+  "bin": "go",
+  "ports": [],
+  "icon": "🐹",
+  "config": {
+    "path": "/etc/go",
+    "template": "go.conf.j2"
+  },
+  "fields": [
+    {"name": "version", "label": "Version", "default": "1.21"},
+    {"name": "gopath", "label": "GOPATH", "default": "/root/go"},
+    {"name": "goroot", "label": "GOROOT", "default": "/usr/lib/go"}
+  ]
+}

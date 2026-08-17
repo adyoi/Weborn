@@ -1,0 +1,22 @@
+{
+  "id": "postfix",
+  "name": "Postfix",
+  "description": "Mail Transfer Agent (MTA) untuk mengirim/menerima email",
+  "category": "mail",
+  "type": "system",
+  "packages": ["postfix"],
+  "systemd_unit": "postfix",
+  "bin": "postfix",
+  "ports": [25, 587, 465],
+  "icon": "📧",
+  "config": {
+    "path": "/etc/postfix/main.cf",
+    "template": "postfix.conf.j2"
+  },
+  "fields": [
+    {"name": "myhostname", "label": "Hostname", "default": "mail.example.com"},
+    {"name": "mydomain", "label": "Domain", "default": "example.com"},
+    {"name": "myorigin", "label": "Origin", "default": "$mydomain"},
+    {"name": "inet_interfaces", "label": "Listen Interfaces", "default": "all"}
+  ]
+}

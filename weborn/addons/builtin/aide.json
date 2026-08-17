@@ -1,0 +1,21 @@
+{
+  "id": "aide",
+  "name": "AIDE",
+  "description": "Advanced Intrusion Detection - file integrity checker",
+  "category": "security",
+  "type": "system",
+  "packages": ["aide"],
+  "systemd_unit": "aidecheck",
+  "bin": "aide",
+  "ports": [],
+  "icon": "🔍",
+  "config": {
+    "path": "/etc/aide/aide.conf",
+    "template": "aide.conf.j2"
+  },
+  "fields": [
+    {"name": "db_in", "label": "Database Input", "default": "file:/var/lib/aide/aide.db"},
+    {"name": "db_out", "label": "Database Output", "default": "file:/var/lib/aide/aide.db.new"},
+    {"name": "gzip_dbout", "label": "Gzip DB", "default": "yes"}
+  ]
+}

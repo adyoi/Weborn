@@ -1,0 +1,20 @@
+{
+  "id": "htop",
+  "name": "htop",
+  "description": "Interactive process viewer & system monitor",
+  "category": "monitoring",
+  "type": "runtime",
+  "packages": ["htop"],
+  "bin": "htop",
+  "ports": [],
+  "icon": "📊",
+  "config": {
+    "path": "/etc/htoprc",
+    "template": "htop.conf.j2"
+  },
+  "fields": [
+    {"name": "sort_key", "label": "Sort Key", "default": "PERCENT_CPU"},
+    {"name": "tree_view", "label": "Tree View", "default": "0"},
+    {"name": "show_threads", "label": "Show Threads", "default": "1"}
+  ]
+}

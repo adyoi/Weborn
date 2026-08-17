@@ -1,0 +1,22 @@
+{
+  "id": "roundcube",
+  "name": "Roundcube",
+  "description": "Webmail client berbasis IMAP/SMTP",
+  "category": "mail",
+  "type": "app",
+  "packages": ["roundcube", "roundcube-pgsql"],
+  "systemd_unit": "apache2",
+  "bin": "roundcube",
+  "ports": [80, 443],
+  "icon": "📬",
+  "config": {
+    "path": "/etc/roundcube/config.inc.php",
+    "template": "roundcube.conf.j2"
+  },
+  "fields": [
+    {"name": "db_host", "label": "DB Host", "default": "localhost"},
+    {"name": "db_name", "label": "DB Name", "default": "roundcube"},
+    {"name": "db_user", "label": "DB User", "default": "roundcube"},
+    {"name": "imap_host", "label": "IMAP Host", "default": "localhost"}
+  ]
+}
