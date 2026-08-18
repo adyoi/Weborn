@@ -549,6 +549,71 @@ async def files_chmod(path: str = Form(...), mode: str = Form(...),
     return RedirectResponse(f"/files?path={resolved.parent}&chmod={ok}", status_code=303)
 
 
+@router.post("/files/create")
+async def files_create(path: str = Form(...), name: str = Form(...),
+                       kind: str = Form("file"), user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    resolved = _resolve_fs_path(path)
+    if resolved is None:
+        return JSONResponse({"ok": False, "error": "path tidak valid"}, status_code=400)
+    name = name.strip()
+    if not name or "/" in name or name in (".", ".."):
+        return JSONResponse({"ok": False, "error": "nama tidak valid"}, status_code=400)
+    target = resolved / name
+    if target.exists():
+        return JSONResponse({"ok": False, "error": f"'{name}' sudah ada"}, status_code=400)
+    ex = get_executor()
+    if kind == "dir":
+        if ex.mode in ("local", "wsl"):
+            r = await ex.run("mkdir", "-p", str(target))
+            ok = r.ok
+        else:
+            target.mkdir(parents=True, exist_ok=True)
+            ok = True
+    else:
+        if ex.mode in ("local", "wsl"):
+            r = await ex.run("touch", str(target))
+            ok = r.ok
+        else:
+            target.touch()
+            ok = True
+    return RedirectResponse(f"/files?path={resolved}&created={ok}", status_code=303)
+
+
+@router.get("/files/edit")
+async def files_edit_get(path: str, user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    resolved = _resolve_fs_path(path)
+    if resolved is None or not resolved.is_file():
+        return JSONResponse({"ok": False, "error": "file tidak valid"}, status_code=400)
+    try:
+        content = resolved.read_text(encoding="utf-8", errors="replace")
+    except OSError as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+    return JSONResponse({"ok": True, "content": content, "path": str(resolved)})
+
+
+@router.post("/files/mkdir")
+async def files_mkdir(path: str = Form(...), user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    resolved = _resolve_fs_path(path)
+    if resolved is None:
+        return JSONResponse({"ok": False, "error": "path tidak valid"}, status_code=400)
+    if resolved.exists():
+        return JSONResponse({"ok": False, "error": "sudah ada"}, status_code=400)
+    ex = get_executor()
+    if ex.mode in ("local", "wsl"):
+        r = await ex.run("mkdir", "-p", str(resolved))
+        ok = r.ok
+    else:
+        resolved.mkdir(parents=True, exist_ok=True)
+        ok = True
+    return RedirectResponse(f"/files?path={resolved.parent}&created={ok}", status_code=303)
+
+
 # ---------------------------------------------------------------- terminal
 @router.get("/terminal", response_class=HTMLResponse)
 async def terminal_page(request: Request, user: dict = Depends(require_user)):

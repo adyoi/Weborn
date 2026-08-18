@@ -1,10 +1,20 @@
 {% extends "base.html" %}
-{% block title %}File Explorer - Weborn{% endblock %}
+{% block title %}File Explorer — Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">📁 File Explorer</div>
-<div class="page-sub text-t3 text-[13px] mb-5">Jelajahi file server (baca: semua user; tulis/hapus: admin)</div>
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <h1 class="text-xl font-bold">📁 File Explorer</h1>
+        <div class="text-t3 text-xs mt-0.5">Jelajahi file server (baca: semua user; tulis/hapus: admin)</div>
+    </div>
+    <div class="flex gap-1">
+        <button class="btn sm" onclick="document.getElementById('modal-create').classList.remove('hidden')">📄 New</button>
+        <button class="btn sm" onclick="document.getElementById('modal-mkdir').classList.remove('hidden')">📁 New Dir</button>
+    </div>
+</div>
 
 {% if error %}<div class="msg err">{{ error }}</div>{% endif %}
+{% if request.query_params.get('created') == 'True' %}<div class="msg ok">Dibuat.</div>{% endif %}
+{% if request.query_params.get('saved') == 'True' %}<div class="msg ok">Disimpan.</div>{% endif %}
 {% if request.query_params.get('deleted') == 'True' %}<div class="msg ok">Dihapus.</div>{% endif %}
 {% if request.query_params.get('chown') == 'True' %}<div class="msg ok">Pemilik diubah.</div>
 {% elif request.query_params.get('chown') == 'False' %}<div class="msg err">Gagal mengubah pemilik.</div>{% endif %}
@@ -13,15 +23,21 @@
 
 <div class="card mb-4">
     <form method="get" action="/files" class="flex gap-2">
-        <input name="path" value="{{ path }}" class="flex-1 !font-mono">
-        <button type="submit" class="btn">📂 Buka</button>
-        <a class="btn" href="/files">Root</a>
+        <input name="path" value="{{ path }}" class="flex-1 !font-mono text-[12px]" style="min-width:0">
+        <button type="submit" class="btn sm">📂 Buka</button>
+        {% if user.username == 'root' %}
+        <a class="btn sm" href="/files?path=/">Root</a>
+        {% else %}
+        <a class="btn sm" href="/files">Home</a>
+        {% endif %}
     </form>
 </div>
 
-<div class="card !p-0 overflow-hidden">
+<div class="card !p-0 overflow-x-auto">
     <table>
-        <thead><tr><th>Nama</th><th>Mode</th><th>Pemilik</th><th>Ukuran</th><th>Diubah</th><th>Aksi</th></tr></thead>
+        <thead><tr>
+            <th>Nama</th><th>Mode</th><th>Pemilik</th><th>Ukuran</th><th>Diubah</th><th>Aksi</th>
+        </tr></thead>
         <tbody>
         <tr>
             <td><a href="/files?path={{ path.rsplit('/', 1)[0] if '/' in path else '/' }}">⬆ ..</a></td>
@@ -38,40 +54,56 @@
                 </td>
                 <td class="mono text-[10px] text-t3">{{ e.mode }} <span class="text-t2">{{ e.mode_num }}</span></td>
                 <td class="mono text-[10px] text-t3">{{ e.owner }}:{{ e.group }}</td>
-                <td>{{ e.size }}</td>
+                <td class="text-[11px]">{{ e.size }}</td>
                 <td class="text-[11px] text-t3">{{ e.mtime }}</td>
                 <td class="whitespace-nowrap">
-                    <form method="post" action="/files/chown" class="flex gap-1 items-center"
-                          onsubmit="return confirm('Ganti pemilik {{ e.name }}?')">
-                        <input type="hidden" name="path" value="{{ path }}/{{ e.name }}">
-                        <select name="owner" class="!py-1 !px-1.5 !text-[11px] !font-mono" style="width:92px"
-                                title="user pemilik">
-                            {% for u in users %}<option value="{{ u }}" {{ 'selected' if u == e.owner }}>{{ u }}</option>{% endfor %}
-                        </select>
-                        <select name="group" class="!py-1 !px-1.5 !text-[11px] !font-mono" style="width:92px"
-                                title="group pemilik">
-                            {% for g in groups %}<option value="{{ g }}" {{ 'selected' if g == e.group }}>{{ g }}</option>{% endfor %}
-                        </select>
-                        {% if e.dir %}
-                        <label class="flex items-center gap-0.5 !mb-0 !text-[10px] !text-t3"><input type="checkbox" name="recursive" value="1"> -R</label>
+                    <div class="flex gap-0.5 flex-wrap">
+                        {% if not e.dir %}
+                        <button class="btn sm" title="Edit"
+                                onclick="openEdit('{{ path }}/{{ e.name }}')">✏️</button>
+                        <a href="/files/download?path={{ path }}/{{ e.name }}" class="btn sm" title="Download">⬇</a>
                         {% endif %}
-                        <button class="btn !py-1 !px-2" type="submit" data-tip="chown {{ e.name }}">chown</button>
-                    </form>
-                    <form method="post" action="/files/chmod" class="flex gap-1 items-center"
-                          onsubmit="return confirm('Ubah mode {{ e.name }}?')">
-                        <input type="hidden" name="path" value="{{ path }}/{{ e.name }}">
-                        <select name="mode" class="!py-1 !px-1.5 !text-[11px] !font-mono" style="width:76px"
-                                title="mode izin (oktal)">
-                            {% set cur = e.mode_num %}
-                            {% for m in ['0644','0664','0600','0750','0755','0775','0777'] %}
-                            <option value="{{ m }}" {{ 'selected' if m[-3:] == cur }}>{{ m }}</option>
-                            {% endfor %}
-                        </select>
-                        {% if e.dir %}
-                        <label class="flex items-center gap-0.5 !mb-0 !text-[10px] !text-t3"><input type="checkbox" name="recursive" value="1"> -R</label>
-                        {% endif %}
-                        <button class="btn !py-1 !px-2" type="submit" data-tip="chmod {{ e.name }}">chmod</button>
-                    </form>
+                        <button class="btn sm" title="Copy path"
+                                onclick="navigator.clipboard.writeText('{{ path }}/{{ e.name }}');weborn.toast('Path copied','ok')">🔗</button>
+                        <form method="post" action="/files/delete" class="inline"
+                              onsubmit="return confirm('Hapus {{ e.name }}?')">
+                            <input type="hidden" name="path" value="{{ path }}/{{ e.name }}">
+                            <button class="btn danger sm" title="Hapus" type="submit">🗑</button>
+                        </form>
+                    </div>
+                    <div class="flex gap-0.5 flex-wrap mt-1">
+                        <form method="post" action="/files/chown" class="flex gap-0.5 items-center"
+                              onsubmit="return confirm('Ganti pemilik {{ e.name }}?')">
+                            <input type="hidden" name="path" value="{{ path }}/{{ e.name }}">
+                            <select name="owner" class="!py-0.5 !px-1 !text-[10px] !font-mono" style="width:80px"
+                                    title="user pemilik">
+                                {% for u in users %}<option value="{{ u }}" {{ 'selected' if u == e.owner }}>{{ u }}</option>{% endfor %}
+                            </select>
+                            <select name="group" class="!py-0.5 !px-1 !text-[10px] !font-mono" style="width:80px"
+                                    title="group pemilik">
+                                {% for g in groups %}<option value="{{ g }}" {{ 'selected' if g == e.group }}>{{ g }}</option>{% endfor %}
+                            </select>
+                            {% if e.dir %}
+                            <label class="flex items-center gap-0.5 !mb-0 !text-[9px] !text-t3"><input type="checkbox" name="recursive" value="1"> -R</label>
+                            {% endif %}
+                            <button class="btn sm" type="submit" title="chown {{ e.name }}">chown</button>
+                        </form>
+                        <form method="post" action="/files/chmod" class="flex gap-0.5 items-center"
+                              onsubmit="return confirm('Ubah mode {{ e.name }}?')">
+                            <input type="hidden" name="path" value="{{ path }}/{{ e.name }}">
+                            <select name="mode" class="!py-0.5 !px-1 !text-[10px] !font-mono" style="width:68px"
+                                    title="mode izin (oktal)">
+                                {% set cur = e.mode_num %}
+                                {% for m in ['0644','0664','0600','0750','0755','0775','0777'] %}
+                                <option value="{{ m }}" {{ 'selected' if m[-3:] == cur }}>{{ m }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if e.dir %}
+                            <label class="flex items-center gap-0.5 !mb-0 !text-[9px] !text-t3"><input type="checkbox" name="recursive" value="1"> -R</label>
+                            {% endif %}
+                            <button class="btn sm" type="submit" title="chmod {{ e.name }}">chmod</button>
+                        </form>
+                    </div>
                 </td>
             </tr>
         {% else %}
@@ -80,4 +112,74 @@
         </tbody>
     </table>
 </div>
+
+<!-- Modal: Create File -->
+<div id="modal-create" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="bg-panel rounded-lg border border-line p-4 w-[380px]">
+        <h3 class="text-xs font-bold mb-3">📄 Buat File</h3>
+        <form method="post" action="/files/create" class="flex flex-col gap-2">
+            <input type="hidden" name="path" value="{{ path }}">
+            <input type="hidden" name="kind" value="file">
+            <input name="name" placeholder="filename.txt" required class="sm w-full">
+            <div class="flex justify-end gap-1">
+                <button type="button" class="btn sm" onclick="this.closest('.hidden').classList.add('hidden')">Batal</button>
+                <button type="submit" class="btn primary sm">Buat</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Create Dir -->
+<div id="modal-mkdir" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="bg-panel rounded-lg border border-line p-4 w-[380px]">
+        <h3 class="text-xs font-bold mb-3">📁 Buat Direktori</h3>
+        <form method="post" action="/files/create" class="flex flex-col gap-2">
+            <input type="hidden" name="path" value="{{ path }}">
+            <input type="hidden" name="kind" value="dir">
+            <input name="name" placeholder="nama-folder" required class="sm w-full">
+            <div class="flex justify-end gap-1">
+                <button type="button" class="btn sm" onclick="this.closest('.hidden').classList.add('hidden')">Batal</button>
+                <button type="submit" class="btn primary sm">Buat</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Edit File -->
+<div id="modal-edit" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="bg-panel rounded-lg border border-line p-4 w-[600px] max-h-[80vh] flex flex-col">
+        <h3 class="text-xs font-bold mb-2">✏️ Edit File</h3>
+        <div id="edit-path" class="text-[10px] text-t3 mono mb-2"></div>
+        <textarea id="edit-content" class="sm w-full font-mono text-[12px]" style="height:300px;resize:vertical"></textarea>
+        <div class="flex justify-end gap-1 mt-2">
+            <button type="button" class="btn sm" onclick="document.getElementById('modal-edit').classList.add('hidden')">Batal</button>
+            <button type="button" class="btn primary sm" onclick="saveEdit()">💾 Simpan</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var editPath = '';
+function openEdit(p) {
+    editPath = p;
+    document.getElementById('edit-path').textContent = p;
+    document.getElementById('modal-edit').classList.remove('hidden');
+    fetch('/files/edit?path=' + encodeURIComponent(p))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            document.getElementById('edit-content').value = d.content || '';
+        });
+}
+function saveEdit() {
+    var form = new FormData();
+    form.append('path', editPath);
+    form.append('content', document.getElementById('edit-content').value);
+    fetch('/files/save?path=' + encodeURIComponent(editPath), {
+        method: 'POST', body: form
+    }).then(function(r){
+        document.getElementById('modal-edit').classList.add('hidden');
+        location.reload();
+    });
+}
+</script>
 {% endblock %}
