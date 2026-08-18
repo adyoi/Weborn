@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Update — Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">🔄 Update</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Periksa & install update Weborn</div>
+
+<div class="card mb-4">
+    <div class="flex items-center gap-3 mb-3">
+        <span class="text-xs text-t3">Version saat ini:</span>
+        <span class="badge info text-[11px]">v{{ version }}</span>
+    </div>
+    <div class="flex gap-2">
+        <button class="btn primary sm" onclick="checkUpdate()" id="btn-check">🔍 Check Update</button>
+        <button class="btn sm hidden" onclick="installUpdate()" id="btn-install">⬇ Install Update</button>
+    </div>
+</div>
+
+<div id="update-result" class="hidden">
+    <div class="card">
+        <div id="update-status" class="text-[12px] mb-2"></div>
+        <pre id="update-output" class="mono text-[11px] text-t3 whitespace-pre-wrap max-h-[300px] overflow-auto"></pre>
+    </div>
+</div>
+
+<script>
+function checkUpdate() {
+    var btn = document.getElementById('btn-check');
+    btn.disabled = true; btn.textContent = '⏳ Checking...';
+    document.getElementById('update-result').classList.remove('hidden');
+    document.getElementById('update-status').textContent = 'Fetching from origin...';
+    document.getElementById('update-output').textContent = '';
+    fetch('/info/update/check', {method:'POST'}).then(function(r){return r.json()}).then(function(d){
+        var st = document.getElementById('update-status');
+        var out = document.getElementById('update-output');
+        if (d.has_update) {
+            st.innerHTML = '<span class="badge" style="background:#f59e0b;color:#000">UPDATE AVAILABLE</span> '+d.commits+' commit(s) baru';
+            out.textContent = (d.changes||[]).join('\n');
+            document.getElementById('btn-install').classList.remove('hidden');
+        } else {
+            st.innerHTML = '<span class="st active">✅ Sudah terbaru</span>';
+            out.textContent = 'Tidak ada update. Current: v'+d.current;
+        }
+        btn.disabled = false; btn.textContent = '🔍 Check Update';
+    }).catch(function(e){
+        document.getElementById('update-status').textContent = 'Error: '+e;
+        btn.disabled = false; btn.textContent = '🔍 Check Update';
+    });
+}
+
+function installUpdate() {
+    var btn = document.getElementById('btn-install');
+    btn.disabled = true; btn.textContent = '⏳ Installing...';
+    document.getElementById('update-output').textContent = 'Pulling...';
+    fetch('/info/update/install', {method:'POST'}).then(function(r){return r.json()}).then(function(d){
+        document.getElementById('update-output').textContent = d.output || '';
+        if (d.ok) {
+            document.getElementById('update-status').innerHTML = '<span class="st active">✅ Update berhasil</span>';
+        } else {
+            document.getElementById('update-status').innerHTML = '<span class="st failed">❌ Update gagal</span>';
+        }
+        btn.disabled = false; btn.textContent = '⬇ Install Update';
+    });
+}
+</script>
+{% endblock %}

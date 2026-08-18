@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Changelog — Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">📋 Changelog</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Riwayat perubahan versi</div>
+
+<div class="card">
+    {% if changelog %}
+    <div class="prose-sm text-[12px] leading-relaxed whitespace-pre-wrap" style="font-family:inherit">{{ changelog }}</div>
+    {% else %}
+    <div class="text-center text-t3 py-7">Changelog tidak ditemukan.</div>
+    {% endif %}
+</div>
+{% endblock %}

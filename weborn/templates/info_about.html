@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}About — Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">ℹ️ About</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Informasi tentang Weborn Control Panel</div>
+
+<div class="card mb-4">
+    <div class="grid grid-cols-[140px_1fr] gap-y-2 gap-x-4 text-[12px]">
+        <div class="text-t3">Nama</div><div class="font-bold">Weborn Control Panel</div>
+        <div class="text-t3">Versi</div><div><span class="badge info">v{{ version }}</span></div>
+        <div class="text-t3">License</div><div>MIT</div>
+        <div class="text-t3">Repository</div><div><a href="https://github.com/adyoi/Weborn" class="underline text-blue-400" target="_blank">github.com/adyoi/Weborn</a></div>
+        <div class="text-t3">Platform</div><div>Python {{ '%s.%s'|format(version.split('.')[0], version.split('.')[1]) if version else '3.10+' }} / FastAPI / Tailwind CSS</div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <h3 class="text-xs font-bold mb-2">👤 Team</h3>
+    <div class="grid grid-cols-[140px_1fr] gap-y-1.5 gap-x-4 text-[12px]">
+        <div class="text-t3">Creator</div><div>adyoi</div>
+        <div class="text-t3">Contributor</div><div>OpenCode</div>
+    </div>
+</div>
+
+{% if os_info %}
+<div class="card">
+    <h3 class="text-xs font-bold mb-2">🖥️ OS Info</h3>
+    <pre class="mono text-[11px] text-t3 whitespace-pre-wrap">{{ os_info }}</pre>
+</div>
+{% endif %}
+{% endblock %}

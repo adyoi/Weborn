@@ -1,16 +1,8 @@
 {% extends "base.html" %}
 {% block title %}File Explorer — Weborn{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-4">
-    <div>
-        <h1 class="text-xl font-bold">📁 File Explorer</h1>
-        <div class="text-t3 text-xs mt-0.5">Jelajahi file server (baca: semua user; tulis/hapus: admin)</div>
-    </div>
-    <div class="flex gap-1">
-        <button class="btn sm" onclick="document.getElementById('modal-create').classList.remove('hidden')">📄 New</button>
-        <button class="btn sm" onclick="document.getElementById('modal-mkdir').classList.remove('hidden')">📁 New Dir</button>
-    </div>
-</div>
+<div class="page-title text-[22px] font-bold mb-1">📁 File Explorer</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Jelajahi file server (baca: semua user; tulis/hapus: admin)</div>
 
 {% if error %}<div class="msg err">{{ error }}</div>{% endif %}
 {% if request.query_params.get('created') == 'True' %}<div class="msg ok">Dibuat.</div>{% endif %}
@@ -22,14 +14,12 @@
 {% elif request.query_params.get('chmod') == 'False' %}<div class="msg err">Gagal mengubah mode.</div>{% endif %}
 
 <div class="card mb-4">
-    <form method="get" action="/files" class="flex gap-2">
+    <form method="get" action="/files" class="flex gap-2 items-center">
+        <a class="btn sm shrink-0" href="/files?path=/home/{{ user.username }}">Home</a>
         <input name="path" value="{{ path }}" class="flex-1 !font-mono text-[12px]" style="min-width:0">
         <button type="submit" class="btn sm">📂 Buka</button>
-        {% if user.username == 'root' %}
-        <a class="btn sm" href="/files?path=/">Root</a>
-        {% else %}
-        <a class="btn sm" href="/files">Home</a>
-        {% endif %}
+        <button type="button" class="btn sm" onclick="document.getElementById('modal-create').classList.remove('hidden')">📄 New File</button>
+        <button type="button" class="btn sm" onclick="document.getElementById('modal-mkdir').classList.remove('hidden')">📁 New Dir</button>
     </form>
 </div>
 
@@ -147,38 +137,75 @@
 
 <!-- Modal: Edit File -->
 <div id="modal-edit" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onclick="if(event.target===this)this.classList.add('hidden')">
-    <div class="bg-panel rounded-lg border border-line p-4 w-[600px] max-h-[80vh] flex flex-col">
-        <h3 class="text-xs font-bold mb-2">✏️ Edit File</h3>
+    <div class="bg-panel rounded-lg border border-line p-4 w-[700px] max-h-[85vh] flex flex-col">
+        <h3 class="text-xs font-bold mb-1">✏️ Edit File</h3>
         <div id="edit-path" class="text-[10px] text-t3 mono mb-2"></div>
-        <textarea id="edit-content" class="sm w-full font-mono text-[12px]" style="height:300px;resize:vertical"></textarea>
-        <div class="flex justify-end gap-1 mt-2">
-            <button type="button" class="btn sm" onclick="document.getElementById('modal-edit').classList.add('hidden')">Batal</button>
-            <button type="button" class="btn primary sm" onclick="saveEdit()">💾 Simpan</button>
+        <div class="flex-1 overflow-auto border border-line rounded" style="max-height:60vh">
+            <div class="flex">
+                <div id="edit-lines" class="select-none text-right pr-2 pl-2 py-2 text-[11px] text-t3 mono leading-[20px] border-r border-line bg-surface" style="min-width:36px"></div>
+                <textarea id="edit-content" class="flex-1 font-mono text-[12px] border-0 outline-none resize-none p-2 leading-[20px] bg-transparent" style="tab-size:4"></textarea>
+            </div>
+        </div>
+        <div class="flex justify-between items-center mt-2">
+            <span id="edit-info" class="text-[10px] text-t3"></span>
+            <div class="flex gap-1">
+                <button type="button" class="btn sm" onclick="document.getElementById('modal-edit').classList.add('hidden')">Batal</button>
+                <button type="button" class="btn primary sm" onclick="saveEdit()">💾 Simpan</button>
+            </div>
         </div>
     </div>
 </div>
 
+<style>
+#edit-content:focus { outline: none; }
+#edit-content::selection { background: rgba(99,102,241,0.25); }
+</style>
+
 <script>
 var editPath = '';
+var editEl, linesEl, infoEl;
+
 function openEdit(p) {
     editPath = p;
+    editEl = document.getElementById('edit-content');
+    linesEl = document.getElementById('edit-lines');
+    infoEl = document.getElementById('edit-info');
     document.getElementById('edit-path').textContent = p;
     document.getElementById('modal-edit').classList.remove('hidden');
     fetch('/files/edit?path=' + encodeURIComponent(p))
         .then(function(r){ return r.json(); })
         .then(function(d){
-            document.getElementById('edit-content').value = d.content || '';
+            editEl.value = d.content || '';
+            updateLines();
+            editEl.focus();
         });
 }
+
+function updateLines() {
+    var count = editEl.value.split('\n').length;
+    var html = '';
+    for (var i = 1; i <= count; i++) html += i + '\n';
+    linesEl.textContent = html;
+    var bytes = editEl.value.length;
+    infoEl.textContent = count + ' lines \u00b7 ' + bytes + ' chars';
+}
+
 function saveEdit() {
     var form = new FormData();
     form.append('path', editPath);
-    form.append('content', document.getElementById('edit-content').value);
+    form.append('content', editEl.value);
     fetch('/files/save?path=' + encodeURIComponent(editPath), {
         method: 'POST', body: form
-    }).then(function(r){
+    }).then(function(){
         document.getElementById('modal-edit').classList.add('hidden');
         location.reload();
+    });
+}
+
+if (editEl) {
+    editEl.addEventListener('input', updateLines);
+    editEl.addEventListener('scroll', function(){
+        linesEl.scrollTop = editEl.scrollTop;
     });
 }
 </script>

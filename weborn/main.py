@@ -11,7 +11,7 @@ from .db import get_secret_key, has_panel_users, init_db
 from .executors import get_executor
 from .managers.accounts import AccountManager
 from .routers import (accounts, addons, apps, appmonitor, auth, backup, cron,
-                      dashboard, database, domains, email, misc, panel_accounts,
+                      dashboard, database, domains, email, info, misc, panel_accounts,
                       proxy, servers, security, setup, system, webservers)
 
 
@@ -33,7 +33,7 @@ def create_app() -> FastAPI:
                    proxy.router, addons.router, accounts.router, apps.router,
                    appmonitor.router, webservers.router, system.router,
                    cron.router, database.router, backup.router,
-                   security.router, email.router, misc.router):
+                   security.router, email.router, info.router, misc.router):
         app.include_router(router)
     return app
 

@@ -1,5 +1,7 @@
 from pathlib import Path
 
+VERSION = "0.3.1"
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 WEBORN_DIR = BASE_DIR / "data"
