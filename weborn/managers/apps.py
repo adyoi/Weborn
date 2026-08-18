@@ -257,9 +257,9 @@ class AppManager:
                                     "python3 -m pip install --break-system-packages")
 
             steps += [
-                ("mkdir", f"mkdir -p {home}/{lang.get('run_dir', '.')}"),
+                ("mkdir", f"sudo mkdir -p {home}/{lang.get('run_dir', '.')}"),
                 ("user", f"id {os_user} >/dev/null 2>&1 || "
-                         f"useradd -r -M -d {home} -s /bin/false {os_user}"),
+                         f"sudo useradd -r -M -d {home} -s /bin/false {os_user}"),
             ]
 
             if stub:
@@ -289,6 +289,7 @@ class AppManager:
 
             steps += [
                 ("chown", f"sudo chown -R {os_user}:{os_user} {home}"),
+                ("reload", "sudo systemctl daemon-reload"),
                 ("start", f"sudo systemctl enable --now {unit}"),
             ]
 
@@ -350,13 +351,14 @@ class AppManager:
             await self._ensure_dirs(slug)
 
             steps += [
-                ("mkdir", f"mkdir -p {home}"),
+                ("mkdir", f"sudo mkdir -p {home}"),
                 ("user", f"id {os_user} >/dev/null 2>&1 || "
-                         f"useradd -r -M -d {home} -s /bin/false {os_user}"),
+                         f"sudo useradd -r -M -d {home} -s /bin/false {os_user}"),
                 ("env", self._write_env(home, port, app_type, name)),
                 ("unit", self._write_unit(unit, os_user, home, command, app_type)),
                 ("glog", f"sudo mkdir -p /var/log/{slug} && sudo chown {os_user}:{os_user} /var/log/{slug}"),
                 ("chown", f"sudo chown -R {os_user}:{os_user} {home}"),
+                ("reload", "sudo systemctl daemon-reload"),
                 ("start", f"sudo systemctl enable --now {unit}"),
             ]
 
@@ -393,13 +395,16 @@ class AppManager:
     def _write_env(home: str, port: int, app_type: str, name: str) -> str:
         slug = _slug(name)
         sock = f"{GUNICORN_SOCK_DIR}/{slug}.sock"
-        lines = [
-            f"PORT={port}",
-            f"APP_DIR={home}",
-            f"APP_TYPE={app_type}",
-            f"GUNICORN_SOCK={sock}",
-        ]
-        return f"cat > {home}/.env <<'WEBORN_EOF'\n" + "\n".join(lines) + "\nWEBORN_EOF"
+        content = (
+            f"PORT={port}\n"
+            f"APP_DIR={home}\n"
+            f"APP_TYPE={app_type}\n"
+            f"GUNICORN_SOCK={sock}\n"
+        )
+        import base64
+        b64 = base64.b64encode(content.encode()).decode()
+        return (f"echo {b64} | base64 -d | sudo tee {home}/.env > /dev/null && "
+                f"sudo chown root:root {home}/.env")
 
     @staticmethod
     def _write_unit(unit: str, os_user: str, home: str, command: str | None,
@@ -410,8 +415,7 @@ class AppManager:
         else:
             # PHP-FPM or static: unit just ensures directory perms
             exec_line = f"ExecStart=/bin/true"
-        return (
-            f"cat > /etc/systemd/system/{unit} <<'WEBORN_EOF'\n"
+        content = (
             "[Unit]\n"
             f"Description=Weborn app ({app_type})\n"
             "After=network.target\n\n"
@@ -425,8 +429,11 @@ class AppManager:
             "RestartSec=5\n\n"
             "[Install]\n"
             "WantedBy=multi-user.target\n"
-            "WEBORN_EOF"
         )
+        import base64
+        b64 = base64.b64encode(content.encode()).decode()
+        return (f"echo {b64} | base64 -d | sudo tee /etc/systemd/system/{unit} > /dev/null && "
+                f"sudo chmod 644 /etc/systemd/system/{unit}")
 
     # ---------------------------------------------------------------- actions
     async def control(self, app_id: int, action: str) -> dict:

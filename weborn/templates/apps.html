@@ -14,9 +14,9 @@
 {% if request.query_params.get('created') %}<div class="msg ok">Aplikasi dibuat. Nginx config otomatis.</div>{% endif %}
 {% if request.query_params.get('msg') %}<div class="msg ok">{{ request.query_params.get('msg')|replace('%20', ' ') }}</div>{% endif %}
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+<div class="flex gap-3 mb-4">
     {# ── Card 1: Framework Apps ── #}
-    <div class="card">
+    <div class="card flex-1">
         <h3 class="text-xs font-bold mb-2">➕ Buat Aplikasi Framework</h3>
         <form method="post" action="/apps/create" class="flex flex-col gap-2">
             <div class="field"><label class="text-[13px]">Nama</label>
@@ -45,7 +45,7 @@
     </div>
 
     {# ── Card 2: Native Apps ── #}
-    <div class="card">
+    <div class="card flex-1">
         <h3 class="text-xs font-bold mb-2">🚀 Buat Aplikasi Native</h3>
         <form method="post" action="/apps/create-native" class="flex flex-col gap-2" id="native-form">
             <div class="field"><label class="text-[13px]">Nama</label>
