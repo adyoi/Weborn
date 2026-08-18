@@ -1,5 +1,18 @@
 {% extends "base.html" %}
 {% block title %}File Explorer — Weborn{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-darker.min.css">
+<style>
+.cm-s-material-darker.CodeMirror { background: var(--bg-2); color: var(--text-1); }
+.cm-s-material-darker .CodeMirror-gutters { background: var(--bg-1); border-right: 1px solid var(--panel-border); }
+.cm-s-material-darker .CodeMirror-linenumber { color: var(--text-3); }
+.cm-s-material-darker .CodeMirror-cursor { border-left: 2px solid var(--accent); }
+.cm-s-material-darker .CodeMirror-selected { background: rgba(99,102,241,0.2); }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-title text-[22px] font-bold mb-1">📁 File Explorer</div>
 <div class="page-sub text-t3 text-[13px] mb-5">Jelajahi file server (baca: semua user; tulis/hapus: admin)</div>
@@ -53,11 +66,44 @@
                         <button class="btn sm" title="Edit" onclick="openEdit('{{ path }}/{{ e.name }}')">✏️</button>
                         <a href="/files/download?path={{ path }}/{{ e.name }}" class="btn sm" title="Download">⬇</a>
                         {% else %}
-                        <a href="/files/compress?path={{ path }}/{{ e.name }}" class="btn sm" title="Download (tar.gz)">📦</a>
+                        <a href="/files/compress?path={{ path }}/{{ e.name }}" class="btn sm" title="Compress (tar.gz)">📦</a>
                         {% endif %}
-                        <button class="btn sm" title="Rename" onclick="openRename('{{ path }}/{{ e.name }}','{{ e.name }}')">✏️</button>
+                        <button class="btn sm" title="Rename" onclick="openRename('{{ path }}/{{ e.name }}','{{ e.name }}')">📝</button>
                         <button class="btn sm" title="Copy path" onclick="copyPath('{{ path }}/{{ e.name }}')">🔗</button>
                         <button class="btn danger sm" title="Hapus" onclick="openDelete('{{ path }}/{{ e.name }}','{{ e.name }}')">🗑</button>
+                    </div>
+                    <div class="flex gap-0.5 flex-wrap mt-1">
+                        <form method="post" action="/files/chown" class="flex gap-0.5 items-center"
+                              onsubmit="return confirm('Ganti pemilik {{ e.name }}?')">
+                            <input type="hidden" name="path" value="{{ path }}/{{ e.name }}">
+                            <select name="owner" class="!py-0.5 !px-1 !text-[10px] !font-mono" style="width:80px"
+                                    title="user pemilik">
+                                {% for u in users %}<option value="{{ u }}" {{ 'selected' if u == e.owner }}>{{ u }}</option>{% endfor %}
+                            </select>
+                            <select name="group" class="!py-0.5 !px-1 !text-[10px] !font-mono" style="width:80px"
+                                    title="group pemilik">
+                                {% for g in groups %}<option value="{{ g }}" {{ 'selected' if g == e.group }}>{{ g }}</option>{% endfor %}
+                            </select>
+                            {% if e.dir %}
+                            <label class="flex items-center gap-0.5 !mb-0 !text-[9px] !text-t3"><input type="checkbox" name="recursive" value="1"> -R</label>
+                            {% endif %}
+                            <button class="btn sm" type="submit" title="chown {{ e.name }}">chown</button>
+                        </form>
+                        <form method="post" action="/files/chmod" class="flex gap-0.5 items-center"
+                              onsubmit="return confirm('Ubah mode {{ e.name }}?')">
+                            <input type="hidden" name="path" value="{{ path }}/{{ e.name }}">
+                            <select name="mode" class="!py-0.5 !px-1 !text-[10px] !font-mono" style="width:68px"
+                                    title="mode izin (oktal)">
+                                {% set cur = e.mode_num %}
+                                {% for m in ['0644','0664','0600','0750','0755','0775','0777'] %}
+                                <option value="{{ m }}" {{ 'selected' if m[-3:] == cur }}>{{ m }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if e.dir %}
+                            <label class="flex items-center gap-0.5 !mb-0 !text-[9px] !text-t3"><input type="checkbox" name="recursive" value="1"> -R</label>
+                            {% endif %}
+                            <button class="btn sm" type="submit" title="chmod {{ e.name }}">chmod</button>
+                        </form>
                     </div>
                 </td>
             </tr>
@@ -100,17 +146,12 @@
     </div>
 </div>
 
-<!-- Modal: Edit File -->
+<!-- Modal: Edit File (CodeMirror) -->
 <div id="modal-edit" class="w-modal" onclick="if(event.target===this)weborn.modal.close(this)">
-    <div class="w-modal-box w-[700px]">
+    <div class="w-modal-box" style="width:min(95vw,960px)">
         <h3 class="w-modal-title">✏️ Edit File</h3>
-        <div id="edit-path" class="text-[10px] text-t3 mono mb-2"></div>
-        <div class="overflow-auto border rounded" style="max-height:60vh; border-color:var(--panel-border)">
-            <div class="flex">
-                <div id="edit-lines" class="select-none text-right pr-2 pl-2 py-2 text-[11px] mono leading-[20px] border-r" style="min-width:36px; border-color:var(--panel-border); color:var(--text-3)"></div>
-                <textarea id="edit-content" class="flex-1 font-mono text-[12px] border-0 outline-none resize-none p-2 leading-[20px] bg-transparent" style="tab-size:4; color:var(--text-1)"></textarea>
-            </div>
-        </div>
+        <div id="edit-path" class="text-[10px] mono mb-2" style="color:var(--text-3)"></div>
+        <div id="edit-cm" style="height:55vh;border:1px solid var(--panel-border);border-radius:6px;overflow:hidden"></div>
         <div class="flex justify-between items-center mt-2">
             <span id="edit-info" class="text-[10px]" style="color:var(--text-3)"></span>
             <div class="flex gap-1">
@@ -124,7 +165,7 @@
 <!-- Modal: Rename -->
 <div id="modal-rename" class="w-modal" onclick="if(event.target===this)weborn.modal.close(this)">
     <div class="w-modal-box w-[380px]">
-        <h3 class="w-modal-title">✏️ Rename</h3>
+        <h3 class="w-modal-title">📝 Rename</h3>
         <form method="post" action="/files/rename" class="flex flex-col gap-2">
             <input type="hidden" name="path" id="rename-path">
             <input name="new_name" id="rename-input" placeholder="nama-baru" required class="sm w-full">
@@ -151,12 +192,83 @@
     </div>
 </div>
 
-<style>
-#edit-content:focus { outline: none; }
-#edit-content::selection { background: rgba(99,102,241,0.25); }
-</style>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/php/php.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/shell/shell.min.js"></script>
 <script>
+var cmEditor = null;
+var editPath = '';
+
+var modeMap = {
+    py: 'python', python: 'python', pyw: 'python',
+    js: 'javascript', mjs: 'javascript', cjs: 'javascript',
+    json: { name: 'javascript', json: true },
+    html: 'htmlmixed', htm: 'htmlmixed',
+    css: 'css', scss: 'css',
+    php: 'php',
+    sh: 'shell', bash: 'shell', zsh: 'shell',
+    xml: 'htmlmixed', svg: 'htmlmixed',
+    md: 'markdown', txt: 'text', log: 'text', csv: 'text',
+};
+
+function guessMode(path) {
+    var ext = path.split('.').pop().toLowerCase();
+    return modeMap[ext] || 'text';
+}
+
+function openEdit(p) {
+    editPath = p;
+    document.getElementById('edit-path').textContent = p;
+    weborn.modal.open('modal-edit');
+    fetch('/files/edit?path=' + encodeURIComponent(p))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            var el = document.getElementById('edit-cm');
+            if (cmEditor) {
+                cmEditor.toTextArea();
+            }
+            var ta = document.createElement('textarea');
+            el.innerHTML = '';
+            el.appendChild(ta);
+            cmEditor = CodeMirror.fromTextArea(ta, {
+                value: d.content || '',
+                mode: guessMode(p),
+                theme: 'material-darker',
+                lineNumbers: true,
+                lineWrapping: true,
+                tabSize: 4,
+                indentUnit: 4,
+                autofocus: true,
+            });
+            cmEditor.setValue(d.content || '');
+            var info = cmEditor.lineCount() + ' lines \u00b7 ' + (d.content || '').length + ' chars';
+            document.getElementById('edit-info').textContent = info;
+            cmEditor.on('change', function() {
+                var c = cmEditor.lineCount() + ' lines \u00b7 ' + cmEditor.getValue().length + ' chars';
+                document.getElementById('edit-info').textContent = c;
+            });
+            cmEditor.refresh();
+        });
+}
+
+function saveEdit() {
+    if (!cmEditor) return;
+    var form = new FormData();
+    form.append('path', editPath);
+    form.append('content', cmEditor.getValue());
+    fetch('/files/save?path=' + encodeURIComponent(editPath), {
+        method: 'POST', body: form
+    }).then(function(){
+        weborn.modal.closeAll();
+        location.reload();
+    });
+}
+
 function copyPath(p) {
     navigator.clipboard.writeText(p);
     weborn.toast('Path copied', 'ok');
@@ -175,52 +287,5 @@ function openDelete(p, name) {
     document.getElementById('delete-name').textContent = name;
     weborn.modal.open('modal-delete');
 }
-
-var editPath = '';
-
-function openEdit(p) {
-    editPath = p;
-    document.getElementById('edit-path').textContent = p;
-    weborn.modal.open('modal-edit');
-    fetch('/files/edit?path=' + encodeURIComponent(p))
-        .then(function(r){ return r.json(); })
-        .then(function(d){
-            var ta = document.getElementById('edit-content');
-            ta.value = d.content || '';
-            updateLines(ta);
-            ta.focus();
-        });
-}
-
-function updateLines(ta) {
-    var count = ta.value.split('\n').length;
-    var html = '';
-    for (var i = 1; i <= count; i++) html += i + '\n';
-    document.getElementById('edit-lines').textContent = html;
-    document.getElementById('edit-info').textContent = count + ' lines \u00b7 ' + ta.value.length + ' chars';
-}
-
-function saveEdit() {
-    var ta = document.getElementById('edit-content');
-    var form = new FormData();
-    form.append('path', editPath);
-    form.append('content', ta.value);
-    fetch('/files/save?path=' + encodeURIComponent(editPath), {
-        method: 'POST', body: form
-    }).then(function(){
-        weborn.modal.closeAll();
-        location.reload();
-    });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    var ta = document.getElementById('edit-content');
-    if (ta) {
-        ta.addEventListener('input', function() { updateLines(ta); });
-        ta.addEventListener('scroll', function() {
-            document.getElementById('edit-lines').scrollTop = ta.scrollTop;
-        });
-    }
-});
 </script>
 {% endblock %}
