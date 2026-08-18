@@ -151,7 +151,7 @@
     <div class="w-modal-box" style="width:min(95vw,960px)">
         <h3 class="w-modal-title">✏️ Edit File</h3>
         <div id="edit-path" class="text-[10px] mono mb-2" style="color:var(--text-3)"></div>
-        <div id="edit-cm" style="height:55vh;border:1px solid var(--panel-border);border-radius:6px;overflow:hidden"></div>
+        <div id="edit-cm" style="height:55vh;border:1px solid var(--panel-border);border-radius:6px;overflow:auto"></div>
         <div class="flex justify-between items-center mt-2">
             <span id="edit-info" class="text-[10px]" style="color:var(--text-3)"></span>
             <div class="flex gap-1">
@@ -231,29 +231,30 @@ function openEdit(p) {
             var el = document.getElementById('edit-cm');
             if (cmEditor) {
                 cmEditor.toTextArea();
+                cmEditor = null;
             }
             var ta = document.createElement('textarea');
             el.innerHTML = '';
             el.appendChild(ta);
             cmEditor = CodeMirror.fromTextArea(ta, {
-                value: d.content || '',
                 mode: guessMode(p),
                 theme: 'material-darker',
                 lineNumbers: true,
                 lineWrapping: true,
                 tabSize: 4,
                 indentUnit: 4,
-                autofocus: true,
             });
             cmEditor.setValue(d.content || '');
-            var info = cmEditor.lineCount() + ' lines \u00b7 ' + (d.content || '').length + ' chars';
-            document.getElementById('edit-info').textContent = info;
-            cmEditor.on('change', function() {
-                var c = cmEditor.lineCount() + ' lines \u00b7 ' + cmEditor.getValue().length + ' chars';
-                document.getElementById('edit-info').textContent = c;
-            });
-            cmEditor.refresh();
+            updateCmInfo();
+            cmEditor.on('change', updateCmInfo);
+            setTimeout(function(){ cmEditor.refresh(); cmEditor.focus(); }, 110);
         });
+}
+
+function updateCmInfo() {
+    if (!cmEditor) return;
+    var c = cmEditor.lineCount() + ' lines \u00b7 ' + cmEditor.getValue().length + ' chars';
+    document.getElementById('edit-info').textContent = c;
 }
 
 function saveEdit() {
