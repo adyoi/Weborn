@@ -502,6 +502,48 @@ async def _os_groups(ex) -> list:
     return out
 
 
+@router.post("/files/rename")
+async def files_rename(path: str = Form(...), new_name: str = Form(...),
+                       user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    resolved = _resolve_fs_path(path)
+    if resolved is None:
+        return JSONResponse({"ok": False, "error": "path tidak valid"}, status_code=400)
+    new_name = new_name.strip()
+    if not new_name or "/" in new_name or new_name in (".", ".."):
+        return JSONResponse({"ok": False, "error": "nama tidak valid"}, status_code=400)
+    target = resolved.parent / new_name
+    if target.exists():
+        return JSONResponse({"ok": False, "error": f"'{new_name}' sudah ada"}, status_code=400)
+    ex = get_executor()
+    if ex.mode in ("local", "wsl"):
+        r = await ex.run("bash", "-c", f"sudo mv '{resolved}' '{target}'")
+        ok = r.ok
+    else:
+        resolved.rename(target)
+        ok = True
+    return RedirectResponse(f"/files?path={resolved.parent}&renamed={ok}", status_code=303)
+
+
+@router.get("/files/compress")
+async def files_compress(path: str, user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    resolved = _resolve_fs_path(path)
+    if resolved is None:
+        return JSONResponse({"error": "path tidak valid"}, status_code=400)
+    ex = get_executor()
+    if ex.mode in ("local", "wsl"):
+        tar_name = resolved.name + ".tar.gz"
+        tar_path = f"/tmp/weborn-{tar_name}"
+        r = await ex.run("bash", "-c",
+                         f"sudo tar -czf '{tar_path}' -C '{resolved.parent}' '{resolved.name}' 2>/dev/null")
+        if r.ok:
+            return FileResponse(tar_path, filename=tar_name, media_type="application/gzip")
+    return JSONResponse({"error": "gagal compress"}, status_code=500)
+
+
 @router.get("/files/download")
 async def files_download(path: str, user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
@@ -628,14 +670,14 @@ async def files_create(path: str = Form(...), name: str = Form(...),
     ex = get_executor()
     if kind == "dir":
         if ex.mode in ("local", "wsl"):
-            r = await ex.run("mkdir", "-p", str(target))
+            r = await ex.run("bash", "-c", f"sudo mkdir -p '{target}'")
             ok = r.ok
         else:
             target.mkdir(parents=True, exist_ok=True)
             ok = True
     else:
         if ex.mode in ("local", "wsl"):
-            r = await ex.run("touch", str(target))
+            r = await ex.run("bash", "-c", f"sudo touch '{target}' && sudo chown $(id -u):$(id -g) '{target}'")
             ok = r.ok
         else:
             target.touch()
@@ -676,7 +718,7 @@ async def files_mkdir(path: str = Form(...), user: dict = Depends(require_admin)
         return JSONResponse({"ok": False, "error": "sudah ada"}, status_code=400)
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        r = await ex.run("mkdir", "-p", str(resolved))
+        r = await ex.run("bash", "-c", f"sudo mkdir -p '{resolved}'")
         ok = r.ok
     else:
         resolved.mkdir(parents=True, exist_ok=True)

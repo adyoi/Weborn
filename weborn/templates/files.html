@@ -8,6 +8,7 @@
 {% if request.query_params.get('created') == 'True' %}<div class="msg ok">Dibuat.</div>{% endif %}
 {% if request.query_params.get('saved') == 'True' %}<div class="msg ok">Disimpan.</div>{% endif %}
 {% if request.query_params.get('deleted') == 'True' %}<div class="msg ok">Dihapus.</div>{% endif %}
+{% if request.query_params.get('renamed') == 'True' %}<div class="msg ok">Di-rename.</div>{% endif %}
 {% if request.query_params.get('chown') == 'True' %}<div class="msg ok">Pemilik diubah.</div>
 {% elif request.query_params.get('chown') == 'False' %}<div class="msg err">Gagal mengubah pemilik.</div>{% endif %}
 {% if request.query_params.get('chmod') == 'True' %}<div class="msg ok">Mode diubah.</div>
@@ -18,8 +19,8 @@
         <a class="btn sm shrink-0" href="/files?path=/home/{{ user.username }}">Home</a>
         <input name="path" value="{{ path }}" class="flex-1 !font-mono text-[12px]" style="min-width:0">
         <button type="submit" class="btn sm">📂 Buka</button>
-        <button type="button" class="btn sm" onclick="document.getElementById('modal-create').classList.remove('hidden')">📄 New File</button>
-        <button type="button" class="btn sm" onclick="document.getElementById('modal-mkdir').classList.remove('hidden')">📁 New Dir</button>
+        <button type="button" class="btn sm" onclick="showModal('modal-create')">📄 New File</button>
+        <button type="button" class="btn sm" onclick="showModal('modal-mkdir')">📁 New Dir</button>
     </form>
 </div>
 
@@ -49,50 +50,14 @@
                 <td class="whitespace-nowrap">
                     <div class="flex gap-0.5 flex-wrap">
                         {% if not e.dir %}
-                        <button class="btn sm" title="Edit"
-                                onclick="openEdit('{{ path }}/{{ e.name }}')">✏️</button>
+                        <button class="btn sm" title="Edit" onclick="openEdit('{{ path }}/{{ e.name }}')">✏️</button>
                         <a href="/files/download?path={{ path }}/{{ e.name }}" class="btn sm" title="Download">⬇</a>
+                        {% else %}
+                        <a href="/files/compress?path={{ path }}/{{ e.name }}" class="btn sm" title="Download (zip)">📦</a>
                         {% endif %}
-                        <button class="btn sm" title="Copy path"
-                                onclick="navigator.clipboard.writeText('{{ path }}/{{ e.name }}');weborn.toast('Path copied','ok')">🔗</button>
-                        <form method="post" action="/files/delete" class="inline"
-                              onsubmit="return confirm('Hapus {{ e.name }}?')">
-                            <input type="hidden" name="path" value="{{ path }}/{{ e.name }}">
-                            <button class="btn danger sm" title="Hapus" type="submit">🗑</button>
-                        </form>
-                    </div>
-                    <div class="flex gap-0.5 flex-wrap mt-1">
-                        <form method="post" action="/files/chown" class="flex gap-0.5 items-center"
-                              onsubmit="return confirm('Ganti pemilik {{ e.name }}?')">
-                            <input type="hidden" name="path" value="{{ path }}/{{ e.name }}">
-                            <select name="owner" class="!py-0.5 !px-1 !text-[10px] !font-mono" style="width:80px"
-                                    title="user pemilik">
-                                {% for u in users %}<option value="{{ u }}" {{ 'selected' if u == e.owner }}>{{ u }}</option>{% endfor %}
-                            </select>
-                            <select name="group" class="!py-0.5 !px-1 !text-[10px] !font-mono" style="width:80px"
-                                    title="group pemilik">
-                                {% for g in groups %}<option value="{{ g }}" {{ 'selected' if g == e.group }}>{{ g }}</option>{% endfor %}
-                            </select>
-                            {% if e.dir %}
-                            <label class="flex items-center gap-0.5 !mb-0 !text-[9px] !text-t3"><input type="checkbox" name="recursive" value="1"> -R</label>
-                            {% endif %}
-                            <button class="btn sm" type="submit" title="chown {{ e.name }}">chown</button>
-                        </form>
-                        <form method="post" action="/files/chmod" class="flex gap-0.5 items-center"
-                              onsubmit="return confirm('Ubah mode {{ e.name }}?')">
-                            <input type="hidden" name="path" value="{{ path }}/{{ e.name }}">
-                            <select name="mode" class="!py-0.5 !px-1 !text-[10px] !font-mono" style="width:68px"
-                                    title="mode izin (oktal)">
-                                {% set cur = e.mode_num %}
-                                {% for m in ['0644','0664','0600','0750','0755','0775','0777'] %}
-                                <option value="{{ m }}" {{ 'selected' if m[-3:] == cur }}>{{ m }}</option>
-                                {% endfor %}
-                            </select>
-                            {% if e.dir %}
-                            <label class="flex items-center gap-0.5 !mb-0 !text-[9px] !text-t3"><input type="checkbox" name="recursive" value="1"> -R</label>
-                            {% endif %}
-                            <button class="btn sm" type="submit" title="chmod {{ e.name }}">chmod</button>
-                        </form>
+                        <button class="btn sm" title="Rename" onclick="openRename('{{ path }}/{{ e.name }}','{{ e.name }}')">✏️</button>
+                        <button class="btn sm" title="Copy path" onclick="copyPath('{{ path }}/{{ e.name }}')">🔗</button>
+                        <button class="btn danger sm" title="Hapus" onclick="openDelete('{{ path }}/{{ e.name }}','{{ e.name }}')">🗑</button>
                     </div>
                 </td>
             </tr>
@@ -104,15 +69,15 @@
 </div>
 
 <!-- Modal: Create File -->
-<div id="modal-create" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onclick="if(event.target===this)this.classList.add('hidden')">
-    <div class="bg-panel rounded-lg border border-line p-4 w-[380px]">
-        <h3 class="text-xs font-bold mb-3">📄 Buat File</h3>
+<div id="modal-create" class="modal hidden" onclick="if(event.target===this)closeModal(this)">
+    <div class="modal-box w-[380px]">
+        <h3 class="modal-title">📄 Buat File</h3>
         <form method="post" action="/files/create" class="flex flex-col gap-2">
             <input type="hidden" name="path" value="{{ path }}">
             <input type="hidden" name="kind" value="file">
             <input name="name" placeholder="filename.txt" required class="sm w-full">
-            <div class="flex justify-end gap-1">
-                <button type="button" class="btn sm" onclick="this.closest('.hidden').classList.add('hidden')">Batal</button>
+            <div class="flex justify-end gap-1 mt-1">
+                <button type="button" class="btn sm" onclick="closeModal(this)">Batal</button>
                 <button type="submit" class="btn primary sm">Buat</button>
             </div>
         </form>
@@ -120,15 +85,15 @@
 </div>
 
 <!-- Modal: Create Dir -->
-<div id="modal-mkdir" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onclick="if(event.target===this)this.classList.add('hidden')">
-    <div class="bg-panel rounded-lg border border-line p-4 w-[380px]">
-        <h3 class="text-xs font-bold mb-3">📁 Buat Direktori</h3>
+<div id="modal-mkdir" class="modal hidden" onclick="if(event.target===this)closeModal(this)">
+    <div class="modal-box w-[380px]">
+        <h3 class="modal-title">📁 Buat Direktori</h3>
         <form method="post" action="/files/create" class="flex flex-col gap-2">
             <input type="hidden" name="path" value="{{ path }}">
             <input type="hidden" name="kind" value="dir">
             <input name="name" placeholder="nama-folder" required class="sm w-full">
-            <div class="flex justify-end gap-1">
-                <button type="button" class="btn sm" onclick="this.closest('.hidden').classList.add('hidden')">Batal</button>
+            <div class="flex justify-end gap-1 mt-1">
+                <button type="button" class="btn sm" onclick="closeModal(this)">Batal</button>
                 <button type="submit" class="btn primary sm">Buat</button>
             </div>
         </form>
@@ -136,9 +101,9 @@
 </div>
 
 <!-- Modal: Edit File -->
-<div id="modal-edit" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onclick="if(event.target===this)this.classList.add('hidden')">
-    <div class="bg-panel rounded-lg border border-line p-4 w-[700px] max-h-[85vh] flex flex-col">
-        <h3 class="text-xs font-bold mb-1">✏️ Edit File</h3>
+<div id="modal-edit" class="modal hidden" onclick="if(event.target===this)closeModal(this)">
+    <div class="modal-box w-[700px] max-h-[85vh]">
+        <h3 class="modal-title">✏️ Edit File</h3>
         <div id="edit-path" class="text-[10px] text-t3 mono mb-2"></div>
         <div class="flex-1 overflow-auto border border-line rounded" style="max-height:60vh">
             <div class="flex">
@@ -149,19 +114,74 @@
         <div class="flex justify-between items-center mt-2">
             <span id="edit-info" class="text-[10px] text-t3"></span>
             <div class="flex gap-1">
-                <button type="button" class="btn sm" onclick="document.getElementById('modal-edit').classList.add('hidden')">Batal</button>
+                <button type="button" class="btn sm" onclick="closeModal(this)">Batal</button>
                 <button type="button" class="btn primary sm" onclick="saveEdit()">💾 Simpan</button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Modal: Rename -->
+<div id="modal-rename" class="modal hidden" onclick="if(event.target===this)closeModal(this)">
+    <div class="modal-box w-[380px]">
+        <h3 class="modal-title">✏️ Rename</h3>
+        <form method="post" action="/files/rename" class="flex flex-col gap-2">
+            <input type="hidden" name="path" id="rename-path">
+            <input name="new_name" id="rename-input" placeholder="nama-baru" required class="sm w-full">
+            <div class="flex justify-end gap-1 mt-1">
+                <button type="button" class="btn sm" onclick="closeModal(this)">Batal</button>
+                <button type="submit" class="btn primary sm">Rename</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Delete -->
+<div id="modal-delete" class="modal hidden" onclick="if(event.target===this)closeModal(this)">
+    <div class="modal-box w-[380px]">
+        <h3 class="modal-title">🗑 Hapus</h3>
+        <p class="text-[12px] mb-3">Yakin ingin menghapus <strong id="delete-name"></strong>?</p>
+        <form method="post" action="/files/delete">
+            <input type="hidden" name="path" id="delete-path">
+            <div class="flex justify-end gap-1">
+                <button type="button" class="btn sm" onclick="closeModal(this)">Batal</button>
+                <button type="submit" class="btn danger sm">Hapus</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <style>
+.modal { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:50; display:flex; align-items:center; justify-content:center; }
+.modal-box { background:var(--pane,#1e1e2e); border:1px solid var(--line,#333); border-radius:0.5rem; padding:1rem; }
+.modal-title { font-size:12px; font-weight:700; margin-bottom:0.75rem; }
 #edit-content:focus { outline: none; }
 #edit-content::selection { background: rgba(99,102,241,0.25); }
 </style>
 
 <script>
+function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(el) { el.closest('.modal').classList.add('hidden'); }
+
+function copyPath(p) {
+    navigator.clipboard.writeText(p);
+    weborn.toast('Path copied', 'ok');
+}
+
+function openRename(p, name) {
+    document.getElementById('rename-path').value = p;
+    document.getElementById('rename-input').value = name;
+    showModal('modal-rename');
+    document.getElementById('rename-input').focus();
+    document.getElementById('rename-input').select();
+}
+
+function openDelete(p, name) {
+    document.getElementById('delete-path').value = p;
+    document.getElementById('delete-name').textContent = name;
+    showModal('modal-delete');
+}
+
 var editPath = '';
 var editEl, linesEl, infoEl;
 
@@ -171,7 +191,7 @@ function openEdit(p) {
     linesEl = document.getElementById('edit-lines');
     infoEl = document.getElementById('edit-info');
     document.getElementById('edit-path').textContent = p;
-    document.getElementById('modal-edit').classList.remove('hidden');
+    showModal('modal-edit');
     fetch('/files/edit?path=' + encodeURIComponent(p))
         .then(function(r){ return r.json(); })
         .then(function(d){
@@ -197,7 +217,7 @@ function saveEdit() {
     fetch('/files/save?path=' + encodeURIComponent(editPath), {
         method: 'POST', body: form
     }).then(function(){
-        document.getElementById('modal-edit').classList.add('hidden');
+        closeModal(document.getElementById('modal-edit'));
         location.reload();
     });
 }
