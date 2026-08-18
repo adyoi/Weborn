@@ -14,18 +14,36 @@ router = APIRouter()
 def system_stats() -> dict:
     try:
         import psutil
+        vmem = psutil.virtual_memory()
+        dsk = psutil.disk_usage("/")
+        boot = psutil.boot_time()
+        now = datetime.now().timestamp()
+        uptime_sec = int(now - boot)
+        days = uptime_sec // 86400
+        hours = (uptime_sec % 86400) // 3600
+        mins = (uptime_sec % 3600) // 60
+        if days > 0:
+            uptime_str = f"{days} hari {hours} jam {mins} menit"
+        elif hours > 0:
+            uptime_str = f"{hours} jam {mins} menit"
+        else:
+            uptime_str = f"{mins} menit"
+        GB = 1024 ** 3
         return {
             "cpu": psutil.cpu_percent(interval=0.2),
             "cores": psutil.cpu_count(),
-            "ram": psutil.virtual_memory().percent,
-            "ram_used": round(psutil.virtual_memory().used / 1e9, 2),
-            "ram_total": round(psutil.virtual_memory().total / 1e9, 2),
-            "disk": psutil.disk_usage("/").percent,
-            "uptime": int(psutil.boot_time()),
+            "ram": vmem.percent,
+            "ram_used": round(vmem.used / GB, 1),
+            "ram_total": round(vmem.total / GB, 1),
+            "disk": dsk.percent,
+            "disk_used": round(dsk.used / GB, 1),
+            "disk_total": round(dsk.total / GB, 1),
+            "uptime_str": uptime_str,
         }
     except Exception:
         return {"cpu": 0, "cores": 0, "ram": 0, "ram_used": 0,
-                "ram_total": 0, "disk": 0, "uptime": None}
+                "ram_total": 0, "disk": 0, "disk_used": 0, "disk_total": 0,
+                "uptime_str": "—"}
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -58,11 +76,15 @@ async def dashboard(request: Request, user: dict = Depends(require_user)):
     updates = await os_update_info_cached(ex)
     stats = system_stats()
 
+    services_running = sum(1 for s in services if s.get("active"))
+    services_stopped = installed_count - services_running
+
     return render(request, "dashboard.html", {
         "user": user,
         "stats": stats,
-        "uptime_days": int((datetime.now().timestamp() - stats["uptime"]) // 86400) if stats["uptime"] else 0,
         "services": services,
+        "services_running": services_running,
+        "services_stopped": services_stopped,
         "apps_total": len(apps),
         "apps_running": apps_running,
         "apps_stopped": apps_stopped,

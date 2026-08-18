@@ -13,20 +13,20 @@
     <aside class="sidebar bg-pane border-r border-line px-3.5 py-5 flex flex-col gap-3.5 sticky top-0 h-screen overflow-y-auto w-60 shrink-0">
         <div class="logo flex items-center gap-2.5 px-2 pb-3 border-b border-line">
             <div class="hex">🐝</div>
-            <div><b class="text-lg tracking-wide">WEBORN</b><small class="text-t3 text-[11px] block">v{{ version }}</small></div>
+            <div><b class="text-lg tracking-wide">WEBORN</b><small class="text-t3 text-[13px] block">version {{ version }}</small></div>
         </div>
 
         <nav>
             {# ── Beranda ── #}
             <div class="menu-group mt-1">
-                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Beranda</h4>
+                <h4 class="text-[14px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Beranda</h4>
                 <a href="/" class="menu-link {{ 'menu-active' if active == 'dashboard' else '' }}">📊 Dashboard</a>
                 <a href="/addons" class="menu-link {{ 'menu-active' if active == 'addons' else '' }}">🧩 Addon Store</a>
             </div>
 
             {# ── Web Server ── #}
             <div class="menu-group mt-1">
-                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Web Server</h4>
+                <h4 class="text-[14px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Web Server</h4>
                 <a href="/domains" class="menu-link {{ 'menu-active' if active == 'domains' else '' }}">🏷️ Domain & DNS</a>
                 <a href="/web-server/nginx" class="menu-link {{ 'menu-active' if active == 'ws-nginx' else '' }}">🌐 Nginx</a>
                 <a href="/web-server/php" class="menu-link {{ 'menu-active' if active == 'ws-php' else '' }}">🐘 PHP-FPM</a>
@@ -36,7 +36,7 @@
 
             {# ── Database ── #}
             <div class="menu-group mt-1">
-                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Database</h4>
+                <h4 class="text-[14px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Database</h4>
                 <a href="/database" class="menu-link {{ 'menu-active' if active == 'database' else '' }}">🗄️ MariaDB</a>
                 <a href="/database/pg" class="menu-link {{ 'menu-active' if active == 'db-pg' else '' }}">🐘 PostgreSQL</a>
                 <a href="/database/mongodb" class="menu-link {{ 'menu-active' if active == 'db-mongo' else '' }}">🍃 MongoDB</a>
@@ -46,7 +46,7 @@
 
             {# ── Mail Server ── #}
             <div class="menu-group mt-1">
-                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Mail Server</h4>
+                <h4 class="text-[14px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Mail Server</h4>
                 <a href="/email" class="menu-link {{ 'menu-active' if active == 'email' else '' }}">📧 Overview</a>
                 <a href="/email/accounts" class="menu-link {{ 'menu-active' if active == 'email-accounts' else '' }}">👤 Mailbox</a>
                 <a href="/email/dns" class="menu-link {{ 'menu-active' if active == 'email-dns' else '' }}">📡 Mail DNS</a>
@@ -56,7 +56,7 @@
 
             {# ── Weborn (App Manager) ── #}
             <div class="menu-group mt-1">
-                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Weborn</h4>
+                <h4 class="text-[14px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Weborn</h4>
                 <a href="/apps" class="menu-link {{ 'menu-active' if active == 'apps' else '' }}">⚡ WSGI Apps</a>
                 <a href="/apps?type=asgi" class="menu-link {{ 'menu-active' if active == 'apps-asgi' else '' }}">🚀 ASGI Apps</a>
                 <a href="/apps/monitor" class="menu-link {{ 'menu-active' if active == 'app-monitor' else '' }}">🧠 Process Monitor</a>
@@ -64,7 +64,7 @@
 
             {# ── Monitoring ── #}
             <div class="menu-group mt-1">
-                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Monitoring</h4>
+                <h4 class="text-[14px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Monitoring</h4>
                 <a href="/logs" class="menu-link {{ 'menu-active' if active == 'logs' else '' }}">📄 Logs</a>
                 <a href="/processes" class="menu-link {{ 'menu-active' if active == 'processes' else '' }}">🧠 Proses</a>
                 <a href="/network" class="menu-link {{ 'menu-active' if active == 'network' else '' }}">🌍 Network</a>
@@ -74,7 +74,7 @@
 
             {# ── Access & Security ── #}
             <div class="menu-group mt-1">
-                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Access & Security</h4>
+                <h4 class="text-[14px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Access & Security</h4>
                 <a href="/terminal" class="menu-link {{ 'menu-active' if active == 'terminal' else '' }}">💻 Terminal</a>
                 <a href="/files" class="menu-link {{ 'menu-active' if active == 'files' else '' }}">📁 File Explorer</a>
                 <a href="/accounts" class="menu-link {{ 'menu-active' if active == 'accounts' else '' }}">👤 OS Users</a>
@@ -89,7 +89,7 @@
 
             {# ── Info ── #}
             <div class="menu-group mt-1">
-                <h4 class="text-[10px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Info</h4>
+                <h4 class="text-[14px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Info</h4>
                 <a href="/info/test" class="menu-link {{ 'menu-active' if active == 'info-test' else '' }}">🧪 Test</a>
                 <a href="/info/update" class="menu-link {{ 'menu-active' if active == 'info-update' else '' }}">🔄 Update</a>
                 <a href="/info/changelog" class="menu-link {{ 'menu-active' if active == 'info-changelog' else '' }}">📋 Changelog</a>
