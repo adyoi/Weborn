@@ -296,6 +296,23 @@
 
     // ── Toast ──
     toast: showToast,
+
+    // ── Modal ──
+    modal: {
+      open(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.add('open');
+      },
+      close(el) {
+        var m = el.closest ? el.closest('.w-modal') : null;
+        if (m) m.classList.remove('open');
+      },
+      closeAll() {
+        document.querySelectorAll('.w-modal.open').forEach(function(m) {
+          m.classList.remove('open');
+        });
+      }
+    },
   };
 
   initTheme();

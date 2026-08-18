@@ -19,8 +19,8 @@
         <a class="btn sm shrink-0" href="/files?path=/home/{{ user.username }}">Home</a>
         <input name="path" value="{{ path }}" class="flex-1 !font-mono text-[12px]" style="min-width:0">
         <button type="submit" class="btn sm">📂 Buka</button>
-        <button type="button" class="btn sm" onclick="showModal('modal-create')">📄 New File</button>
-        <button type="button" class="btn sm" onclick="showModal('modal-mkdir')">📁 New Dir</button>
+        <button type="button" class="btn sm" onclick="weborn.modal.open('modal-create')">📄 New File</button>
+        <button type="button" class="btn sm" onclick="weborn.modal.open('modal-mkdir')">📁 New Dir</button>
     </form>
 </div>
 
@@ -53,7 +53,7 @@
                         <button class="btn sm" title="Edit" onclick="openEdit('{{ path }}/{{ e.name }}')">✏️</button>
                         <a href="/files/download?path={{ path }}/{{ e.name }}" class="btn sm" title="Download">⬇</a>
                         {% else %}
-                        <a href="/files/compress?path={{ path }}/{{ e.name }}" class="btn sm" title="Download (zip)">📦</a>
+                        <a href="/files/compress?path={{ path }}/{{ e.name }}" class="btn sm" title="Download (tar.gz)">📦</a>
                         {% endif %}
                         <button class="btn sm" title="Rename" onclick="openRename('{{ path }}/{{ e.name }}','{{ e.name }}')">✏️</button>
                         <button class="btn sm" title="Copy path" onclick="copyPath('{{ path }}/{{ e.name }}')">🔗</button>
@@ -69,15 +69,15 @@
 </div>
 
 <!-- Modal: Create File -->
-<div id="modal-create" class="modal hidden" onclick="if(event.target===this)closeModal(this)">
-    <div class="modal-box w-[380px]">
-        <h3 class="modal-title">📄 Buat File</h3>
+<div id="modal-create" class="w-modal" onclick="if(event.target===this)weborn.modal.close(this)">
+    <div class="w-modal-box w-[380px]">
+        <h3 class="w-modal-title">📄 Buat File</h3>
         <form method="post" action="/files/create" class="flex flex-col gap-2">
             <input type="hidden" name="path" value="{{ path }}">
             <input type="hidden" name="kind" value="file">
             <input name="name" placeholder="filename.txt" required class="sm w-full">
             <div class="flex justify-end gap-1 mt-1">
-                <button type="button" class="btn sm" onclick="closeModal(this)">Batal</button>
+                <button type="button" class="btn sm" onclick="weborn.modal.close(this)">Batal</button>
                 <button type="submit" class="btn primary sm">Buat</button>
             </div>
         </form>
@@ -85,15 +85,15 @@
 </div>
 
 <!-- Modal: Create Dir -->
-<div id="modal-mkdir" class="modal hidden" onclick="if(event.target===this)closeModal(this)">
-    <div class="modal-box w-[380px]">
-        <h3 class="modal-title">📁 Buat Direktori</h3>
+<div id="modal-mkdir" class="w-modal" onclick="if(event.target===this)weborn.modal.close(this)">
+    <div class="w-modal-box w-[380px]">
+        <h3 class="w-modal-title">📁 Buat Direktori</h3>
         <form method="post" action="/files/create" class="flex flex-col gap-2">
             <input type="hidden" name="path" value="{{ path }}">
             <input type="hidden" name="kind" value="dir">
             <input name="name" placeholder="nama-folder" required class="sm w-full">
             <div class="flex justify-end gap-1 mt-1">
-                <button type="button" class="btn sm" onclick="closeModal(this)">Batal</button>
+                <button type="button" class="btn sm" onclick="weborn.modal.close(this)">Batal</button>
                 <button type="submit" class="btn primary sm">Buat</button>
             </div>
         </form>
@@ -101,20 +101,20 @@
 </div>
 
 <!-- Modal: Edit File -->
-<div id="modal-edit" class="modal hidden" onclick="if(event.target===this)closeModal(this)">
-    <div class="modal-box w-[700px] max-h-[85vh]">
-        <h3 class="modal-title">✏️ Edit File</h3>
+<div id="modal-edit" class="w-modal" onclick="if(event.target===this)weborn.modal.close(this)">
+    <div class="w-modal-box w-[700px]">
+        <h3 class="w-modal-title">✏️ Edit File</h3>
         <div id="edit-path" class="text-[10px] text-t3 mono mb-2"></div>
-        <div class="flex-1 overflow-auto border border-line rounded" style="max-height:60vh">
+        <div class="overflow-auto border rounded" style="max-height:60vh; border-color:var(--panel-border)">
             <div class="flex">
-                <div id="edit-lines" class="select-none text-right pr-2 pl-2 py-2 text-[11px] text-t3 mono leading-[20px] border-r border-line bg-surface" style="min-width:36px"></div>
-                <textarea id="edit-content" class="flex-1 font-mono text-[12px] border-0 outline-none resize-none p-2 leading-[20px] bg-transparent" style="tab-size:4"></textarea>
+                <div id="edit-lines" class="select-none text-right pr-2 pl-2 py-2 text-[11px] mono leading-[20px] border-r" style="min-width:36px; border-color:var(--panel-border); color:var(--text-3)"></div>
+                <textarea id="edit-content" class="flex-1 font-mono text-[12px] border-0 outline-none resize-none p-2 leading-[20px] bg-transparent" style="tab-size:4; color:var(--text-1)"></textarea>
             </div>
         </div>
         <div class="flex justify-between items-center mt-2">
-            <span id="edit-info" class="text-[10px] text-t3"></span>
+            <span id="edit-info" class="text-[10px]" style="color:var(--text-3)"></span>
             <div class="flex gap-1">
-                <button type="button" class="btn sm" onclick="closeModal(this)">Batal</button>
+                <button type="button" class="btn sm" onclick="weborn.modal.close(this)">Batal</button>
                 <button type="button" class="btn primary sm" onclick="saveEdit()">💾 Simpan</button>
             </div>
         </div>
@@ -122,14 +122,14 @@
 </div>
 
 <!-- Modal: Rename -->
-<div id="modal-rename" class="modal hidden" onclick="if(event.target===this)closeModal(this)">
-    <div class="modal-box w-[380px]">
-        <h3 class="modal-title">✏️ Rename</h3>
+<div id="modal-rename" class="w-modal" onclick="if(event.target===this)weborn.modal.close(this)">
+    <div class="w-modal-box w-[380px]">
+        <h3 class="w-modal-title">✏️ Rename</h3>
         <form method="post" action="/files/rename" class="flex flex-col gap-2">
             <input type="hidden" name="path" id="rename-path">
             <input name="new_name" id="rename-input" placeholder="nama-baru" required class="sm w-full">
             <div class="flex justify-end gap-1 mt-1">
-                <button type="button" class="btn sm" onclick="closeModal(this)">Batal</button>
+                <button type="button" class="btn sm" onclick="weborn.modal.close(this)">Batal</button>
                 <button type="submit" class="btn primary sm">Rename</button>
             </div>
         </form>
@@ -137,14 +137,14 @@
 </div>
 
 <!-- Modal: Delete -->
-<div id="modal-delete" class="modal hidden" onclick="if(event.target===this)closeModal(this)">
-    <div class="modal-box w-[380px]">
-        <h3 class="modal-title">🗑 Hapus</h3>
-        <p class="text-[12px] mb-3">Yakin ingin menghapus <strong id="delete-name"></strong>?</p>
+<div id="modal-delete" class="w-modal" onclick="if(event.target===this)weborn.modal.close(this)">
+    <div class="w-modal-box w-[380px]">
+        <h3 class="w-modal-title">🗑 Hapus</h3>
+        <p class="text-[12px] mb-3" style="color:var(--text-2)">Yakin ingin menghapus <strong id="delete-name" style="color:var(--text-1)"></strong>?</p>
         <form method="post" action="/files/delete">
             <input type="hidden" name="path" id="delete-path">
             <div class="flex justify-end gap-1">
-                <button type="button" class="btn sm" onclick="closeModal(this)">Batal</button>
+                <button type="button" class="btn sm" onclick="weborn.modal.close(this)">Batal</button>
                 <button type="submit" class="btn danger sm">Hapus</button>
             </div>
         </form>
@@ -152,17 +152,11 @@
 </div>
 
 <style>
-.modal { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:50; display:flex; align-items:center; justify-content:center; }
-.modal-box { background:var(--pane,#1e1e2e); border:1px solid var(--line,#333); border-radius:0.5rem; padding:1rem; }
-.modal-title { font-size:12px; font-weight:700; margin-bottom:0.75rem; }
 #edit-content:focus { outline: none; }
 #edit-content::selection { background: rgba(99,102,241,0.25); }
 </style>
 
 <script>
-function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
-function closeModal(el) { el.closest('.modal').classList.add('hidden'); }
-
 function copyPath(p) {
     navigator.clipboard.writeText(p);
     weborn.toast('Path copied', 'ok');
@@ -171,7 +165,7 @@ function copyPath(p) {
 function openRename(p, name) {
     document.getElementById('rename-path').value = p;
     document.getElementById('rename-input').value = name;
-    showModal('modal-rename');
+    weborn.modal.open('modal-rename');
     document.getElementById('rename-input').focus();
     document.getElementById('rename-input').select();
 }
@@ -179,54 +173,54 @@ function openRename(p, name) {
 function openDelete(p, name) {
     document.getElementById('delete-path').value = p;
     document.getElementById('delete-name').textContent = name;
-    showModal('modal-delete');
+    weborn.modal.open('modal-delete');
 }
 
 var editPath = '';
-var editEl, linesEl, infoEl;
 
 function openEdit(p) {
     editPath = p;
-    editEl = document.getElementById('edit-content');
-    linesEl = document.getElementById('edit-lines');
-    infoEl = document.getElementById('edit-info');
     document.getElementById('edit-path').textContent = p;
-    showModal('modal-edit');
+    weborn.modal.open('modal-edit');
     fetch('/files/edit?path=' + encodeURIComponent(p))
         .then(function(r){ return r.json(); })
         .then(function(d){
-            editEl.value = d.content || '';
-            updateLines();
-            editEl.focus();
+            var ta = document.getElementById('edit-content');
+            ta.value = d.content || '';
+            updateLines(ta);
+            ta.focus();
         });
 }
 
-function updateLines() {
-    var count = editEl.value.split('\n').length;
+function updateLines(ta) {
+    var count = ta.value.split('\n').length;
     var html = '';
     for (var i = 1; i <= count; i++) html += i + '\n';
-    linesEl.textContent = html;
-    var bytes = editEl.value.length;
-    infoEl.textContent = count + ' lines \u00b7 ' + bytes + ' chars';
+    document.getElementById('edit-lines').textContent = html;
+    document.getElementById('edit-info').textContent = count + ' lines \u00b7 ' + ta.value.length + ' chars';
 }
 
 function saveEdit() {
+    var ta = document.getElementById('edit-content');
     var form = new FormData();
     form.append('path', editPath);
-    form.append('content', editEl.value);
+    form.append('content', ta.value);
     fetch('/files/save?path=' + encodeURIComponent(editPath), {
         method: 'POST', body: form
     }).then(function(){
-        closeModal(document.getElementById('modal-edit'));
+        weborn.modal.closeAll();
         location.reload();
     });
 }
 
-if (editEl) {
-    editEl.addEventListener('input', updateLines);
-    editEl.addEventListener('scroll', function(){
-        linesEl.scrollTop = editEl.scrollTop;
-    });
-}
+document.addEventListener('DOMContentLoaded', function() {
+    var ta = document.getElementById('edit-content');
+    if (ta) {
+        ta.addEventListener('input', function() { updateLines(ta); });
+        ta.addEventListener('scroll', function() {
+            document.getElementById('edit-lines').scrollTop = ta.scrollTop;
+        });
+    }
+});
 </script>
 {% endblock %}
