@@ -241,11 +241,18 @@ class AppManager:
             command = None
 
         # ── Stub starter file ──
+        # Skip stubs for scaffolding frameworks (create-project / npx create-* / nest new)
+        # These generate their own project structure
+        _scaffold_keywords = ("create-project", "create-next-app", "nest new",
+                              "sv create", "create astro", "wp core")
+        _is_scaffold = fw and any(kw in ((fw or {}).get("pkg") or "")
+                                  for kw in _scaffold_keywords)
         stub = None
-        if fw and fw["id"] in STUBS:
-            stub = STUBS[fw["id"]]
-        elif not fw:
-            stub = LANG_STUB.get(language)
+        if not _is_scaffold:
+            if fw and fw["id"] in STUBS:
+                stub = STUBS[fw["id"]]
+            elif not fw:
+                stub = LANG_STUB.get(language)
 
         steps, failed = [], None
         if self.ex.mode in ("local", "wsl"):
@@ -263,11 +270,13 @@ class AppManager:
             ]
 
             if stub:
+                import base64
                 fname, content = stub
+                resolved_content = content.replace('{name}', name)
+                b64 = base64.b64encode(resolved_content.encode()).decode()
                 steps.append(("stub",
                     f"mkdir -p {home}/{lang.get('run_dir', '.')} && "
-                    f"cat > {home}/{fname} <<'WEBORN_EOF'\n"
-                    f"{content.replace('{name}', name)}\nWEBORN_EOF"))
+                    f"echo {b64} | base64 -d | sudo tee {home}/{fname} > /dev/null"))
 
             if deps:
                 steps.append(("deps", f"cd {home} && {deps}"))
