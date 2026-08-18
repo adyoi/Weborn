@@ -389,25 +389,73 @@ async def files_page(request: Request, path: str = "", user: dict = Depends(requ
     if resolved is None:
         error = f"Path di luar izin (akar: {', '.join(ALLOWED_FS_ROOTS)})"
         resolved = Path(default_root)
-    try:
-        for child in sorted(resolved.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
+
+    # Use sudo ls to list directory (panel may not have read access to all dirs)
+    if ex.mode in ("local", "wsl"):
+        r = await ex.run("bash", "-c",
+                         f"sudo ls -la '{resolved}' 2>&1")
+        lines = r.stdout.strip().splitlines()
+        # Skip first line (total ...) — parse each entry
+        for line in lines[1:]:
+            parts = line.split(None, 8)
+            if len(parts) < 9:
+                continue
+            mode_str, owner, group = parts[0], parts[2], parts[3]
+            name = parts[8]
+            if name in (".", ".."):
+                continue
+            is_dir = mode_str.startswith("d")
+            # Get size and mtime from ls output
+            try:
+                size = int(parts[4])
+            except ValueError:
+                size = 0
+            mtime_raw = f"{parts[5]} {parts[6]} {parts[7]}"
+            # Try to get precise mtime via stat (best effort)
+            child = resolved / name
             try:
                 st = child.stat()
-                oname, gname = _owner_of(st)
-                entries.append({
-                    "name": child.name,
-                    "dir": child.is_dir(),
-                    "size": st.st_size,
-                    "mtime": datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M"),
-                    "mode": stat.filemode(st.st_mode),
-                    "mode_num": "%03o" % stat.S_IMODE(st.st_mode),
-                    "owner": oname,
-                    "group": gname,
-                })
+                mtime = datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M")
+                mode_num = "%03o" % stat.S_IMODE(st.st_mode)
             except OSError:
-                continue
-    except OSError as e:
-        error = str(e)
+                mtime = mtime_raw
+                # Parse mode from ls string like drwxr-xr-x
+                try:
+                    mode_num = oct(int(mode_str[1:].replace("-", "0").replace("r", "4").replace("w", "2").replace("x", "1"), 8))[-3:]
+                except Exception:
+                    mode_num = "???"
+            entries.append({
+                "name": name,
+                "dir": is_dir,
+                "size": size,
+                "mtime": mtime,
+                "mode": mode_str,
+                "mode_num": mode_num,
+                "owner": owner,
+                "group": group,
+            })
+    else:
+        # dry-run: use Python iterdir
+        try:
+            for child in sorted(resolved.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
+                try:
+                    st = child.stat()
+                    oname, gname = _owner_of(st)
+                    entries.append({
+                        "name": child.name,
+                        "dir": child.is_dir(),
+                        "size": st.st_size,
+                        "mtime": datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M"),
+                        "mode": stat.filemode(st.st_mode),
+                        "mode_num": "%03o" % stat.S_IMODE(st.st_mode),
+                        "owner": oname,
+                        "group": gname,
+                    })
+                except OSError:
+                    continue
+        except OSError as e:
+            error = str(e)
+
     users = await _os_users(ex)
     groups = await _os_groups(ex)
     return render(request, "files.html", {"user": user, "path": str(resolved), "entries": entries,
@@ -461,7 +509,21 @@ async def files_download(path: str, user: dict = Depends(require_admin)):
     resolved = _resolve_fs_path(path)
     if resolved is None or not resolved.is_file():
         return JSONResponse({"error": "file tidak valid"}, status_code=400)
-    return FileResponse(resolved, filename=resolved.name)
+    # Try direct serve first
+    try:
+        resolved.stat()
+        return FileResponse(resolved, filename=resolved.name)
+    except PermissionError:
+        pass
+    # Fallback: sudo cat for restricted files
+    ex = get_executor()
+    if ex.mode in ("local", "wsl"):
+        r = await ex.run("bash", "-c", f"sudo cat '{resolved}' 2>/dev/null")
+        if r.ok:
+            from fastapi.responses import Response
+            return Response(content=r.stdout, media_type="application/octet-stream",
+                            headers={"Content-Disposition": f'attachment; filename="{resolved.name}"'})
+    return JSONResponse({"error": "file tidak dapat diakses"}, status_code=400)
 
 
 @router.post("/files/save")
@@ -588,11 +650,19 @@ async def files_edit_get(path: str, user: dict = Depends(require_admin)):
     resolved = _resolve_fs_path(path)
     if resolved is None or not resolved.is_file():
         return JSONResponse({"ok": False, "error": "file tidak valid"}, status_code=400)
+    # Try direct read first
     try:
         content = resolved.read_text(encoding="utf-8", errors="replace")
-    except OSError as e:
-        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
-    return JSONResponse({"ok": True, "content": content, "path": str(resolved)})
+        return JSONResponse({"ok": True, "content": content, "path": str(resolved)})
+    except PermissionError:
+        pass
+    # Fallback: sudo cat
+    ex = get_executor()
+    if ex.mode in ("local", "wsl"):
+        r = await ex.run("bash", "-c", f"sudo cat '{resolved}' 2>/dev/null")
+        if r.ok:
+            return JSONResponse({"ok": True, "content": r.stdout, "path": str(resolved)})
+    return JSONResponse({"ok": False, "error": "permission denied"}, status_code=403)
 
 
 @router.post("/files/mkdir")
