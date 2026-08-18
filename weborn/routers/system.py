@@ -523,7 +523,8 @@ async def files_rename(path: str = Form(...), new_name: str = Form(...),
     else:
         resolved.rename(target)
         ok = True
-    return RedirectResponse(f"/files?path={resolved.parent}&renamed={ok}", status_code=303)
+    ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return RedirectResponse(f"/files?path={resolved.parent}&renamed={ok}&name={new_name}&ts={ts}", status_code=303)
 
 
 @router.get("/files/compress")
@@ -577,7 +578,8 @@ async def files_save(path: str = Form(...), content: str = Form(""),
     if resolved is None:
         return JSONResponse({"ok": False, "error": "path tidak valid"}, status_code=400)
     r = await get_executor().write_file(str(resolved), content)
-    return RedirectResponse(f"/files?path={resolved.parent}&saved={r.ok}", status_code=303)
+    ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return RedirectResponse(f"/files?path={resolved.parent}&saved={r.ok}&name={resolved.name}&ts={ts}", status_code=303)
 
 
 @router.post("/files/delete")
@@ -598,7 +600,8 @@ async def files_delete(path: str = Form(...), user: dict = Depends(require_admin
             ok = False
     else:
         ok = False
-    return RedirectResponse(f"/files?path={resolved.parent}&deleted={ok}", status_code=303)
+    ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return RedirectResponse(f"/files?path={resolved.parent}&deleted={ok}&name={resolved.name}&ts={ts}", status_code=303)
 
 
 @router.post("/files/chown")
@@ -625,7 +628,8 @@ async def files_chown(path: str = Form(...), owner: str = Form(...),
         ok = r.ok
     else:
         ok = True
-    return RedirectResponse(f"/files?path={resolved.parent}&chown={ok}", status_code=303)
+    ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return RedirectResponse(f"/files?path={resolved.parent}&chown={ok}&name={resolved.name}&ts={ts}", status_code=303)
 
 
 @router.post("/files/chmod")
@@ -650,7 +654,8 @@ async def files_chmod(path: str = Form(...), mode: str = Form(...),
         ok = r.ok
     else:
         ok = True
-    return RedirectResponse(f"/files?path={resolved.parent}&chmod={ok}", status_code=303)
+    ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return RedirectResponse(f"/files?path={resolved.parent}&chmod={ok}&name={resolved.name}&ts={ts}", status_code=303)
 
 
 @router.post("/files/create")
@@ -682,7 +687,8 @@ async def files_create(path: str = Form(...), name: str = Form(...),
         else:
             target.touch()
             ok = True
-    return RedirectResponse(f"/files?path={resolved}&created={ok}", status_code=303)
+    ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return RedirectResponse(f"/files?path={resolved}&created={ok}&name={name}&kind={kind}&ts={ts}", status_code=303)
 
 
 @router.get("/files/edit")
@@ -723,7 +729,8 @@ async def files_mkdir(path: str = Form(...), user: dict = Depends(require_admin)
     else:
         resolved.mkdir(parents=True, exist_ok=True)
         ok = True
-    return RedirectResponse(f"/files?path={resolved.parent}&created={ok}", status_code=303)
+    ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return RedirectResponse(f"/files?path={resolved.parent}&created={ok}&name={resolved.name}&kind=dir&ts={ts}", status_code=303)
 
 
 # ---------------------------------------------------------------- terminal

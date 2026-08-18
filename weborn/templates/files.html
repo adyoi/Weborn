@@ -18,19 +18,38 @@
 <div class="page-sub text-t3 text-[13px] mb-5">Jelajahi file server (baca: semua user; tulis/hapus: admin)</div>
 
 {% if error %}<div class="msg err">{{ error }}</div>{% endif %}
-{% if request.query_params.get('created') == 'True' %}<div class="msg ok">Dibuat.</div>{% endif %}
-{% if request.query_params.get('saved') == 'True' %}<div class="msg ok">Disimpan.</div>{% endif %}
-{% if request.query_params.get('deleted') == 'True' %}<div class="msg ok">Dihapus.</div>{% endif %}
-{% if request.query_params.get('renamed') == 'True' %}<div class="msg ok">Di-rename.</div>{% endif %}
-{% if request.query_params.get('chown') == 'True' %}<div class="msg ok">Pemilik diubah.</div>
-{% elif request.query_params.get('chown') == 'False' %}<div class="msg err">Gagal mengubah pemilik.</div>{% endif %}
-{% if request.query_params.get('chmod') == 'True' %}<div class="msg ok">Mode diubah.</div>
-{% elif request.query_params.get('chmod') == 'False' %}<div class="msg err">Gagal mengubah mode.</div>{% endif %}
+
+{% set ts = request.query_params.get('ts', '') %}
+{% set nm = request.query_params.get('name', '') %}
+
+{% if request.query_params.get('created') == 'True' %}
+  {% set kind = request.query_params.get('kind', 'file') %}
+  <div class="msg ok">{{ kind }} <strong>{{ nm }}</strong> dibuat @ {{ ts or now().strftime('%Y-%m-%d %H:%M:%S') }}</div>
+{% endif %}
+{% if request.query_params.get('saved') == 'True' %}
+  <div class="msg ok">File <strong>{{ nm }}</strong> diupdate @ {{ ts or now().strftime('%Y-%m-%d %H:%M:%S') }}</div>
+{% endif %}
+{% if request.query_params.get('deleted') == 'True' %}
+  <div class="msg ok"><strong>{{ nm }}</strong> dihapus @ {{ ts or now().strftime('%Y-%m-%d %H:%M:%S') }}</div>
+{% endif %}
+{% if request.query_params.get('renamed') == 'True' %}
+  <div class="msg ok">File <strong>{{ nm }}</strong> di-rename @ {{ ts or now().strftime('%Y-%m-%d %H:%M:%S') }}</div>
+{% endif %}
+{% if request.query_params.get('chown') == 'True' %}
+  <div class="msg ok"><strong>{{ nm }}</strong> chown berhasil @ {{ ts or now().strftime('%Y-%m-%d %H:%M:%S') }}</div>
+{% elif request.query_params.get('chown') == 'False' %}
+  <div class="msg err">Gagal chown <strong>{{ nm }}</strong></div>
+{% endif %}
+{% if request.query_params.get('chmod') == 'True' %}
+  <div class="msg ok"><strong>{{ nm }}</strong> chmod berhasil @ {{ ts or now().strftime('%Y-%m-%d %H:%M:%S') }}</div>
+{% elif request.query_params.get('chmod') == 'False' %}
+  <div class="msg err">Gagal chmod <strong>{{ nm }}</strong></div>
+{% endif %}
 
 <div class="card mb-4">
     <form method="get" action="/files" class="flex gap-2 items-center">
         <a class="btn sm shrink-0" href="/files?path=/home/{{ user.username }}">Home</a>
-        <input name="path" value="{{ path }}" class="flex-1 !font-mono text-[12px]" style="min-width:0">
+        <input name="path" value="{{ path }}" class="flex-1 !font-mono text-[14px]" style="min-width:0">
         <button type="submit" class="btn sm">📂 Buka</button>
         <button type="button" class="btn sm" onclick="weborn.modal.open('modal-create')">📄 New File</button>
         <button type="button" class="btn sm" onclick="weborn.modal.open('modal-mkdir')">📁 New Dir</button>
@@ -56,10 +75,10 @@
                     📄 {{ e.name }}
                     {% endif %}
                 </td>
-                <td class="mono text-[10px] text-t3">{{ e.mode }} <span class="text-t2">{{ e.mode_num }}</span></td>
-                <td class="mono text-[10px] text-t3">{{ e.owner }}:{{ e.group }}</td>
-                <td class="text-[11px]">{{ e.size }}</td>
-                <td class="text-[11px] text-t3">{{ e.mtime }}</td>
+                <td class="mono text-[14px] text-t3">{{ e.mode }} <span class="text-t2">{{ e.mode_num }}</span></td>
+                <td class="mono text-[14px] text-t3">{{ e.owner }}:{{ e.group }}</td>
+                <td class="text-[13px]">{{ e.size }}</td>
+                <td class="text-[13px] text-t3">{{ e.mtime }}</td>
                 <td class="whitespace-nowrap">
                     <div class="flex gap-0.5 flex-wrap">
                         {% if not e.dir %}
@@ -76,23 +95,23 @@
                         <form method="post" action="/files/chown" class="flex gap-0.5 items-center"
                               onsubmit="return confirm('Ganti pemilik {{ e.name }}?')">
                             <input type="hidden" name="path" value="{{ path }}/{{ e.name }}">
-                            <select name="owner" class="!py-0.5 !px-1 !text-[10px] !font-mono" style="width:80px"
+                            <select name="owner" class="!py-0.5 !px-1 !text-[14px] !font-mono" style="width:80px"
                                     title="user pemilik">
                                 {% for u in users %}<option value="{{ u }}" {{ 'selected' if u == e.owner }}>{{ u }}</option>{% endfor %}
                             </select>
-                            <select name="group" class="!py-0.5 !px-1 !text-[10px] !font-mono" style="width:80px"
+                            <select name="group" class="!py-0.5 !px-1 !text-[14px] !font-mono" style="width:80px"
                                     title="group pemilik">
                                 {% for g in groups %}<option value="{{ g }}" {{ 'selected' if g == e.group }}>{{ g }}</option>{% endfor %}
                             </select>
                             {% if e.dir %}
-                            <label class="flex items-center gap-0.5 !mb-0 !text-[9px] !text-t3"><input type="checkbox" name="recursive" value="1"> -R</label>
+                            <label class="flex items-center gap-0.5 !mb-0 !text-[13px] !text-t3"><input type="checkbox" name="recursive" value="1"> -R</label>
                             {% endif %}
                             <button class="btn sm" type="submit" title="chown {{ e.name }}">chown</button>
                         </form>
                         <form method="post" action="/files/chmod" class="flex gap-0.5 items-center"
                               onsubmit="return confirm('Ubah mode {{ e.name }}?')">
                             <input type="hidden" name="path" value="{{ path }}/{{ e.name }}">
-                            <select name="mode" class="!py-0.5 !px-1 !text-[10px] !font-mono" style="width:68px"
+                            <select name="mode" class="!py-0.5 !px-1 !text-[14px] !font-mono" style="width:68px"
                                     title="mode izin (oktal)">
                                 {% set cur = e.mode_num %}
                                 {% for m in ['0644','0664','0600','0750','0755','0775','0777'] %}
@@ -100,7 +119,7 @@
                                 {% endfor %}
                             </select>
                             {% if e.dir %}
-                            <label class="flex items-center gap-0.5 !mb-0 !text-[9px] !text-t3"><input type="checkbox" name="recursive" value="1"> -R</label>
+                            <label class="flex items-center gap-0.5 !mb-0 !text-[13px] !text-t3"><input type="checkbox" name="recursive" value="1"> -R</label>
                             {% endif %}
                             <button class="btn sm" type="submit" title="chmod {{ e.name }}">chmod</button>
                         </form>
@@ -150,10 +169,10 @@
 <div id="modal-edit" class="w-modal" onclick="if(event.target===this)weborn.modal.close(this)">
     <div class="w-modal-box" style="width:min(95vw,960px)">
         <h3 class="w-modal-title">✏️ Edit File</h3>
-        <div id="edit-path" class="text-[10px] mono mb-2" style="color:var(--text-3)"></div>
+        <div id="edit-path" class="text-[14px] mono mb-2" style="color:var(--text-3)"></div>
         <div id="edit-cm" style="height:55vh;border:1px solid var(--panel-border);border-radius:6px;overflow:auto"></div>
         <div class="flex justify-between items-center mt-2">
-            <span id="edit-info" class="text-[10px]" style="color:var(--text-3)"></span>
+            <span id="edit-info" class="text-[14px]" style="color:var(--text-3)"></span>
             <div class="flex gap-1">
                 <button type="button" class="btn sm" onclick="weborn.modal.close(this)">Batal</button>
                 <button type="button" class="btn primary sm" onclick="saveEdit()">💾 Simpan</button>
@@ -181,7 +200,7 @@
 <div id="modal-delete" class="w-modal" onclick="if(event.target===this)weborn.modal.close(this)">
     <div class="w-modal-box w-[380px]">
         <h3 class="w-modal-title">🗑 Hapus</h3>
-        <p class="text-[12px] mb-3" style="color:var(--text-2)">Yakin ingin menghapus <strong id="delete-name" style="color:var(--text-1)"></strong>?</p>
+        <p class="text-[14px] mb-3" style="color:var(--text-2)">Yakin ingin menghapus <strong id="delete-name" style="color:var(--text-1)"></strong>?</p>
         <form method="post" action="/files/delete">
             <input type="hidden" name="path" id="delete-path">
             <div class="flex justify-end gap-1">
