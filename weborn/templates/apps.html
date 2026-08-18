@@ -14,33 +14,81 @@
 {% if request.query_params.get('created') %}<div class="msg ok">Aplikasi dibuat. Nginx config otomatis.</div>{% endif %}
 {% if request.query_params.get('msg') %}<div class="msg ok">{{ request.query_params.get('msg')|replace('%20', ' ') }}</div>{% endif %}
 
-<div class="card mb-4">
-    <h3 class="text-xs font-bold mb-2">➕ Buat Aplikasi</h3>
-    <form method="post" action="/apps/create" class="grid grid-cols-1 md:grid-cols-[1.4fr_1fr_1.4fr_.7fr_auto] items-end gap-2">
-        <div class="field"><label class="text-[11px]">Nama</label>
-            <input name="name" placeholder="myblog" required class="sm"></div>
-        <div class="field"><label class="text-[11px]">Runtime</label>
-            <select name="language" id="app-language" required class="sm">
-                {% for key, r in runtimes.items() %}
-                <option value="{{ key }}">{{ r.label }}</option>
-                {% endfor %}
-            </select></div>
-        <div class="field"><label class="text-[11px]">Framework</label>
-            <select name="framework" id="app-framework" class="sm">
-                <option value="">— dasar —</option>
-                {% for key, fs in frameworks.items() %}
-                <optgroup label="{{ runtimes[key].label }}">
-                    {% for f in fs %}<option value="{{ f.id }}" data-lang="{{ key }}">{{ f.label }}</option>{% endfor %}
-                </optgroup>
-                {% endfor %}
-            </select></div>
-        <div class="field"><label class="text-[11px]">Port</label>
-            <input name="port" type="number" min="8000" max="8999" placeholder="auto" class="sm"></div>
-        <button type="submit" class="btn primary sm">Buat</button>
-    </form>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+    {# ── Card 1: Framework Apps ── #}
+    <div class="card">
+        <h3 class="text-xs font-bold mb-2">➕ Buat Aplikasi Framework</h3>
+        <form method="post" action="/apps/create" class="flex flex-col gap-2">
+            <div class="field"><label class="text-[13px]">Nama</label>
+                <input name="name" placeholder="myblog" required class="sm"></div>
+            <div class="flex gap-2">
+                <div class="field flex-1"><label class="text-[13px]">Runtime</label>
+                    <select name="language" id="app-language" required class="sm">
+                        {% for key, r in runtimes.items() %}
+                        <option value="{{ key }}">{{ r.label }}</option>
+                        {% endfor %}
+                    </select></div>
+                <div class="field flex-1"><label class="text-[13px]">Framework</label>
+                    <select name="framework" id="app-framework" class="sm">
+                        <option value="">— dasar —</option>
+                        {% for key, fs in frameworks.items() %}
+                        <optgroup label="{{ runtimes[key].label }}">
+                            {% for f in fs %}<option value="{{ f.id }}" data-lang="{{ key }}">{{ f.label }}</option>{% endfor %}
+                        </optgroup>
+                        {% endfor %}
+                    </select></div>
+            </div>
+            <div class="field"><label class="text-[13px]">Port</label>
+                <input name="port" type="number" min="8000" max="8999" placeholder="auto (8000-8999)" class="sm"></div>
+            <button type="submit" class="btn primary sm w-full">Buat Aplikasi</button>
+        </form>
+    </div>
+
+    {# ── Card 2: Native Apps ── #}
+    <div class="card">
+        <h3 class="text-xs font-bold mb-2">🚀 Buat Aplikasi Native</h3>
+        <form method="post" action="/apps/create-native" class="flex flex-col gap-2" id="native-form">
+            <div class="field"><label class="text-[13px]">Nama</label>
+                <input name="name" placeholder="myapp" required class="sm"></div>
+            <div class="flex gap-2">
+                <div class="field flex-1"><label class="text-[13px]">Type</label>
+                    <select name="app_type" id="native-type" class="sm" onchange="updateNativeCommand()">
+                        <option value="wsgi">WSGI</option>
+                        <option value="asgi">ASGI</option>
+                    </select></div>
+                <div class="field flex-1"><label class="text-[13px]">Launcher</label>
+                    <select name="launcher" id="native-launcher" class="sm" onchange="updateNativeCommand()">
+                        <option value="gunicorn">Gunicorn</option>
+                        <option value="uvicorn">Uvicorn</option>
+                    </select></div>
+            </div>
+            <div class="field"><label class="text-[13px]">Module : App</label>
+                <input name="module_app" id="native-module" value="main:app" placeholder="main:app" required class="sm mono"
+                       oninput="updateNativeCommand()"></div>
+            <div class="flex gap-2">
+                <div class="field flex-1"><label class="text-[13px]">Workers</label>
+                    <input name="workers" id="native-workers" type="number" min="1" max="32" value="4" class="sm"
+                           oninput="updateNativeCommand()"></div>
+                <div class="field flex-1"><label class="text-[13px]">Host</label>
+                    <input name="host" id="native-host" value="0.0.0.0" class="sm"
+                           oninput="updateNativeCommand()"></div>
+                <div class="field flex-1"><label class="text-[13px]">Port</label>
+                    <input name="port" id="native-port" type="number" min="8000" max="8999" placeholder="auto" class="sm"
+                           oninput="updateNativeCommand()"></div>
+            </div>
+            <div class="field"><label class="text-[13px]">Path (module file)</label>
+                <input name="path" id="native-path" value="./main.py" placeholder="./main.py" class="sm"
+                       oninput="updateNativeCommand()"></div>
+            <div class="field">
+                <label class="text-[13px]">Command</label>
+                <div id="native-cmd" class="mono text-[11px] p-2 rounded border" style="background:var(--bg-2);border-color:var(--panel-border);color:var(--accent);word-break:break-all;min-height:32px"></div>
+            </div>
+            <button type="submit" class="btn primary sm w-full">Buat Aplikasi</button>
+        </form>
+    </div>
 </div>
 
-<div class="flex gap-1 mb-3 flex-wrap text-[10px]">
+<div class="flex gap-1 mb-3 flex-wrap text-[14px]">
     <a href="/apps" class="btn {{ 'primary' if not app_type_filter else '' }} sm">Semua</a>
     <a href="/apps?type=wsgi" class="btn {{ 'primary' if app_type_filter == 'wsgi' else '' }} sm">WSGI</a>
     <a href="/apps?type=asgi" class="btn {{ 'primary' if app_type_filter == 'asgi' else '' }} sm">ASGI</a>
@@ -56,18 +104,18 @@
     <div class="card">
         <div class="flex items-center gap-1.5 mb-2 flex-wrap">
             <strong class="text-xs">{{ a.name }}</strong>
-            <span class="badge info text-[9px]">{{ a.language_label }}</span>
-            {% if a.framework %}<span class="badge text-[9px]">{{ a.framework }}</span>{% endif %}
+            <span class="badge info text-[13px]">{{ a.language_label }}</span>
+            {% if a.framework %}<span class="badge text-[13px]">{{ a.framework }}</span>{% endif %}
             <span class="st {{ 'active' if a.status == 'running' else ('failed' if a.status == 'error' else 'inactive') }}">
                 {{ a.status }}
             </span>
         </div>
-        <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] mb-2">
+        <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[14px] mb-2">
             <div class="text-t3">Process Mgr</div><div class="mono">{{ a.process_manager }}</div>
-            <div class="text-t3">Socket</div><div class="mono text-[9px]">/run/gunicorn/{{ a.name }}.sock</div>
+            <div class="text-t3">Socket</div><div class="mono text-[13px]">/run/gunicorn/{{ a.name }}.sock</div>
             <div class="text-t3">User OS</div><div class="mono">{{ a.user }}</div>
-            <div class="text-t3">Directory</div><div class="mono text-[9px]">{{ a.home_dir }}</div>
-            <div class="text-t3">Systemd</div><div class="mono text-[9px]">{{ a.unit }}</div>
+            <div class="text-t3">Directory</div><div class="mono text-[13px]">{{ a.home_dir }}</div>
+            <div class="text-t3">Systemd</div><div class="mono text-[13px]">{{ a.unit }}</div>
         </div>
         <div class="flex gap-1 flex-wrap border-t border-line pt-2">
             <a href="/apps/{{ a.id }}/edit" class="btn sm" title="Edit">✏️</a>
@@ -80,7 +128,7 @@
         </div>
     </div>
     {% else %}
-    <div class="card col-span-full text-center text-t3 text-[12px] py-6">
+    <div class="card col-span-full text-center text-t3 text-[14px] py-6">
         Belum ada aplikasi. Buat satu di atas.
     </div>
     {% endfor %}
@@ -101,5 +149,30 @@
   lang.addEventListener('change', filterFrameworks);
   filterFrameworks();
 })();
+
+function updateNativeCommand(){
+  var type = document.getElementById('native-type').value;
+  var launcher = document.getElementById('native-launcher').value;
+  var mod = document.getElementById('native-module').value || 'main:app';
+  var workers = document.getElementById('native-workers').value || '4';
+  var host = document.getElementById('native-host').value || '0.0.0.0';
+  var port = document.getElementById('native-port').value || '8000';
+  var cmd = '';
+  if(type === 'wsgi'){
+    if(launcher === 'gunicorn'){
+      cmd = 'gunicorn -w ' + workers + ' ' + mod + ' --bind ' + host + ':' + port;
+    } else {
+      cmd = 'uvicorn ' + mod + ' --host ' + host + ' --port ' + port;
+    }
+  } else {
+    if(launcher === 'gunicorn'){
+      cmd = 'gunicorn -w ' + workers + ' -k uvicorn.workers.UvicornWorker ' + mod + ' --bind ' + host + ':' + port;
+    } else {
+      cmd = 'uvicorn ' + mod + ' --host ' + host + ' --port ' + port + ' --workers ' + workers;
+    }
+  }
+  document.getElementById('native-cmd').textContent = cmd;
+}
+updateNativeCommand();
 </script>
 {% endblock %}

@@ -321,6 +321,73 @@ class AppManager:
             "unit": unit, "command": command, "env_file": env_file, "steps": steps,
         }
 
+    # ----------------------------------------------------------------- create native
+    async def create_native(self, name: str, app_type: str, command: str,
+                             port: int = 0) -> dict:
+        """Create a native app with user-specified command (no framework stub)."""
+        slug = _slug(name)
+
+        existing = get_app_by_name(name)
+        if existing:
+            return {"ok": False, "error": f"nama app '{name}' sudah dipakai"}
+
+        if not port:
+            try:
+                port = await self.alloc_port()
+            except RuntimeError as e:
+                return {"ok": False, "error": str(e)}
+        if get_app_by_port(port):
+            return {"ok": False, "error": f"port {port} sudah dipakai app lain"}
+
+        home = f"{WEB_ROOT}/{slug}"
+        os_user = f"weborn-{slug}"[:32]
+        unit = f"weborn-{slug}.service"
+        env_file = f"{home}/.env"
+        sock = f"{GUNICORN_SOCK_DIR}/{slug}.sock"
+
+        steps, failed = [], None
+        if self.ex.mode in ("local", "wsl"):
+            await self._ensure_dirs(slug)
+
+            steps += [
+                ("mkdir", f"mkdir -p {home}"),
+                ("user", f"id {os_user} >/dev/null 2>&1 || "
+                         f"useradd -r -M -d {home} -s /bin/false {os_user}"),
+                ("env", self._write_env(home, port, app_type, name)),
+                ("unit", self._write_unit(unit, os_user, home, command, app_type)),
+                ("glog", f"sudo mkdir -p /var/log/{slug} && sudo chown {os_user}:{os_user} /var/log/{slug}"),
+                ("chown", f"sudo chown -R {os_user}:{os_user} {home}"),
+                ("start", f"sudo systemctl enable --now {unit}"),
+            ]
+
+            for step, cmd in steps:
+                r = await self.ex.run("bash", "-c", cmd)
+                if not r.ok and failed is None:
+                    failed = step
+        else:
+            steps = [
+                ("mkdir", f"mkdir -p {home}"),
+                ("user", f"useradd -r -M -d {home} -s /bin/false {os_user}"),
+                ("env", f".env written (PORT={port}, TYPE={app_type})"),
+                ("unit", f"unit {unit} written"),
+                ("start", f"systemctl enable --now {unit}"),
+            ]
+
+        add_app({
+            "name": name, "language": "python", "framework": "",
+            "user": os_user, "home_dir": home, "port": port,
+            "command": command,
+            "status": "running" if failed is None else "error",
+            "env_file": env_file, "unit": unit,
+            "created_at": datetime.now().isoformat(),
+        })
+        return {
+            "ok": failed is None,
+            "error": f"langkah '{failed}' gagal" if failed else None,
+            "port": port, "user": os_user, "home_dir": home,
+            "unit": unit, "command": command, "env_file": env_file, "steps": steps,
+        }
+
     # ----------------------------------------------------------------- env/unit
     @staticmethod
     def _write_env(home: str, port: int, app_type: str, name: str) -> str:

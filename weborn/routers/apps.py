@@ -88,6 +88,48 @@ async def apps_create(name: str = Form(...), language: str = Form(...),
     return RedirectResponse(f"/apps?created=1&port={port}", status_code=303)
 
 
+@router.post("/apps/create-native")
+async def apps_create_native(name: str = Form(...), app_type: str = Form("wsgi"),
+                              launcher: str = Form("gunicorn"), module_app: str = Form("main:app"),
+                              workers: str = Form("4"), host: str = Form("0.0.0.0"),
+                              port: str = Form("8000"), path: str = Form("./main.py"),
+                              user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    try:
+        port_int = int((port or "8000").strip())
+    except ValueError:
+        return JSONResponse({"ok": False, "error": "port harus angka"}, status_code=400)
+    try:
+        workers_int = int((workers or "4").strip())
+    except ValueError:
+        workers_int = 4
+
+    # Build command from user selections
+    mod = module_app.strip() or "main:app"
+    h = (host.strip() or "0.0.0.0")
+    if app_type == "wsgi":
+        if launcher == "gunicorn":
+            command = f"gunicorn -w {workers_int} {mod} --bind {h}:{port_int}"
+        else:
+            command = f"uvicorn {mod} --host {h} --port {port_int}"
+    else:
+        if launcher == "gunicorn":
+            command = f"gunicorn -w {workers_int} -k uvicorn.workers.UvicornWorker {mod} --bind {h}:{port_int}"
+        else:
+            command = f"uvicorn {mod} --host {h} --port {port_int} --workers {workers_int}"
+
+    try:
+        result = await AppManager(get_executor()).create_native(
+            name.strip(), app_type, command, port_int)
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": f"gagal membuat app: {e}"},
+                            status_code=400)
+    if not result.get("ok"):
+        return JSONResponse({"ok": False, "error": result.get("error")}, status_code=400)
+    return RedirectResponse(f"/apps?created=1&port={port_int}", status_code=303)
+
+
 @router.post("/apps/{app_id}/{action}")
 async def apps_control(app_id: int, action: str, user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
