@@ -49,12 +49,13 @@
         <h3 class="text-xs font-bold mb-2">🚀 Buat Aplikasi Native</h3>
         <form method="post" action="/apps/create-native" class="flex flex-col gap-2" id="native-form">
             <div class="field"><label class="text-[13px]">Nama</label>
-                <input name="name" placeholder="myapp" required class="sm"></div>
+                <input name="name" id="native-name" placeholder="myapp" required class="sm"
+                       oninput="updateNativeDir()"></div>
             <div class="flex gap-2">
                 <div class="field flex-1"><label class="text-[13px]">Type</label>
-                    <select name="app_type" id="native-type" class="sm" onchange="updateNativeCommand()">
-                        <option value="wsgi">WSGI</option>
-                        <option value="asgi">ASGI</option>
+                    <select name="app_type" id="native-type" class="sm" onchange="updateNativeCommand();updateSampleInfo()">
+                        <option value="wsgi">WSGI (Flask/Gunicorn)</option>
+                        <option value="asgi">ASGI (FastAPI/Uvicorn)</option>
                     </select></div>
                 <div class="field flex-1"><label class="text-[13px]">Launcher</label>
                     <select name="launcher" id="native-launcher" class="sm" onchange="updateNativeCommand()">
@@ -62,9 +63,26 @@
                         <option value="uvicorn">Uvicorn</option>
                     </select></div>
             </div>
-            <div class="field"><label class="text-[13px]">Module : App</label>
-                <input name="module_app" id="native-module" value="main:app" placeholder="main:app" required class="sm mono"
-                       oninput="updateNativeCommand()"></div>
+
+            <div class="field">
+                <label class="text-[13px]">Direktori Aplikasi</label>
+                <div class="flex gap-1">
+                    <input name="dir_path" id="native-dir" placeholder="/var/www/myapp" class="sm mono flex-1">
+                    <button type="button" class="btn sm" id="btn-check-dir" onclick="checkDirectory()">🔍 Cek</button>
+                </div>
+                <div id="dir-result" class="text-[12px] mt-1" style="display:none"></div>
+            </div>
+
+            <div class="field">
+                <label class="text-[13px]">Module : App</label>
+                <div class="flex gap-1">
+                    <input name="module_app" id="native-module" value="main:app" placeholder="main:app" required class="sm mono flex-1"
+                           oninput="updateNativeCommand()">
+                    <button type="button" class="btn sm" id="btn-validate-mod" onclick="validateModule()">✅ Validasi</button>
+                </div>
+                <div id="mod-result" class="text-[12px] mt-1" style="display:none"></div>
+            </div>
+
             <div class="flex gap-2">
                 <div class="field flex-1"><label class="text-[13px]">Workers</label>
                     <input name="workers" id="native-workers" type="number" min="1" max="32" value="4" class="sm"
@@ -76,11 +94,11 @@
                     <input name="port" id="native-port" type="number" min="8000" max="8999" placeholder="auto" class="sm"
                            oninput="updateNativeCommand()"></div>
             </div>
-            <div class="field"><label class="text-[13px]">Path (module file)</label>
-                <input name="path" id="native-path" value="./main.py" placeholder="./main.py" class="sm"
-                       oninput="updateNativeCommand()"></div>
+
+            <div id="sample-info" class="text-[12px] p-2 rounded border" style="background:var(--bg-2);border-color:var(--panel-border);display:none"></div>
+
             <div class="field">
-                <label class="text-[13px]">Command</label>
+                <label class="text-[13px]">Command Preview</label>
                 <div id="native-cmd" class="mono text-[11px] p-2 rounded border" style="background:var(--bg-2);border-color:var(--panel-border);color:var(--accent);word-break:break-all;min-height:32px"></div>
             </div>
             <button type="submit" class="btn primary sm w-full">Buat Aplikasi</button>
@@ -150,6 +168,13 @@
   filterFrameworks();
 })();
 
+function updateNativeDir(){
+  var name = document.getElementById('native-name').value.trim();
+  var dirEl = document.getElementById('native-dir');
+  if(name && !dirEl.dataset.touched){
+    dirEl.value = '/var/www/' + name.replace(/[^a-z0-9-]/g,'-').toLowerCase();
+  }
+}
 function updateNativeCommand(){
   var type = document.getElementById('native-type').value;
   var launcher = document.getElementById('native-launcher').value;
@@ -173,6 +198,70 @@ function updateNativeCommand(){
   }
   document.getElementById('native-cmd').textContent = cmd;
 }
+
+function updateSampleInfo(){
+  var type = document.getElementById('native-type').value;
+  var el = document.getElementById('sample-info');
+  el.style.display = 'block';
+  if(type === 'asgi'){
+    el.innerHTML = '<span style="color:var(--accent)">📦 Sample ASGI:</span> FastAPI + Uvicorn<br>Endpoint: GET / → JSON status, GET /health → health check';
+  } else {
+    el.innerHTML = '<span style="color:var(--accent)">📦 Sample WSGI:</span> Flask + Gunicorn<br>Endpoint: GET / → JSON status, GET /health → health check';
+  }
+}
+
+function markDirTouched(){
+  document.getElementById('native-dir').dataset.touched = '1';
+}
+document.getElementById('native-dir').addEventListener('input', markDirTouched);
+
+async function checkDirectory(){
+  var path = document.getElementById('native-dir').value.trim();
+  var resultEl = document.getElementById('dir-result');
+  var btn = document.getElementById('btn-check-dir');
+  if(!path){ resultEl.style.display='block'; resultEl.innerHTML='<span style="color:var(--err)">⚠ Masukkan path direktori</span>'; return; }
+  btn.disabled = true; btn.textContent = '⏳';
+  resultEl.style.display='block'; resultEl.innerHTML='<span style="color:var(--t3)">Mengecek…</span>';
+  try {
+    var res = await fetch('/apps/api/check-dir?path=' + encodeURIComponent(path));
+    var data = await res.json();
+    var color = data.exists && data.writable ? 'var(--ok)' : data.exists ? 'var(--warn)' : data.parent_writable ? 'var(--accent)' : 'var(--err)';
+    var icon = data.exists && data.writable ? '✅' : data.exists ? '⚠️' : data.parent_writable ? '📁' : '❌';
+    resultEl.innerHTML = '<span style="color:' + color + '">' + icon + ' ' + escHtml(data.message) + '</span>';
+    if(data.exists && data.files && data.files.length > 0){
+      resultEl.innerHTML += '<br><span class="text-t3">Isi: ' + escHtml(data.files.slice(0,5).join(', ')) + (data.files.length > 5 ? '…' : '') + '</span>';
+    }
+  } catch(e) {
+    resultEl.innerHTML = '<span style="color:var(--err)">❌ Error: ' + escHtml(e.message) + '</span>';
+  }
+  btn.disabled = false; btn.textContent = '🔍 Cek';
+}
+
+async function validateModule(){
+  var dir = document.getElementById('native-dir').value.trim() || '/tmp';
+  var mod = document.getElementById('native-module').value.trim() || 'main:app';
+  var resultEl = document.getElementById('mod-result');
+  var btn = document.getElementById('btn-validate-mod');
+  var parts = mod.split(':');
+  var moduleName = parts[0] || 'main';
+  var appName = parts[1] || 'app';
+  btn.disabled = true; btn.textContent = '⏳';
+  resultEl.style.display='block'; resultEl.innerHTML='<span style="color:var(--t3)">Validasi…</span>';
+  try {
+    var res = await fetch('/apps/api/validate-module?dir=' + encodeURIComponent(dir) + '&module=' + encodeURIComponent(moduleName) + '&app_name=' + encodeURIComponent(appName));
+    var data = await res.json();
+    var color = data.valid ? 'var(--ok)' : 'var(--err)';
+    resultEl.innerHTML = '<span style="color:' + color + '">' + escHtml(data.message) + '</span>';
+    if(data.error) resultEl.innerHTML += '<br><span class="text-t3">' + escHtml(data.error) + '</span>';
+  } catch(e) {
+    resultEl.innerHTML = '<span style="color:var(--err)">❌ Error: ' + escHtml(e.message) + '</span>';
+  }
+  btn.disabled = false; btn.textContent = '✅ Validasi';
+}
+
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 updateNativeCommand();
+updateSampleInfo();
 </script>
 {% endblock %}

@@ -33,6 +33,101 @@ async def apps_page(request: Request, user: dict = Depends(require_user),
     })
 
 
+@router.get("/apps/api/check-dir")
+async def api_check_dir(path: str = "", user: dict = Depends(require_admin)):
+    """Check if a directory path exists, is a directory, and is writable."""
+    if hasattr(user, "headers"):
+        return user
+    if not path.strip():
+        return JSONResponse({"ok": False, "error": "path kosong"})
+    ex = get_executor()
+    if ex.mode in ("local", "wsl"):
+        r = await ex.run("bash", "-c",
+                         f"if [ -d '{path}' ]; then "
+                         f"  echo EXISTS; "
+                         f"  sudo ls -1 '{path}' 2>/dev/null | head -20; "
+                         f"  echo '---'; "
+                         f"  sudo test -w '{path}' && echo WRITABLE || echo NOWRIT; "
+                         f"else "
+                         f"  echo MISSING; "
+                         f"  pdir=$(dirname '{path}'); "
+                         f"  [ -d \"$pdir\" ] && sudo test -w \"$pdir\" && echo PARENT_WRITABLE || echo PARENT_NOWRIT; "
+                         f"fi")
+        out = r.stdout.strip()
+        lines = out.splitlines()
+        exists = lines[0] == "EXISTS" if lines else False
+        writable = "WRITABLE" in out and "NOWRIT" not in out
+        files = []
+        if exists:
+            files = [l for l in lines[1:] if l and l != "---" and not l.startswith("WRITABLE") and not l.startswith("NOWRIT")]
+        parent_writable = "PARENT_WRITABLE" in out
+        return JSONResponse({
+            "ok": True, "exists": exists, "writable": writable,
+            "parent_writable": parent_writable, "files": files,
+            "message": ("Direktori ada, bisa ditulis" if exists and writable
+                        else "Direktori ada, TIDAK bisa ditulis" if exists
+                        else "Direktori belum ada, parent bisa ditulis" if parent_writable
+                        else "Direktori belum ada, parent TIDAK bisa ditulis"),
+        })
+    return JSONResponse({"ok": True, "exists": False, "writable": False,
+                         "files": [], "message": "[dry-run] cek direktori"})
+
+
+@router.get("/apps/api/validate-module")
+async def api_validate_module(dir: str = "", module: str = "", app_name: str = "",
+                               user: dict = Depends(require_admin)):
+    """Validate module:app — check if module exists and app_name is callable."""
+    if hasattr(user, "headers"):
+        return user
+    if not module.strip():
+        return JSONResponse({"ok": False, "error": "module kosong"})
+    ex = get_executor()
+    # Extract module filename (e.g. "main" from "main:app")
+    mod_name = module.split(":")[0].strip().split(".")[0].strip()
+    if not mod_name:
+        return JSONResponse({"ok": False, "error": "format module salah"})
+    if ex.mode in ("local", "wsl"):
+        check_dir = dir.strip() or "/tmp"
+        r = await ex.run("bash", "-c",
+                         f"cd '{check_dir}' 2>/dev/null && "
+                         f"python3 -c \""
+                         f"import importlib.util, sys; "
+                         f"spec = importlib.util.find_spec('{mod_name}'); "
+                         f"exit(0 if spec else 1)"
+                         f"\" 2>/dev/null && echo MODULE_OK || echo MODULE_MISSING")
+        mod_ok = "MODULE_OK" in r.stdout
+        if not mod_ok:
+            return JSONResponse({
+                "ok": True, "valid": False,
+                "error": f"Module '{mod_name}.py' tidak ditemukan di {check_dir}",
+                "message": f"❌ Module '{mod_name}' tidak ditemukan",
+            })
+        if app_name.strip():
+            r2 = await ex.run("bash", "-c",
+                              f"cd '{check_dir}' 2>/dev/null && "
+                              f"python3 -c \""
+                              f"from {mod_name} import {app_name.strip()}; "
+                              f"import inspect; "
+                              f"assert callable({app_name.strip()}) or hasattr({app_name.strip()}, '__call__') or hasattr({app_name.strip()}, 'app') or hasattr({app_name.strip()}, 'get') or hasattr({app_name.strip()}, 'route')"
+                              f"\" 2>/dev/null && echo APP_OK || echo APP_MISSING")
+            app_ok = "APP_OK" in r2.stdout
+            if not app_ok:
+                return JSONResponse({
+                    "ok": True, "valid": False,
+                    "error": f"'{app_name}' tidak ditemukan atau bukan callable di module '{mod_name}'",
+                    "message": f"❌ '{app_name}' tidak ditemukan di module '{mod_name}'",
+                })
+            return JSONResponse({
+                "ok": True, "valid": True,
+                "message": f"✅ Module '{mod_name}' + app '{app_name}' valid",
+            })
+        return JSONResponse({
+            "ok": True, "valid": True,
+            "message": f"✅ Module '{mod_name}' ditemukan",
+        })
+    return JSONResponse({"ok": True, "valid": True, "message": "[dry-run] validasi module"})
+
+
 @router.get("/apps/{app_id}/edit", response_class=HTMLResponse)
 async def apps_edit_page(request: Request, app_id: int,
                          user: dict = Depends(require_admin)):
@@ -92,7 +187,7 @@ async def apps_create(name: str = Form(...), language: str = Form(...),
 async def apps_create_native(name: str = Form(...), app_type: str = Form("wsgi"),
                               launcher: str = Form("gunicorn"), module_app: str = Form("main:app"),
                               workers: str = Form("4"), host: str = Form("0.0.0.0"),
-                              port: str = Form("8000"), path: str = Form("./main.py"),
+                              port: str = Form("8000"), dir_path: str = Form(""),
                               user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
@@ -121,7 +216,8 @@ async def apps_create_native(name: str = Form(...), app_type: str = Form("wsgi")
 
     try:
         result = await AppManager(get_executor()).create_native(
-            name.strip(), app_type, command, port_int)
+            name.strip(), app_type, command, port_int,
+            dir_path=dir_path.strip())
     except Exception as e:
         return JSONResponse({"ok": False, "error": f"gagal membuat app: {e}"},
                             status_code=400)

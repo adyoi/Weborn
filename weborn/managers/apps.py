@@ -324,7 +324,7 @@ class AppManager:
 
     # ----------------------------------------------------------------- create native
     async def create_native(self, name: str, app_type: str, command: str,
-                             port: int = 0) -> dict:
+                             port: int = 0, dir_path: str = "") -> dict:
         """Create a native app with user-specified command (no framework stub)."""
         slug = _slug(name)
 
@@ -340,7 +340,11 @@ class AppManager:
         if get_app_by_port(port):
             return {"ok": False, "error": f"port {port} sudah dipakai app lain"}
 
-        home = f"{WEB_ROOT}/{slug}"
+        # Use custom dir or default
+        if dir_path and dir_path.startswith("/"):
+            home = dir_path.rstrip("/")
+        else:
+            home = f"{WEB_ROOT}/{slug}"
         os_user = f"weborn-{slug}"[:32]
         unit = f"weborn-{slug}.service"
         env_file = f"{home}/.env"
@@ -354,6 +358,17 @@ class AppManager:
                 ("mkdir", f"sudo mkdir -p {home}"),
                 ("user", f"id {os_user} >/dev/null 2>&1 || "
                          f"sudo useradd -r -M -d {home} -s /bin/false {os_user}"),
+            ]
+
+            # Auto-install gunicorn + uvicorn if not present
+            steps.append(("deps",
+                "python3 -c 'import gunicorn' 2>/dev/null || "
+                "sudo python3 -m pip install --break-system-packages gunicorn uvicorn 2>/dev/null || true"))
+
+            # Write sample app if directory is empty
+            steps.append(("sample", self._write_sample_app(home, app_type)))
+
+            steps += [
                 ("env", self._write_env(home, port, app_type, name)),
                 ("unit", self._write_unit(unit, os_user, home, command, app_type)),
                 ("glog", f"sudo mkdir -p /var/log/{slug} && sudo chown {os_user}:{os_user} /var/log/{slug}"),
@@ -365,7 +380,8 @@ class AppManager:
             for step, cmd in steps:
                 r = await self.ex.run("bash", "-c", cmd)
                 if not r.ok and failed is None:
-                    failed = step
+                    if step not in ("deps", "sample"):
+                        failed = step
         else:
             steps = [
                 ("mkdir", f"mkdir -p {home}"),
@@ -389,6 +405,56 @@ class AppManager:
             "port": port, "user": os_user, "home_dir": home,
             "unit": unit, "command": command, "env_file": env_file, "steps": steps,
         }
+
+    @staticmethod
+    def _write_sample_app(home: str, app_type: str) -> str:
+        """Write sample main.py if directory is empty."""
+        if app_type == "asgi":
+            content = (
+                "from fastapi import FastAPI\n"
+                "import os, datetime\n\n"
+                "app = FastAPI()\n\n"
+                "@app.get('/')\n"
+                "async def root():\n"
+                "    return {\n"
+                "        'app': os.getenv('APP_DIR', 'unknown'),\n"
+                "        'type': 'asgi',\n"
+                "        'port': os.getenv('PORT', '8000'),\n"
+                "        'time': datetime.datetime.now().isoformat(),\n"
+                "        'status': 'running',\n"
+                "    }\n"
+                "\n"
+                "@app.get('/health')\n"
+                "async def health():\n"
+                "    return {'status': 'ok'}\n"
+            )
+            pkg = "fastapi uvicorn"
+        else:
+            content = (
+                "from flask import Flask\n"
+                "import os, datetime\n\n"
+                "app = Flask(__name__)\n\n"
+                "@app.route('/')\n"
+                "def root():\n"
+                "    return {\n"
+                "        'app': os.getenv('APP_DIR', 'unknown'),\n"
+                "        'type': 'wsgi',\n"
+                "        'port': os.getenv('PORT', '8000'),\n"
+                "        'time': datetime.datetime.now().isoformat(),\n"
+                "        'status': 'running',\n"
+                "    }\n"
+                "\n"
+                "@app.route('/health')\n"
+                "def health():\n"
+                "    return {'status': 'ok'}\n"
+            )
+            pkg = "flask gunicorn"
+        import base64
+        b64 = base64.b64encode(content.encode()).decode()
+        # Only write if main.py doesn't exist
+        return (f"[ -f {home}/main.py ] || "
+                f"(echo {b64} | base64 -d | sudo tee {home}/main.py > /dev/null && "
+                f"sudo python3 -m pip install --break-system-packages {pkg} 2>/dev/null)")
 
     # ----------------------------------------------------------------- env/unit
     @staticmethod
