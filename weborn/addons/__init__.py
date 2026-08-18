@@ -35,6 +35,7 @@ class Addon:
     packages: list = field(default_factory=list)     # paket apt/pip/npm
     systemd_unit: str | None = None
     bin: str | None = None
+    version_args: list = field(default_factory=lambda: ["--version"])
     ports: list = field(default_factory=list)
     config: dict = field(default_factory=dict)       # {path, template}
     fields: list = field(default_factory=list)       # [{name,label,default}]
@@ -131,8 +132,9 @@ class AddonManager:
     async def version(self, addon: Addon) -> str:
         if not addon.bin:
             return "—"
-        result = await self.executor.run(addon.bin, "--version")
-        first = result.stdout.strip().splitlines() or ["—"]
+        result = await self.executor.run(addon.bin, *addon.version_args)
+        out = result.stdout.strip() or result.stderr.strip()
+        first = out.splitlines() or ["—"]
         return first[0][:64]
 
     async def status(self, addon: Addon) -> dict:

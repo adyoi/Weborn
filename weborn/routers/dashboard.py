@@ -3,34 +3,12 @@ from fastapi.responses import HTMLResponse
 from datetime import datetime
 
 from ..auth import require_user
-from ..config import VERSION
 from ..db import list_apps, list_panel_users
 from ..executors import get_executor
 from ..managers.accounts import AccountManager
 from ..ui import render
 
 router = APIRouter()
-
-
-async def engine_info(ex) -> dict:
-    """Detect Weborn Engine component versions."""
-    engine = {"python": "—", "gunicorn": "—", "uvicorn": "—", "nginx": "—"}
-    if ex.mode in ("local", "wsl"):
-        r = await ex.run("bash", "-c", "python3 --version 2>&1")
-        if r.ok:
-            engine["python"] = r.stdout.strip().replace("Python ", "")
-        r = await ex.run("bash", "-c", "gunicorn --version 2>&1")
-        if r.ok:
-            out = r.stdout.strip() or r.stderr.strip()
-            engine["gunicorn"] = out.replace("gunicorn (version ", "").rstrip(")") if "version" in out else out
-        r = await ex.run("bash", "-c", "python3 -c 'import uvicorn; print(uvicorn.__version__)' 2>&1")
-        if r.ok and r.stdout.strip():
-            engine["uvicorn"] = r.stdout.strip()
-        r = await ex.run("bash", "-c", "nginx -v 2>&1")
-        if r.ok:
-            out = r.stdout.strip() or r.stderr.strip()
-            engine["nginx"] = out.replace("nginx version: nginx/", "")
-    return engine
 
 
 def system_stats() -> dict:
@@ -97,7 +75,6 @@ async def dashboard(request: Request, user: dict = Depends(require_user)):
     ex = get_executor()
     updates = await os_update_info_cached(ex)
     stats = system_stats()
-    engine = await engine_info(ex)
 
     services_running = sum(1 for s in services if s.get("active"))
     services_stopped = installed_count - services_running
@@ -105,8 +82,6 @@ async def dashboard(request: Request, user: dict = Depends(require_user)):
     return render(request, "dashboard.html", {
         "user": user,
         "stats": stats,
-        "engine": engine,
-        "engine_version": VERSION,
         "services": services,
         "services_running": services_running,
         "services_stopped": services_stopped,

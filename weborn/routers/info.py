@@ -1,4 +1,4 @@
-"""Info pages: test connectivity, update, changelog, about."""
+"""Info pages: test connectivity, update, changelog, about, status."""
 import subprocess
 from pathlib import Path
 
@@ -11,6 +11,48 @@ from ..executors import get_executor
 from ..ui import render
 
 router = APIRouter()
+
+
+@router.get("/info/status", response_class=HTMLResponse)
+async def info_status_page(request: Request, user: dict = Depends(require_user)):
+    if hasattr(user, "headers"):
+        return user
+    from datetime import datetime
+    ex = get_executor()
+    info = {"hostname": "—", "kernel": "—", "os": "—", "uptime": "—",
+            "cpu_model": "—", "cores": 0, "ram": "—", "disk": "—",
+            "ip_lan": "—", "ip_pub": "—", "python": "—", "node": "—",
+            "nginx": "—", "mariadb": "—", "postgresql": "—", "redis": "—"}
+    if ex.mode in ("local", "wsl"):
+        cmds = {
+            "hostname": "hostname -f 2>/dev/null || hostname",
+            "kernel": "uname -r",
+            "os": "cat /etc/os-release 2>/dev/null | grep PRETTY_NAME | cut -d'\"' -f2",
+            "uptime": "uptime -p 2>/dev/null || uptime",
+            "cpu_model": "lscpu 2>/dev/null | grep 'Model name' | sed 's/.*:\\s*//'",
+            "cores": "nproc",
+            "ram": "free -h | awk '/Mem/{print $2}'",
+            "disk": "df -h / | awk 'NR==2{print $2\" total, \"$3\" used, \"$4\" avail\"}'",
+            "ip_lan": "hostname -I 2>/dev/null | awk '{print $1}'",
+            "python": "python3 --version 2>&1",
+            "node": "node -v 2>&1",
+            "nginx": "nginx -v 2>&1",
+            "mariadb": "mariadb --version 2>&1 | head -1",
+            "postgresql": "psql --version 2>&1",
+            "redis": "redis-server --version 2>&1 | awk '{print $3}'",
+        }
+        for key, cmd in cmds.items():
+            r = await ex.run("bash", "-c", cmd)
+            out = (r.stdout.strip() or r.stderr.strip()) if r.ok else "—"
+            if key == "cores":
+                info[key] = int(out) if out.isdigit() else 0
+            else:
+                info[key] = out
+        r = await ex.run("bash", "-c", "curl -s --max-time 3 https://api.ipify.org 2>/dev/null")
+        info["ip_pub"] = r.stdout.strip() if r.ok and r.stdout.strip() else "—"
+    return render(request, "info_status.html", {
+        "user": user, "active": "info-status", "info": info, "version": VERSION,
+    })
 
 
 @router.get("/info/test", response_class=HTMLResponse)

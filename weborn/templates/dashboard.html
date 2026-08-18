@@ -61,39 +61,6 @@
     </div>
 </div>
 
-{# ── Weborn Engine ── #}
-<div class="card mb-3">
-    <div class="flex items-center justify-between mb-2">
-        <div>
-            <h3 class="text-xs font-bold">⚙️ Weborn Engine</h3>
-            <div class="text-t3 text-[13px] mt-0.5">runtime • python • gunicorn • uvicorn</div>
-        </div>
-        <span class="badge info text-[13px] px-3 py-1">v{{ engine_version }}</span>
-    </div>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <div class="flex items-center gap-2 text-[13px]">
-            <span class="text-[var(--ok)]">●</span>
-            <span class="text-t3">Nginx</span>
-            <span class="mono">{{ engine.nginx }}</span>
-        </div>
-        <div class="flex items-center gap-2 text-[13px]">
-            <span class="text-[var(--ok)]">●</span>
-            <span class="text-t3">Python</span>
-            <span class="mono">{{ engine.python }}</span>
-        </div>
-        <div class="flex items-center gap-2 text-[13px]">
-            <span class="text-[var(--ok)]">●</span>
-            <span class="text-t3">Gunicorn</span>
-            <span class="mono">{{ engine.gunicorn }}</span>
-        </div>
-        <div class="flex items-center gap-2 text-[13px]">
-            <span class="text-[var(--ok)]">●</span>
-            <span class="text-t3">Uvicorn</span>
-            <span class="mono">{{ engine.uvicorn }}</span>
-        </div>
-    </div>
-</div>
-
 {# ── Status Layanan (table) ── #}
 <div class="card">
     <div class="flex items-center justify-between mb-3">
