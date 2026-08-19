@@ -26,6 +26,13 @@ PANEL_HTTPS_PORT = 2043
 
 SESSION_COOKIE = "weborn_session"
 
+# ─────────────────────────────────────────────────────────────────────────────
+# PAM — Autentikasi Linux user via Pluggable Authentication Modules
+# Aktifkan bila ingin user Linux bisa login ke panel dengan akun mereka.
+# Root login diizinkan hanya bila sudah ada admin panel (gate).
+# ─────────────────────────────────────────────────────────────────────────────
+USE_PAM = True
+
 import os as _os
 import platform as _platform
 

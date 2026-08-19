@@ -26,26 +26,25 @@ Client (Browser)
   │   ├─ Python ASGI → Gunicorn + UvicornWorker → FastAPI
   │   └─ Node.js → reverse proxy port
   │
-  ├─ Gunicorn — Process Manager
-  │   ├─ WSGI: gunicorn main:app -w 4 --bind unix:/run/gunicorn/{name}.sock
-  │   └─ ASGI: gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind unix:/run/gunicorn/{name}.sock
+  ├─ Gunicorn / Uvicorn — Process Manager
+  │   ├─ WSGI:  gunicorn -w N main:app --bind unix:/run/gunicorn/{name}.sock
+  │   ├─ ASGI:  gunicorn -w N -k uvicorn.workers.UvicornWorker --bind unix:/run/gunicorn/{name}.sock
+  │   └─ ASGI:  uvicorn main:app --host 0.0.0.0 --port {port} --workers N
   │
   └─ Weborn Panel (Port 2025) — Control Panel UI
-      ├─ WSGI mode: Nginx → Gunicorn → FastAPI app
-      └─ ASGI mode: Nginx → Gunicorn (uvicorn workers) → FastAPI app
+      ├─ Session auth (SQLite) + PAM fallback (Linux users)
+      └─ Real-time monitoring via WebSocket (xterm.js)
 ```
 
-## What's New
+## What's New (v0.3.1)
 
-- **Gunicorn as Process Manager** — All Python apps (WSGI/ASGI) run through Gunicorn for stable process management
-- **Browser Navigation Guard** — Prevents accidental page reload/close during running processes; fails gracefully on error
+- **PAM Authentication** — Linux users (including root) can login to the panel with their OS credentials
+- **Process Monitor with Trace Logs** — Live xterm.js log streaming per app, Start/Stop/Restart controls
+- **Gunicorn + Uvicorn Process Manager** — 4 combos: WSGI/ASGI × Gunicorn/Uvicorn
 - **Mail Server Stack** — Postfix + Dovecot + Rspamd + OpenDKIM + Roundcube with automated setup wizard
-- **Web Server Management** — Nginx, PHP-FPM, Redis/Memcached control pages with start/stop/restart
-- **Process Monitor** — Real-time Gunicorn worker status (PID, CPU%, MEM%, uptime)
 - **Admin Setup Creates Linux User** — Setup wizard creates panel account + Linux OS user with sudo/SSH
 - **Interactive WebSocket Terminal** — Real PTY shell via xterm.js
 - **Addon Store with 39 Addons** — 7 categories, install/config/update/uninstall lifecycle
-- **Panel User Management** — Change password, toggle active/inactive, login log tracking
 - **Friendly Error Messages** — Maps common errors (permission denied, disk full, timeout) to readable messages
 
 ## Key Features
@@ -56,15 +55,22 @@ Client (Browser)
 - Panel user count
 - Installed services with start/stop/restart table
 
-### 📦 Application Management
+### 📦 Application Management (Weborn Core)
 - Create isolated apps with dedicated user, directory, and socket
-- **WSGI (Gunicorn sync workers)** — Django, Flask
-- **ASGI (Gunicorn + UvicornWorker)** — FastAPI, Starlette
-- **PHP (PHP-FPM)** — Laravel, WordPress
-- **Node.js (direct process)** — Express, Next.js, Fastify
-- **Static (Nginx direct)** — HTML/CSS/JS sites
-- Framework presets with auto-generated Nginx configs
-- Real-time log streaming via WebSocket
+- **WSGI** — Django, Flask, Pyramid, Bottle, Tornado (Gunicorn sync workers)
+- **ASGI** — FastAPI, Litestar, Sanic (Gunicorn + UvicornWorker or standalone Uvicorn)
+- **PHP** — Laravel, WordPress, Symfony, CodeIgniter, Slim (PHP-FPM)
+- **Node.js** — Express, Next.js, Fastify, NestJS, Hono, SvelteKit, Astro (direct process)
+- **Static** — HTML/CSS/JS sites (Nginx direct)
+- Native app support: custom command + directory + module:app validation
+- Framework presets with auto-scaffold
+
+### 🧠 Process Monitor
+- Real-time Gunicorn/Uvicorn worker status (PID, CPU%, MEM%, uptime)
+- Start / Stop / Restart controls per app
+- **Trace Log** — Live xterm.js log streaming via WebSocket (`journalctl -u`)
+- Auto-refresh mode (5s interval)
+- Master PID detection with 2-level process traversal (systemd → bash → process → workers)
 
 ### 🌐 Web Server
 - **Nginx** — Reverse proxy, static files, site config management
@@ -84,7 +90,6 @@ Client (Browser)
 - **Postfix** (SMTP) — Port 25/587/465
 - **Dovecot** (IMAP/POP3) — Port 143/993/110/995
 - **Rspamd** — Modern anti-spam with ML scoring
-- **SpamAssassin** — Legacy spam filter (alternative)
 - **OpenDKIM** — DKIM signing for email authentication
 - **SPF/DMARC** — DNS-based email authentication
 - **Roundcube** — Web-based email client
@@ -98,7 +103,7 @@ Client (Browser)
 - **Backup** — System backup and restore
 
 ### 📊 Monitoring
-- Centralized log viewer
+- Centralized log viewer (system, auth, nginx, mysql, panel)
 - Process viewer (psutil)
 - Cron job scheduling
 - Network monitoring
@@ -108,6 +113,13 @@ Client (Browser)
 - File explorer with edit/chown/chmod
 - SSH / SFTP / RDP / VNC / NFS user management
 - OS user management with lock/unlock
+
+### 🔐 Authentication
+- **Panel users** — SQLite-based with PBKDF2-SHA256 hashing
+- **PAM fallback** — Linux users login with OS credentials (auto-creates shadow panel user)
+- **Root login gate** — Root can login via PAM only after admin panel user exists
+- Session management with 7-day expiry
+- Login audit trail (IP, timestamp, success/fail)
 
 ### 🧩 Addon Store (39 Addons)
 
@@ -131,7 +143,7 @@ Each addon supports: **Install → Config → Update → Start/Stop/Restart → 
 | **Web Server** | Domain & DNS, Nginx, PHP-FPM, Cache, Reverse Proxy |
 | **Database** | MariaDB, PostgreSQL, MongoDB, Redis, Memcached |
 | **Mail Server** | Overview, Mailbox, Mail DNS, Webmail, Spam & DKIM |
-| **Weborn** | Aplikasi, ASGI Apps, Process Monitor |
+| **Weborn** | WSGI Apps, ASGI Apps, Process Monitor |
 | **Monitoring** | Logs, Proses, Network, Paket, Cron |
 | **Access & Security** | Terminal, File Explorer, OS Users, Panel Users, Services, Firewall, Fail2Ban, ClamAV, Backup, Settings |
 
@@ -139,9 +151,10 @@ Each addon supports: **Install → Config → Update → Start/Stop/Restart → 
 
 - **Backend:** Python 3.10+, FastAPI, SQLite, Jinja2
 - **Frontend:** Tailwind CSS, xterm.js, WebSocket
-- **Process Manager:** Gunicorn (WSGI) + UvicornWorker (ASGI)
+- **Process Manager:** Gunicorn (WSGI) + Uvicorn (ASGI standalone)
 - **Web Server:** Nginx (reverse proxy)
 - **Mail:** Postfix + Dovecot + Rspamd + OpenDKIM + Roundcube
+- **Auth:** SQLite sessions + PAM (Linux Pluggable Authentication Modules)
 - **System:** systemd, psutil
 - **Executor Modes:** Local (Linux), WSL, Dry-run (Windows dev)
 
@@ -196,6 +209,7 @@ http://127.0.0.1:2025
    - Panel admin account (SQLite)
    - Linux OS user with sudo/SSH access
 5. Login with your new credentials
+6. After setup, any Linux user can login with their OS password (PAM fallback)
 
 ## App Deployment Flow
 
@@ -212,14 +226,17 @@ When you create an app through the panel:
 8. Panel enables & starts the service
 ```
 
-For Python apps, Gunicorn is the process manager:
+For Python apps, Gunicorn or Uvicorn is the process manager:
 
 ```bash
-# WSGI (Django/Flask)
+# WSGI (Django/Flask) — Gunicorn
 gunicorn main:app -w 4 --bind unix:/run/gunicorn/{name}.sock
 
-# ASGI (FastAPI)
+# ASGI (FastAPI) — Gunicorn + UvicornWorker
 gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind unix:/run/gunicorn/{name}.sock
+
+# ASGI (FastAPI) — Uvicorn standalone
+uvicorn main:app --host 0.0.0.0 --port {port} --workers 4
 ```
 
 ## Executor Modes
@@ -239,6 +256,15 @@ export WEBORN_EXECUTOR_MODE=local
 export WEBORN_EXECUTOR_MODE=wsl
 export WEBORN_WSL_DISTRO=Debian
 ```
+
+## PAM Authentication
+
+Weborn supports PAM (Pluggable Authentication Modules) for Linux user login:
+
+- **How it works:** When a user tries to login, the panel first checks the SQLite panel database. If the user is not found or the password doesn't match, it falls back to Linux PAM authentication via `su`.
+- **Shadow users:** If PAM authentication succeeds and the user doesn't exist in the panel DB, a shadow user is auto-created (with a random password hash — login only via PAM).
+- **Root login:** Root can login via PAM only after an admin panel user already exists (security gate).
+- **Config:** Set `USE_PAM = True` in `weborn/config.py` to enable/disable.
 
 ## Frontend Build
 
@@ -274,6 +300,7 @@ Weborn creates Linux users with sudo privileges during setup. In production:
 - Enable firewall (UFW)
 - Run behind a reverse proxy with HTTPS
 - Regularly update packages
+- Consider disabling PAM fallback if not needed (`USE_PAM = False`)
 
 ## Contributing
 

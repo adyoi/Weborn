@@ -1,26 +1,112 @@
-"""Autentikasi panel: sesi berbasis cookie + RBAC dasar."""
+"""Autentikasi panel: sesi berbasis cookie + RBAC dasar + PAM fallback.
+
+Alur login:
+  1. Cari user di panel DB (SQLite).
+  2. Jika ditemukan → verifikasi password hash → login.
+  3. Jika tidak ditemukan atau password salah → coba PAM (Linux auth).
+  4. Jika PAM berhasil → buat user shadow di panel → login.
+  5. Gate: root hanya boleh login bila sudah ada admin panel.
+"""
+import platform
+import subprocess
+
 from fastapi import Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from . import db
-from .config import SESSION_COOKIE
+from .config import SESSION_COOKIE, USE_PAM
 
+
+# ── PAM Authentication ──────────────────────────────────────────────────────
+# Metode: subprocess call ke `su` — tidak perlu pip package tambahan.
+# `su -c 'echo ok' username` + password di stdin → cek returncode.
+
+def _pam_authenticate(username: str, password: str) -> bool:
+    """Autentikasi user Linux via PAM menggunakan subprocess `su`.
+
+    Returns True jika PAM accept, False jika ditolak atau tidak tersedia.
+    """
+    if not USE_PAM:
+        return False
+    if platform.system() != "Linux":
+        return False
+
+    try:
+        result = subprocess.run(
+            ["su", "-c", "echo ok", username],
+            input=password + "\n",
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        return result.returncode == 0 and "ok" in result.stdout
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        return False
+
+
+# ── Panel auth ──────────────────────────────────────────────────────────────
 
 def login(request: Request, username: str, password: str) -> bool:
+    """Login dengan fallback: panel DB → PAM.
+
+    Alur:
+      1. Cari user di panel DB, verifikasi password.
+      2. Jika tidak ditemukan/salah → coba PAM.
+      3. Jika PAM berhasil → auto-create shadow user → login.
+      4. Gate: root hanya boleh login bila sudah ada admin panel.
+    """
+    ip = request.client.host if request.client else ""
+
+    # ── Step 1: Coba panel DB ──
     with db.get_conn() as conn:
         row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
-    if not row or not db.verify_password(password, row["password_hash"]):
-        ip = request.client.host if request.client else ""
-        db.log_login(0, username, ip, False)
-        return False
-    row_dict = dict(row)
-    if not row_dict.get("is_active", 1):
-        return False
-    token = db.create_session(row["id"])
-    request.session[SESSION_COOKIE] = token
-    ip = request.client.host if request.client else ""
-    db.log_login(row["id"], username, ip, True)
-    return True
+
+    if row and db.verify_password(password, row["password_hash"]):
+        row_dict = dict(row)
+        if not row_dict.get("is_active", 1):
+            db.log_login(0, username, ip, False)
+            return False
+        token = db.create_session(row["id"])
+        request.session[SESSION_COOKIE] = token
+        db.log_login(row["id"], username, ip, True)
+        return True
+
+    # ── Step 2: Fallback ke PAM ──
+    if _pam_authenticate(username, password):
+        # Gate: root hanya boleh login bila sudah ada admin
+        if username == "root" and not _has_admin():
+            db.log_login(0, username, ip, False)
+            return False
+
+        # Auto-create shadow user jika belum ada di panel
+        role = "admin" if username == "root" else "user"
+        user_id = db.create_shadow_user(username, role=role)
+        if not user_id:
+            db.log_login(0, username, ip, False)
+            return False
+
+        # Check is_active
+        with db.get_conn() as conn:
+            row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        if row and not dict(row).get("is_active", 1):
+            db.log_login(0, username, ip, False)
+            return False
+
+        token = db.create_session(user_id)
+        request.session[SESSION_COOKIE] = token
+        db.log_login(user_id, username, ip, True)
+        return True
+
+    # ── Step 3: Gagal ──
+    db.log_login(0, username, ip, False)
+    return False
+
+
+def _has_admin() -> bool:
+    """Cek apakah sudah ada user admin di panel DB."""
+    with db.get_conn() as conn:
+        row = conn.execute("SELECT 1 FROM users WHERE role = 'admin' LIMIT 1").fetchone()
+    return row is not None
 
 
 def logout(request: Request):

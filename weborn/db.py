@@ -272,6 +272,26 @@ def get_login_logs(limit: int = 50) -> list[dict]:
             "SELECT * FROM login_logs ORDER BY id DESC LIMIT ?", (limit,)).fetchall()]
 
 
+def create_shadow_user(username: str, role: str = "user") -> int | None:
+    """Buat user panel shadow untuk PAM login (hash acak, tidak bisa login via password panel).
+
+    Dipanggil saat user Linux berhasil PAM authenticate tapi belum punya akun panel.
+    Mengembalikan user_id yang baru dibuat, atau None jika gagal.
+    """
+    import secrets as _secrets
+    fake_hash = hash_password(_secrets.token_hex(16))
+    with get_conn() as conn:
+        exists = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
+        if exists:
+            return exists["id"]
+        cur = conn.execute(
+            "INSERT INTO users(username, password_hash, role, is_active, created_at) VALUES (?, ?, ?, 1, ?)",
+            (username, fake_hash, role, datetime.now().isoformat()),
+        )
+        conn.commit()
+        return cur.lastrowid
+
+
 def toggle_panel_user_active(user_id: int) -> bool:
     with get_conn() as conn:
         row = conn.execute("SELECT is_active FROM users WHERE id = ?", (user_id,)).fetchone()
