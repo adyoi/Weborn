@@ -51,7 +51,7 @@ async def apps_monitor_page(request: Request, user: dict = Depends(require_admin
     })
 
 
-@router.get("/apps/monitor/{app_id}", response_class=HTMLResponse)
+@router.get("/apps/{app_id}/monitor", response_class=HTMLResponse)
 async def apps_monitor_detail(request: Request, app_id: int,
                                user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):

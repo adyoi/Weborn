@@ -454,22 +454,22 @@ class AppManager:
             pkg = "fastapi uvicorn"
         else:
             content = (
-                "from flask import Flask\n"
+                "from flask import Flask, jsonify\n"
                 "import os, datetime\n\n"
                 "app = Flask(__name__)\n\n"
                 "@app.route('/')\n"
                 "def root():\n"
-                "    return {\n"
+                "    return jsonify({\n"
                 "        'app': os.getenv('APP_DIR', 'unknown'),\n"
                 "        'type': 'wsgi',\n"
                 "        'port': os.getenv('PORT', '8000'),\n"
                 "        'time': datetime.datetime.now().isoformat(),\n"
                 "        'status': 'running',\n"
-                "    }\n"
+                "    })\n"
                 "\n"
                 "@app.route('/health')\n"
                 "def health():\n"
-                "    return {'status': 'ok'}\n"
+                "    return jsonify({'status': 'ok'})\n"
             )
             pkg = "flask gunicorn"
         import base64
@@ -573,7 +573,12 @@ class AppManager:
 
     # -------------------------------------------------------------- status
     async def get_process_status(self, name: str) -> dict:
-        """Get process status for an app (gunicorn or uvicorn)."""
+        """Get process status for an app (gunicorn or uvicorn).
+
+        Process tree: systemd → bash (MainPID) → gunicorn/uvicorn master + workers
+        All processes (master + workers) are children of bash.
+        We find all children of MainPID and report them.
+        """
         slug = _slug(name)
         unit = f"weborn-{slug}.service"
         if self.ex.mode not in ("local", "wsl"):
@@ -584,12 +589,12 @@ class AppManager:
                               f"systemctl is-active {unit} 2>/dev/null || echo stopped")
         status = r.stdout.strip()
 
-        # Get Gunicorn master PID
+        # Get MainPID (this is the bash wrapper from ExecStart)
         r2 = await self.ex.run("bash", "-c",
                                f"systemctl show {unit} --property=MainPID --value 2>/dev/null")
         master_pid = r2.stdout.strip()
 
-        # Get worker count from ps
+        # Find all children of MainPID (master + workers are all direct children of bash)
         workers = []
         if master_pid and master_pid.isdigit() and int(master_pid) > 0:
             r3 = await self.ex.run("bash", "-c",

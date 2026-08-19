@@ -4,11 +4,43 @@ Jalankan:  python run.py          (dev, dry-run)
            python run.py --local  (linux: eksekusi sistem nyata)
 """
 import argparse
+import os
+import signal
+import socket
+import subprocess
 import sys
 
 import uvicorn
 
 from weborn.config import PANEL_HTTP_PORT
+
+
+def _kill_port(port: int):
+    """Hentikan proses yang menduduki port tertentu (Linux/WSL only)."""
+    if sys.platform == "win32":
+        return
+    try:
+        r = subprocess.run(
+            ["ss", "-tlnp"], capture_output=True, text=True, timeout=3
+        )
+        for line in r.stdout.splitlines():
+            if f":{port}" in line:
+                # ss output: LISTEN  0  128  0.0.0.0:2025  ... users:(("python3",pid=1234,fd=7))
+                import re
+                m = re.search(r'pid=(\d+)', line)
+                if m:
+                    pid = int(m.group(1))
+                    if pid != os.getpid():
+                        os.kill(pid, signal.SIGTERM)
+                        import time
+                        time.sleep(0.5)
+                        try:
+                            os.kill(pid, signal.SIGKILL)
+                        except OSError:
+                            pass
+                        print(f"[run.py] Stopped existing process on port {port} (PID {pid})")
+    except Exception:
+        pass
 
 
 def main():
@@ -23,8 +55,10 @@ def main():
     args = parser.parse_args()
 
     if args.local:
-        import os
         os.environ["WEBORN_EXECUTOR_MODE"] = "local"
+
+    # Auto-kill proses lama yang menduduki port yang sama
+    _kill_port(args.port)
 
     ssl_kwargs = {}
     if args.ssl_cert and args.ssl_key:
