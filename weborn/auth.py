@@ -3,12 +3,11 @@
 Alur login:
   1. Cari user di panel DB (SQLite).
   2. Jika ditemukan → verifikasi password hash → login.
-  3. Jika tidak ditemukan atau password salah → coba PAM (Linux auth).
+  3. Jika tidak ditemukan atau password salah → coba PAM (Linux auth via /etc/shadow).
   4. Jika PAM berhasil → buat user shadow di panel → login.
   5. Gate: root hanya boleh login bila sudah ada admin panel.
 """
 import platform
-import subprocess
 
 from fastapi import Request
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -16,31 +15,42 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from . import db
 from .config import SESSION_COOKIE, USE_PAM
 
+# Linux-only modules (not available on Windows)
+_crypt = None
+_spwd = None
+if platform.system() == "Linux":
+    try:
+        import crypt as _crypt
+        import spwd as _spwd
+    except ImportError:
+        pass
 
-# ── PAM Authentication ──────────────────────────────────────────────────────
-# Metode: subprocess call ke `su` — tidak perlu pip package tambahan.
-# `su -c 'echo ok' username` + password di stdin → cek returncode.
+
+# ── PAM via /etc/shadow ─────────────────────────────────────────────────────
+# Panel berjalan dengan sudo → bisa baca /etc/shadow langsung.
+# Tidak perlu ctypes atau pip package tambahan.
 
 def _pam_authenticate(username: str, password: str) -> bool:
-    """Autentikasi user Linux via PAM menggunakan subprocess `su`.
+    """Autentikasi user Linux via /etc/shadow.
 
-    Returns True jika PAM accept, False jika ditolak atau tidak tersedia.
+    Returns True jika password cocok, False jika ditolak atau tidak tersedia.
     """
     if not USE_PAM:
         return False
     if platform.system() != "Linux":
         return False
+    if not _crypt or not _spwd:
+        return False
 
     try:
-        result = subprocess.run(
-            ["su", "-c", "echo ok", username],
-            input=password + "\n",
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        return result.returncode == 0 and "ok" in result.stdout
-    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        shadow = _spwd.getspnam(username)
+        stored_hash = shadow.sp_pwd
+        # Hash kosong atau '!' atau '*' = akun terkunci/no password
+        if not stored_hash or stored_hash in ("!", "*", "!!"):
+            return False
+        return _crypt.crypt(password, stored_hash) == stored_hash
+    except (KeyError, PermissionError):
+        # KeyError = user tidak ada, PermissionError = tidak punya akses shadow
         return False
 
 
@@ -71,7 +81,7 @@ def login(request: Request, username: str, password: str) -> bool:
         db.log_login(row["id"], username, ip, True)
         return True
 
-    # ── Step 2: Fallback ke PAM ──
+    # ── Step 2: Fallback ke PAM (/etc/shadow) ──
     if _pam_authenticate(username, password):
         # Gate: root hanya boleh login bila sudah ada admin
         if username == "root" and not _has_admin():
