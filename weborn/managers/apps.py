@@ -318,6 +318,7 @@ class AppManager:
 
         add_app({
             "name": name, "language": language, "framework": framework or "",
+            "app_type": app_type,
             "user": os_user, "home_dir": home, "port": port,
             "command": command or f"Nginx → {pm}",
             "status": "running" if failed is None else "error",
@@ -402,6 +403,7 @@ class AppManager:
 
         add_app({
             "name": name, "language": "python", "framework": "",
+            "app_type": app_type,
             "user": os_user, "home_dir": home, "port": port,
             "command": command,
             "status": "running" if failed is None else "error",
@@ -548,7 +550,9 @@ class AppManager:
         for a in apps:
             lang_info = RUNTIMES.get(a["language"], {})
             a["language_label"] = lang_info.get("label", a["language"])
-            a["app_type"] = _app_type_for(a["language"], a.get("framework", ""))
+            # Use stored app_type if available, else compute
+            stored = a.get("app_type", "")
+            a["app_type"] = stored if stored else _app_type_for(a["language"], a.get("framework", ""))
             a["process_manager"] = APP_TYPES.get(a["app_type"], {}).get("process_manager", "direct")
         return apps
 

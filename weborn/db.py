@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS apps (
     name       TEXT NOT NULL UNIQUE,
     language   TEXT NOT NULL,                  -- nodejs | php | python | golang | ruby | rust
     framework  TEXT NOT NULL DEFAULT '',
+    app_type   TEXT NOT NULL DEFAULT '',        -- wsgi | asgi | flask | django | fastapi | laravel | nodejs | static
     user       TEXT NOT NULL,                  -- user OS terisolasi per app
     home_dir   TEXT NOT NULL,                  -- /var/www/<name>
     port       INTEGER NOT NULL UNIQUE,
@@ -180,6 +181,16 @@ def init_db():
         ucols = {r[1] for r in conn.execute("PRAGMA table_info(users)").fetchall()}
         if "is_active" not in ucols:
             conn.execute("ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1")
+        # migration: add app_type to apps
+        acols = {r[1] for r in conn.execute("PRAGMA table_info(apps)").fetchall()}
+        if "app_type" not in acols:
+            conn.execute("ALTER TABLE apps ADD COLUMN app_type TEXT NOT NULL DEFAULT ''")
+        # backfill app_type for existing apps
+        from .managers.apps import _app_type_for
+        for row in conn.execute("SELECT id, language, framework, app_type FROM apps").fetchall():
+            if not row["app_type"]:
+                computed = _app_type_for(row["language"], row["framework"] or "")
+                conn.execute("UPDATE apps SET app_type = ? WHERE id = ?", (computed, row["id"]))
         conn.commit()
 
 
@@ -281,9 +292,9 @@ def list_apps() -> list[dict]:
 def add_app(data: dict) -> None:
     with get_conn() as conn:
         conn.execute(
-            """INSERT INTO apps(name, language, framework, user, home_dir, port,
+            """INSERT INTO apps(name, language, framework, app_type, user, home_dir, port,
                                 command, status, env_file, unit, created_at)
-               VALUES (:name,:language,:framework,:user,:home_dir,:port,
+               VALUES (:name,:language,:framework,:app_type,:user,:home_dir,:port,
                        :command,:status,:env_file,:unit,:created_at)""",
             data,
         )

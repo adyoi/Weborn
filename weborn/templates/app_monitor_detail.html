@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}{{ app.name }} — Monitor{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-3">
+        <a href="/apps/monitor" class="btn sm">← Kembali</a>
+        <h1 class="text-xl font-bold">{{ app.name }}</h1>
+        <span class="text-t3 text-xs font-mono">{{ app.app_type }}</span>
+        <span class="text-t3 text-xs">({{ app.process_manager }})</span>
+        {% if gstatus.status == 'active' %}
+        <span class="px-2 py-0.5 rounded bg-green-500/20 text-green-400 text-[13px] font-mono">● running</span>
+        {% elif gstatus.status == 'stopped' %}
+        <span class="px-2 py-0.5 rounded bg-gray-500/20 text-gray-400 text-[13px] font-mono">● stopped</span>
+        {% else %}
+        <span class="px-2 py-0.5 rounded bg-red-500/20 text-red-400 text-[13px] font-mono">● {{ gstatus.status }}</span>
+        {% endif %}
+    </div>
+    <div class="flex gap-2">
+        <button onclick="weborn.simplePost('/apps/{{ app.id }}/restart','Restart {{ app.name }}',true)" class="btn sm">🔄 Restart</button>
+        <button onclick="location.reload()" class="btn sm">↻ Refresh</button>
+    </div>
+</div>
+
+{# ── Info Cards ── #}
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+    <div class="card p-3 text-center">
+        <div class="text-lg font-bold">{{ gstatus.workers | length }}</div>
+        <div class="text-t3 text-xs">Workers</div>
+    </div>
+    <div class="card p-3 text-center">
+        <div class="text-lg font-bold">{{ gstatus.master_pid or '—' }}</div>
+        <div class="text-t3 text-xs">Master PID</div>
+    </div>
+    <div class="card p-3 text-center">
+        <div class="text-lg font-bold">{{ '%.1f'|format(total_cpu) }}%</div>
+        <div class="text-t3 text-xs">Total CPU</div>
+    </div>
+    <div class="card p-3 text-center">
+        <div class="text-lg font-bold">{{ '%.1f'|format(total_mem) }}%</div>
+        <div class="text-t3 text-xs">Total MEM</div>
+    </div>
+</div>
+
+{# ── App Details ── #}
+<div class="card p-4 mb-4">
+    <h3 class="font-bold text-sm mb-2">App Info</h3>
+    <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[14px]">
+        <div class="text-t3">Name</div><div class="mono">{{ app.name }}</div>
+        <div class="text-t3">Language</div><div class="mono">{{ app.language }}</div>
+        <div class="text-t3">Framework</div><div class="mono">{{ app.framework or '—' }}</div>
+        <div class="text-t3">App Type</div><div class="mono">{{ app.app_type }}</div>
+        <div class="text-t3">Process Manager</div><div class="mono">{{ app.process_manager }}</div>
+        <div class="text-t3">Port</div><div class="mono">{{ app.port }}</div>
+        <div class="text-t3">User OS</div><div class="mono">{{ app.user }}</div>
+        <div class="text-t3">Directory</div><div class="mono text-[13px]">{{ app.home_dir }}</div>
+        <div class="text-t3">Systemd Unit</div><div class="mono text-[13px]">{{ app.unit }}</div>
+        <div class="text-t3">Command</div><div class="mono text-[13px] break-all">{{ app.command }}</div>
+        <div class="text-t3">Socket</div><div class="mono text-[13px]">/run/gunicorn/{{ app.slug }}.sock</div>
+        <div class="text-t3">Created</div><div class="mono text-[13px]">{{ app.created_at }}</div>
+    </div>
+</div>
+
+{# ── Resource Usage ── #}
+{% if resource_info %}
+<div class="card p-4 mb-4">
+    <h3 class="font-bold text-sm mb-2">Resource Usage (Master Process)</h3>
+    <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[14px]">
+        {% for k, v in resource_info.items() %}
+        <div class="text-t3">{{ k }}</div><div class="mono">{{ v }}</div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{# ── Worker Table ── #}
+{% if gstatus.workers %}
+<div class="card p-4">
+    <h3 class="font-bold text-sm mb-2">Workers ({{ gstatus.workers | length }})</h3>
+    <div class="overflow-x-auto">
+        <table class="text-xs font-mono w-full">
+            <thead>
+                <tr class="text-t3 text-left">
+                    <th class="pb-1 pr-3">PID</th>
+                    <th class="pb-1 pr-3">CPU%</th>
+                    <th class="pb-1 pr-3">MEM%</th>
+                    <th class="pb-1 pr-3">Uptime</th>
+                    <th class="pb-1">Command</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for w in gstatus.workers %}
+                <tr class="border-t border-line/30">
+                    <td class="py-1 pr-3">{{ w.pid }}</td>
+                    <td class="py-1 pr-3">{{ w.cpu }}</td>
+                    <td class="py-1 pr-3">{{ w.mem }}</td>
+                    <td class="py-1 pr-3">{{ w.uptime }}</td>
+                    <td class="py-1 truncate max-w-[400px]">{{ w.cmd }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{# ── Quick Actions ── #}
+<div class="card p-4 mt-4">
+    <h3 class="font-bold text-sm mb-2">Quick Actions</h3>
+    <div class="flex gap-2 flex-wrap">
+        <button onclick="weborn.simplePost('/apps/{{ app.id }}/start','Start {{ app.name }}',true)" class="btn sm">▶ Start</button>
+        <button onclick="weborn.simplePost('/apps/{{ app.id }}/stop','Stop {{ app.name }}',true)" class="btn sm">⏹ Stop</button>
+        <button onclick="weborn.simplePost('/apps/{{ app.id }}/restart','Restart {{ app.name }}',true)" class="btn sm">🔄 Restart</button>
+        <a href="/apps/{{ app.id }}/logs" class="btn sm">📄 Logs</a>
+        <a href="/apps/{{ app.id }}/edit" class="btn sm">✏️ Edit</a>
+    </div>
+</div>
+{% endblock %}
