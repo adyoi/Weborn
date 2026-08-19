@@ -137,6 +137,18 @@ def _slug(name: str) -> str:
     return s or "app"
 
 
+def _detect_pm(command: str) -> str:
+    """Detect process manager from command string."""
+    c = command.strip().lower()
+    if c.startswith("gunicorn") or "gunicorn" in c.split():
+        return "gunicorn"
+    if c.startswith("uvicorn") or "uvicorn" in c.split():
+        return "uvicorn"
+    if "php-fpm" in c or "php_fpm" in c:
+        return "php-fpm"
+    return "direct"
+
+
 def _app_type_for(language: str, framework: str) -> str:
     """Determine app type from language + framework."""
     fw_lower = (framework or "").lower()
@@ -553,12 +565,15 @@ class AppManager:
             # Use stored app_type if available, else compute
             stored = a.get("app_type", "")
             a["app_type"] = stored if stored else _app_type_for(a["language"], a.get("framework", ""))
-            a["process_manager"] = APP_TYPES.get(a["app_type"], {}).get("process_manager", "direct")
+            if a.get("command"):
+                a["process_manager"] = _detect_pm(a["command"])
+            else:
+                a["process_manager"] = APP_TYPES.get(a["app_type"], {}).get("process_manager", "direct")
         return apps
 
     # -------------------------------------------------------------- status
-    async def get_gunicorn_status(self, name: str) -> dict:
-        """Get Gunicorn worker status for an app."""
+    async def get_process_status(self, name: str) -> dict:
+        """Get process status for an app (gunicorn or uvicorn)."""
         slug = _slug(name)
         unit = f"weborn-{slug}.service"
         if self.ex.mode not in ("local", "wsl"):

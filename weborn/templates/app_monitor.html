@@ -10,7 +10,7 @@
 </div>
 
 {# ── Summary Cards ── #}
-<div class="grid grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-4 gap-4 mb-6">
     <div class="card p-4 text-center">
         <div class="text-2xl font-bold">{{ apps | selectattr('gunicorn_status', 'eq', 'active') | list | length }}</div>
         <div class="text-t3 text-xs mt-1">Running</div>
@@ -20,8 +20,8 @@
         <div class="text-t3 text-xs mt-1">Stopped</div>
     </div>
     <div class="card p-4 text-center">
-        <div class="text-2xl font-bold">{{ apps | selectattr('process_manager', 'eq', 'gunicorn') | list | length }}</div>
-        <div class="text-t3 text-xs mt-1">Gunicorn Apps</div>
+        <div class="text-2xl font-bold">{{ apps | selectattr('process_manager', 'in', ['gunicorn','uvicorn']) | list | length }}</div>
+        <div class="text-t3 text-xs mt-1">Managed Apps</div>
     </div>
     <div class="card p-4 text-center">
         <div class="text-2xl font-bold">{{ apps | map(attribute='workers') | map('length') | sum }}</div>
@@ -55,7 +55,7 @@
                 </div>
             </div>
 
-            {% if app.process_manager == 'gunicorn' and app.workers %}
+            {% if app.process_manager in ['gunicorn', 'uvicorn'] and app.workers %}
             <div class="mt-2">
                 <div class="text-t3 text-[13px] mb-1">
                     Master PID: <span class="font-mono">{{ app.master_pid }}</span>
@@ -86,7 +86,7 @@
                     </table>
                 </div>
             </div>
-            {% elif app.process_manager != 'gunicorn' %}
+            {% elif app.process_manager not in ['gunicorn', 'uvicorn'] %}
             <div class="text-t3 text-[13px] mt-1">
                 Process manager: <span class="font-mono">{{ app.process_manager }}</span>
                 {% if app.process_manager == 'php-fpm' %} (managed by PHP-FPM socket)

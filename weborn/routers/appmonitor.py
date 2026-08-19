@@ -10,7 +10,7 @@ from ..auth import require_admin
 from ..config import APP_TYPES, GUNICORN_SOCK_DIR
 from ..db import get_app, list_apps
 from ..executors import get_executor
-from ..managers.apps import AppManager, _app_type_for, _slug
+from ..managers.apps import AppManager, _app_type_for, _detect_pm, _slug
 from ..ui import render
 
 router = APIRouter()
@@ -28,11 +28,14 @@ async def apps_monitor_page(request: Request, user: dict = Depends(require_admin
     for a in apps:
         stored = a.get("app_type", "")
         a["app_type"] = stored if stored else _app_type_for(a["language"], a.get("framework", ""))
-        a["process_manager"] = APP_TYPES.get(a["app_type"], {}).get("process_manager", "direct")
+        if a.get("command"):
+            a["process_manager"] = _detect_pm(a["command"])
+        else:
+            a["process_manager"] = APP_TYPES.get(a["app_type"], {}).get("process_manager", "direct")
         a["slug"] = _slug(a["name"])
 
-        if a["process_manager"] == "gunicorn" and ex.mode in ("local", "wsl"):
-            status = await manager.get_gunicorn_status(a["name"])
+        if a["process_manager"] in ("gunicorn", "uvicorn") and ex.mode in ("local", "wsl"):
+            status = await manager.get_process_status(a["name"])
             a["gunicorn_status"] = status.get("status", "unknown")
             a["master_pid"] = status.get("master_pid", "")
             a["workers"] = status.get("workers", [])
@@ -62,13 +65,16 @@ async def apps_monitor_detail(request: Request, app_id: int,
 
     stored = app.get("app_type", "")
     app["app_type"] = stored if stored else _app_type_for(app["language"], app.get("framework", ""))
-    app["process_manager"] = APP_TYPES.get(app["app_type"], {}).get("process_manager", "direct")
+    if app.get("command"):
+        app["process_manager"] = _detect_pm(app["command"])
+    else:
+        app["process_manager"] = APP_TYPES.get(app["app_type"], {}).get("process_manager", "direct")
     app["slug"] = _slug(app["name"])
 
-    # Gunicorn status
+    # Process status
     gstatus = {"status": "unknown", "master_pid": "", "workers": []}
-    if app["process_manager"] == "gunicorn" and ex.mode in ("local", "wsl"):
-        gstatus = await manager.get_gunicorn_status(app["name"])
+    if app["process_manager"] in ("gunicorn", "uvicorn") and ex.mode in ("local", "wsl"):
+        gstatus = await manager.get_process_status(app["name"])
     elif ex.mode in ("local", "wsl"):
         # For non-gunicorn, check systemd status
         r = await ex.run("bash", "-c",
@@ -120,7 +126,7 @@ async def app_status(app_id: int, user: dict = Depends(require_admin)):
 
     ex = get_executor()
     manager = AppManager(ex)
-    status = await manager.get_gunicorn_status(app["name"])
+    status = await manager.get_process_status(app["name"])
     status["app"] = app["name"]
     status["ok"] = True
     return JSONResponse(status)
