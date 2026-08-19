@@ -38,12 +38,23 @@ def _kill_port(port: int):
                             os.kill(pid, signal.SIGKILL)
                         except OSError:
                             pass
-                        print(f"[run.py] Stopped existing process on port {port} (PID {pid})")
     except Exception:
         pass
 
 
 def main():
+    ascii_art = """
+    $$\\      $$\\           $$$$$$$\\                                
+    $$ | $\\  $$ |          $$  __$$\\                               
+    $$ |$$$\\ $$ | $$$$$$\\  $$ |  $$ | $$$$$$\\   $$$$$$\\  $$$$$$$\\  
+    $$ $$ $$\\$$ |$$  __$$\\ $$$$$$$\\ |$$  __$$\\ $$  __$$\\ $$  __$$\\ 
+    $$$$  _$$$$ |$$$$$$$$ |$$  __$$\\ $$ /  $$ |$$ |  \\__|$$ |  $$ |
+    $$$  / \\$$$ |$$   ____|$$ |  $$ |$$ |  $$ |$$ |      $$ |  $$ |
+    $$  /   \\$$ |\\$$$$$$$\\ $$$$$$$  |\\$$$$$$  |$$ |      $$ |  $$ |
+    \\__/     \\__| \\_______|\\_______/  \\______/ \\__|      \\__|  \\__|                                                     
+    """
+    print("%s" % ascii_art)
+
     parser = argparse.ArgumentParser(description="Weborn Control Panel")
     parser.add_argument("--local", action="store_true",
                         help="aktifkan EXECUTOR_MODE=local (eksekusi sistem nyata, butuh root)")

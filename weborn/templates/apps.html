@@ -187,7 +187,7 @@ function updateNativeCommand(){
     if(launcher === 'gunicorn'){
       cmd = 'gunicorn -w ' + workers + ' ' + mod + ' --bind ' + host + ':' + port;
     } else {
-      cmd = 'uvicorn ' + mod + ' --host ' + host + ' --port ' + port;
+      cmd = 'uvicorn ' + mod + ' --interface wsgi --host ' + host + ' --port ' + port;
     }
   } else {
     if(launcher === 'gunicorn'){

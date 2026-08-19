@@ -207,7 +207,7 @@ async def apps_create_native(name: str = Form(...), app_type: str = Form("wsgi")
         if launcher == "gunicorn":
             command = f"gunicorn -w {workers_int} {mod} --bind {h}:{port_int}"
         else:
-            command = f"uvicorn {mod} --host {h} --port {port_int}"
+            command = f"uvicorn {mod} --interface wsgi --host {h} --port {port_int}"
     else:
         if launcher == "gunicorn":
             command = f"gunicorn -w {workers_int} -k uvicorn.workers.UvicornWorker {mod} --bind {h}:{port_int}"

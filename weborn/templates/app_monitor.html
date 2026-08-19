@@ -15,13 +15,13 @@
 </div>
 
 {# ── Summary Cards ── #}
-    <div class="grid grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-5 gap-4 mb-6">
     <div class="card p-4 text-center">
-        <div class="text-2xl font-bold">{{ apps | selectattr('gunicorn_status', 'eq', 'active') | list | length }}</div>
+        <div class="text-2xl font-bold text-green-400">{{ apps | selectattr('gunicorn_status', 'eq', 'active') | list | length }}</div>
         <div class="text-t3 text-xs mt-1">Running</div>
     </div>
     <div class="card p-4 text-center">
-        <div class="text-2xl font-bold">{{ apps | selectattr('gunicorn_status', 'eq', 'stopped') | list | length }}</div>
+        <div class="text-2xl font-bold text-gray-400">{{ apps | selectattr('gunicorn_status', 'eq', 'stopped') | list | length }}</div>
         <div class="text-t3 text-xs mt-1">Stopped</div>
     </div>
     <div class="card p-4 text-center">
@@ -29,9 +29,60 @@
         <div class="text-t3 text-xs mt-1">Managed Apps</div>
     </div>
     <div class="card p-4 text-center">
-        <div class="text-2xl font-bold">{{ apps | map(attribute='workers') | map('length') | sum }}</div>
+        <div class="text-2xl font-bold">{{ apps | map(attribute='workers') | map('length') | sum + panel_info.workers | length }}</div>
         <div class="text-t3 text-xs mt-1">Total Workers</div>
     </div>
+    <div class="card p-4 text-center">
+        <div class="text-2xl font-bold {% if orphans %}text-amber-400{% endif %}">{{ orphans | length }}</div>
+        <div class="text-t3 text-xs mt-1">Orphans</div>
+    </div>
+</div>
+
+{# ── Weborn Panel (self-monitoring) ── #}
+<div class="card p-5 mb-4">
+    <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+            <span class="font-bold text-sm">🖥 Weborn Panel</span>
+            <span class="text-t3 text-xs font-mono">port {{ panel_info.port }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[13px] font-mono">{{ panel_info.mode }}</span>
+            {% if panel_info.master_pid %}
+            <span class="text-t3 text-[13px] font-mono">PID {{ panel_info.master_pid }}</span>
+            {% endif %}
+        </div>
+    </div>
+    {% if panel_info.workers %}
+    <div class="overflow-x-auto">
+        <table class="text-xs font-mono w-full">
+            <thead>
+                <tr class="text-t3 text-left">
+                    <th class="pb-1 pr-3">PID</th>
+                    <th class="pb-1 pr-3">CPU%</th>
+                    <th class="pb-1 pr-3">MEM%</th>
+                    <th class="pb-1 pr-3">Uptime</th>
+                    <th class="pb-1">Command</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for w in panel_info.workers %}
+                <tr class="border-t border-line/30">
+                    <td class="py-1 pr-3">{{ w.pid }}</td>
+                    <td class="py-1 pr-3">{{ w.cpu }}</td>
+                    <td class="py-1 pr-3">{{ w.mem }}</td>
+                    <td class="py-1 pr-3">{{ w.uptime }}</td>
+                    <td class="py-1 truncate max-w-[300px]">{{ w.cmd }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-t3 text-[13px]">
+        Process mode: <span class="font-mono">{{ panel_info.mode }}</span>
+        {% if panel_info.pids %} · PIDs: <span class="font-mono">{{ panel_info.pids | join(', ') }}</span>{% endif %}
+    </div>
+    {% endif %}
 </div>
 
 {# ── App List ── #}
@@ -122,6 +173,55 @@
     <div class="text-t3 text-sm">Belum ada aplikasi</div>
     {% endif %}
 </div>
+
+{# ── Orphan Processes (outside systemd) ── #}
+{% if orphans %}
+<div class="card p-5 mt-4">
+    <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+            <span class="font-bold text-sm text-amber-400">⚠️ Orphan Processes</span>
+            <span class="text-t3 text-xs">Running outside systemd management</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[13px] font-mono">{{ orphans | length }}</span>
+            <button onclick="killAllOrphans()" class="btn sm" style="color:var(--red)">Kill All</button>
+        </div>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="text-xs font-mono w-full">
+            <thead>
+                <tr class="text-t3 text-left">
+                    <th class="pb-1 pr-3">PID</th>
+                    <th class="pb-1 pr-3">PPID</th>
+                    <th class="pb-1 pr-3">User</th>
+                    <th class="pb-1 pr-3">CPU%</th>
+                    <th class="pb-1 pr-3">MEM%</th>
+                    <th class="pb-1 pr-3">Uptime</th>
+                    <th class="pb-1 pr-3">Command</th>
+                    <th class="pb-1"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in orphans %}
+                <tr class="border-t border-line/30">
+                    <td class="py-1 pr-3">{{ p.pid }}</td>
+                    <td class="py-1 pr-3">{{ p.ppid }}</td>
+                    <td class="py-1 pr-3">{{ p.user }}</td>
+                    <td class="py-1 pr-3">{{ p.cpu }}</td>
+                    <td class="py-1 pr-3">{{ p.mem }}</td>
+                    <td class="py-1 pr-3">{{ p.uptime }}</td>
+                    <td class="py-1 pr-3 truncate max-w-[300px]">{{ p.cmd }}</td>
+                    <td class="py-1">
+                        <button onclick="killOrphan('{{ p.pid }}', '{{ p.cmd[:40] }}')"
+                                class="btn sm" style="color:var(--red)">Kill</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
 
 {# ── Trace Log Modal (one per app, hidden by default) ── #}
 <div id="trace-modal" class="w-modal">
@@ -237,6 +337,26 @@ function closeTrace() {
 
 function clearTrace() {
     if (traceTerm) { traceTerm.clear(); }
+}
+
+/* ── Kill orphan process ── */
+function killOrphan(pid, cmdPreview) {
+    if (!confirm('Kill process ' + pid + '?\n' + cmdPreview)) return;
+    fetch('/api/monitor/kill-orphan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({pid: pid}),
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.ok) {
+            weborn.toast('Process ' + pid + ' killed', 'success');
+            setTimeout(() => location.reload(), 800);
+        } else {
+            weborn.toast(d.error || 'Gagal kill', 'error');
+        }
+    })
+    .catch(() => weborn.toast('Error koneksi', 'error'));
 }
 </script>
 {% endblock %}
