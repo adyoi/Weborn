@@ -33,19 +33,19 @@ Client (Browser)
   │
   └─ Weborn Panel (Port 2025) — Control Panel UI
       ├─ Session auth (SQLite) + PAM fallback (Linux users)
+      ├─ CSRF protection + rate limiting
       └─ Real-time monitoring via WebSocket (xterm.js)
 ```
 
-## What's New (v0.3.1)
+## What's New (v1.0.0)
 
-- **PAM Authentication** — Linux users (including root) can login to the panel with their OS credentials
-- **Process Monitor with Trace Logs** — Live xterm.js log streaming per app, Start/Stop/Restart controls
-- **Gunicorn + Uvicorn Process Manager** — 4 combos: WSGI/ASGI × Gunicorn/Uvicorn
-- **Mail Server Stack** — Postfix + Dovecot + Rspamd + OpenDKIM + Roundcube with automated setup wizard
-- **Admin Setup Creates Linux User** — Setup wizard creates panel account + Linux OS user with sudo/SSH
-- **Interactive WebSocket Terminal** — Real PTY shell via xterm.js
-- **Addon Store with 39 Addons** — 7 categories, install/config/update/uninstall lifecycle
-- **Friendly Error Messages** — Maps common errors (permission denied, disk full, timeout) to readable messages
+- **Security Hardening** — CSRF protection, WebSocket auth, rate limiting, shlex.quote() shell injection fixes
+- **Weborn Panel Self-Monitoring** — Monitor panel's own process, workers, CPU, MEM with Trace Log
+- **Process Monitor** — Orphan detection + kill APIs for rogue gunicorn/uvicorn processes
+- **Trace Log xterm.js Fix** — Removed CSS scale transform causing staircase text rendering
+- **SSL Support** — `--ssl-cert` / `--ssl-key` flags, automatic HTTPS cookie flag
+- **24 Frameworks** — 8 Python, 5 PHP, 7 Node.js with framework presets and starter files
+- **Addon Store (39 Addons)** — 7 categories, install/config/update/uninstall lifecycle
 
 ## Key Features
 
@@ -69,14 +69,16 @@ Client (Browser)
 - Real-time Gunicorn/Uvicorn worker status (PID, CPU%, MEM%, uptime)
 - Start / Stop / Restart controls per app
 - **Trace Log** — Live xterm.js log streaming via WebSocket (`journalctl -u`)
+- **Weborn Panel** — Self-monitoring with worker table, resource usage, Trace Log
+- **Orphan Detection** — Finds rogue gunicorn/uvicorn processes with kill APIs
 - Auto-refresh mode (5s interval)
-- Master PID detection with 2-level process traversal (systemd → bash → process → workers)
+- Master PID detection with single-level process traversal (bash → process → workers)
 
 ### 🌐 Web Server
 - **Nginx** — Reverse proxy, static files, site config management
 - **PHP-FPM** — FastCGI Process Manager for PHP apps
 - **Cache** — Redis (object cache + sessions) and Memcached
-- SSL/TLS via Let's Encrypt (Certbot)
+- SSL/TLS via Let's Encrypt (Certbot) or self-signed (`--ssl-cert` / `--ssl-key`)
 - Reverse proxy support
 
 ### 🗄️ Database Management
@@ -96,6 +98,11 @@ Client (Browser)
 - Automated setup wizard with DNS record generation
 
 ### 🔒 Security
+- **CSRF Protection** — Token-based validation on all POST form submissions
+- **WebSocket Auth** — Session validation on all WebSocket endpoints (terminal, logs)
+- **Rate Limiting** — Login rate limit (5 attempts per 5 minutes per IP)
+- **Session Hardening** — `httponly`, `max_age=24h`, `secure` flag when SSL
+- **Shell Injection Prevention** — `shlex.quote()` on all user input in bash commands
 - **UFW** — Firewall rule management (Allow/Block ports)
 - **Fail2Ban** — Intrusion prevention (Ban/Unban IPs)
 - **ClamAV** — Antivirus scanning (system + mail)
@@ -118,7 +125,8 @@ Client (Browser)
 - **Panel users** — SQLite-based with PBKDF2-SHA256 hashing
 - **PAM fallback** — Linux users login with OS credentials (auto-creates shadow panel user)
 - **Root login gate** — Root can login via PAM only after admin panel user exists
-- Session management with 7-day expiry
+- Session management with 24-hour expiry + CSRF tokens
+- Login rate limiting (5 attempts per 5 minutes per IP)
 - Login audit trail (IP, timestamp, success/fail)
 
 ### 🧩 Addon Store (39 Addons)
@@ -150,11 +158,12 @@ Each addon supports: **Install → Config → Update → Start/Stop/Restart → 
 ## Tech Stack
 
 - **Backend:** Python 3.10+, FastAPI, SQLite, Jinja2
-- **Frontend:** Tailwind CSS, xterm.js, WebSocket
+- **Frontend:** Tailwind CSS, xterm.js, WebSocket, marked.js (markdown)
 - **Process Manager:** Gunicorn (WSGI) + Uvicorn (ASGI standalone)
 - **Web Server:** Nginx (reverse proxy)
 - **Mail:** Postfix + Dovecot + Rspamd + OpenDKIM + Roundcube
-- **Auth:** SQLite sessions + PAM (Linux Pluggable Authentication Modules)
+- **Auth:** SQLite sessions + PAM (Linux Pluggable Authentication Modules) + CSRF tokens
+- **Security:** shlex.quote(), rate limiting, session hardening
 - **System:** systemd, psutil
 - **Executor Modes:** Local (Linux), WSL, Dry-run (Windows dev)
 
@@ -192,12 +201,18 @@ python run.py --reload --host 127.0.0.1 --port 2025
 
 # Full system execution on Linux/WSL (requires sudo)
 sudo python run.py --local --host 0.0.0.0 --port 2025
+
+# With SSL (self-signed or Let's Encrypt)
+sudo python run.py --local --host 0.0.0.0 --port 2025 \
+  --ssl-cert /path/to/cert.pem --ssl-key /path/to/key.pem
 ```
 
 Open the dashboard in your browser:
 
 ```text
 http://127.0.0.1:2025
+# or with SSL:
+https://127.0.0.1:2025
 ```
 
 ## First-Time Setup
@@ -256,6 +271,32 @@ export WEBORN_EXECUTOR_MODE=local
 export WEBORN_EXECUTOR_MODE=wsl
 export WEBORN_WSL_DISTRO=Debian
 ```
+
+## SSL Support
+
+```bash
+# Self-signed (for development/testing)
+python run.py --local --ssl-cert /path/to/cert.pem --ssl-key /path/to/key.pem
+
+# Let's Encrypt (production)
+certbot certonly --standalone -d yourdomain.com
+# Then point to the generated files
+python run.py --local --ssl-cert /etc/letsencrypt/live/yourdomain.com/fullchain.pem --ssl-key /etc/letsencrypt/live/yourdomain.com/privkey.pem
+```
+
+When SSL is active, session cookies automatically get the `secure` flag.
+
+## Security Features
+
+| Feature | Description |
+|---------|-------------|
+| **CSRF** | HMAC-based tokens on all POST forms + AJAX headers |
+| **WebSocket Auth** | Session cookie validation before accepting connections |
+| **Rate Limiting** | 5 login attempts per IP per 5 minutes |
+| **Session Hardening** | `httponly`, `max_age=24h`, `secure` when SSL |
+| **Shell Injection** | `shlex.quote()` on all user input in bash commands |
+| **Password Hashing** | PBKDF2-SHA256 (SQLite) + PAM shadow users |
+| **Audit Trail** | Login logs with IP, timestamp, success/fail |
 
 ## PAM Authentication
 
