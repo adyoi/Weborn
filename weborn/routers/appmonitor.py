@@ -243,7 +243,7 @@ async def apps_monitor_page(request: Request, user: dict = Depends(require_admin
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Panel Detail Monitor (MUST be before {app_id} routes)
+# Panel Detail Monitor (must be before {app_id} route)
 # ─────────────────────────────────────────────────────────────────────────────
 @router.get("/apps/panel/monitor", response_class=HTMLResponse)
 async def panel_monitor_detail(request: Request, user: dict = Depends(require_admin)):
@@ -253,6 +253,7 @@ async def panel_monitor_detail(request: Request, user: dict = Depends(require_ad
     ex = get_executor()
     panel_info = await _detect_panel_process(ex)
 
+    # Resource usage from /proc if running
     resource_info = {}
     pid = panel_info.get("master_pid", "")
     if pid and pid.isdigit():
@@ -263,6 +264,7 @@ async def panel_monitor_detail(request: Request, user: dict = Depends(require_ad
                 k, _, v = line.partition(":")
                 resource_info[k.strip()] = v.strip()
 
+    # Memory/CPU summary from all workers
     total_cpu = 0.0
     total_mem = 0.0
     for w in panel_info.get("workers", []):
@@ -283,34 +285,6 @@ async def panel_monitor_detail(request: Request, user: dict = Depends(require_ad
         "total_mem": total_mem,
         "active": "app-monitor",
     })
-
-
-@router.websocket("/ws/panel/logs")
-async def panel_logs_ws(websocket: WebSocket):
-    await websocket.accept()
-    ex = get_executor()
-    if ex.mode not in ("local", "wsl"):
-        await websocket.send_text("[dry-run] Panel log simulasi\n")
-        await websocket.close()
-        return
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            "journalctl", "-u", "weborn-panel.service", "-f", "--no-pager", "-n", "50",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        while True:
-            line = await proc.stdout.readline()
-            if not line:
-                break
-            await websocket.send_text(line.decode("utf-8", errors="replace"))
-    except Exception:
-        pass
-    finally:
-        try:
-            await websocket.close()
-        except Exception:
-            pass
 
 
 @router.get("/apps/{app_id}/monitor", response_class=HTMLResponse)
@@ -434,3 +408,31 @@ async def kill_all_orphans(request: Request, user: dict = Depends(require_admin)
         killed += 1
 
     return JSONResponse({"ok": True, "message": f"Killed {killed} orphan processes"})
+
+
+@router.websocket("/ws/panel/logs")
+async def panel_logs_ws(websocket: WebSocket):
+    await websocket.accept()
+    ex = get_executor()
+    if ex.mode not in ("local", "wsl"):
+        await websocket.send_text("[dry-run] Panel log simulasi\n")
+        await websocket.close()
+        return
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "journalctl", "-u", "weborn-panel.service", "-f", "--no-pager", "-n", "50",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        while True:
+            line = await proc.stdout.readline()
+            if not line:
+                break
+            await websocket.send_text(line.decode("utf-8", errors="replace"))
+    except Exception:
+        pass
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
+            pass
