@@ -5,6 +5,7 @@
 <div class="page-sub text-t3 text-[13px] mb-5">{{ total }} paket (dpkg). Cari nama/versi:</div>
 
 <div class="flex gap-2 mb-4 items-center flex-wrap">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
     <form method="get" action="/packages" class="flex gap-2 flex-1 min-w-[280px] max-w-[420px]">
         <input name="q" value="{{ q }}" placeholder="cari paket…" class="flex-1">
         <button type="submit" class="btn primary">🔍 Cari</button>
