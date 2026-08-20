@@ -37,8 +37,8 @@
             {% for p in proxies %}
                 <tr>
                     <td><b>{{ p.name }}</b></td>
-                    <td class="mono text-[11px]">{{ p.source }}</td>
-                    <td class="mono text-[11px]">{{ p.target }}</td>
+                    <td class="mono text-[13px]">{{ p.source }}</td>
+                    <td class="mono text-[13px]">{{ p.target }}</td>
                     <td>{{ '✅' if p.cache else '—' }}</td>
                     <td>
                         <form method="post" action="/proxies/{{ p.id }}/delete" style="display:inline"

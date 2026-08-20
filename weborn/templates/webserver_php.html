@@ -15,16 +15,16 @@
 
 <div class="grid grid-cols-3 gap-3 mb-4">
     <div class="card">
-        <div class="text-t3 text-[10px] mb-1">PHP Version</div>
-        <div class="font-mono text-[12px]">{{ php_version or 'not installed' }}</div>
+        <div class="text-t3 text-[14px] mb-1">PHP Version</div>
+        <div class="font-mono text-[14px]">{{ php_version or 'not installed' }}</div>
     </div>
     <div class="card">
-        <div class="text-t3 text-[10px] mb-1">FPM Status</div>
-        <div class="font-mono text-[12px]">{{ fpm_status }}</div>
+        <div class="text-t3 text-[14px] mb-1">FPM Status</div>
+        <div class="font-mono text-[14px]">{{ fpm_status }}</div>
     </div>
     <div class="card">
-        <div class="text-t3 text-[10px] mb-1">Active Pools</div>
-        <div class="font-mono text-[12px]">{{ pools | length }}</div>
+        <div class="text-t3 text-[14px] mb-1">Active Pools</div>
+        <div class="font-mono text-[14px]">{{ pools | length }}</div>
     </div>
 </div>
 
@@ -33,20 +33,20 @@
     {% if pools %}
     <div class="space-y-1">
         {% for pool in pools %}
-        <div class="flex items-center justify-between p-2 bg-black/10 rounded text-[11px]">
+        <div class="flex items-center justify-between p-2 bg-black/10 rounded text-[13px]">
             <code class="mono">{{ pool }}</code>
-            <span class="text-t3 text-[10px]">socket</span>
+            <span class="text-t3 text-[14px]">socket</span>
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="text-t3 text-[11px]">Belum ada pool config</div>
+    <div class="text-t3 text-[13px]">Belum ada pool config</div>
     {% endif %}
 </div>
 
 <div class="card">
     <h2 class="font-bold text-xs mb-2">How PHP-FPM Works</h2>
-    <div class="bg-black/10 rounded p-3 font-mono text-[10px] leading-relaxed">
+    <div class="bg-black/10 rounded p-3 font-mono text-[14px] leading-relaxed">
         <div>1. Nginx menerima request untuk file .php</div>
         <div>2. Nginx meneruskan ke PHP-FPM via <span class="text-[var(--accent-2)]">unix socket</span></div>
         <div>3. PHP-FPM memproses file PHP → output HTML/JSON</div>

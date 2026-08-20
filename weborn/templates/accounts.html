@@ -16,15 +16,15 @@
         <h3 class="text-xs font-bold mb-2">➕ Buat Akun</h3>
         <form method="post" action="/accounts/create">
             <div class="field">
-                <label class="text-[11px]">Username</label>
+                <label class="text-[13px]">Username</label>
                 <input name="username" placeholder="joko" required class="sm">
             </div>
             <div class="field">
-                <label class="text-[11px]">Password</label>
+                <label class="text-[13px]">Password</label>
                 <input name="password" type="password" required class="sm">
             </div>
             <div class="field">
-                <label class="text-[11px]">Level Privilege</label>
+                <label class="text-[13px]">Level Privilege</label>
                 <select name="privilege" class="sm">
                     <option value="user">User (reguler)</option>
                     <option value="admin">Admin (sudo/wheel)</option>
@@ -32,7 +32,7 @@
                 </select>
             </div>
             <div class="field">
-                <label class="text-[11px]">Shell</label>
+                <label class="text-[13px]">Shell</label>
                 <select name="shell" class="sm">
                     <option value="/bin/bash">/bin/bash</option>
                     <option value="/usr/sbin/nologin">/usr/sbin/nologin</option>
@@ -40,10 +40,10 @@
                 </select>
             </div>
             <div class="field">
-                <label class="text-[11px] mb-1 block">Akses</label>
+                <label class="text-[13px] mb-1 block">Akses</label>
                 <div class="grid grid-cols-2 gap-x-3 gap-y-1">
                     {% for key, label in services.items() %}
-                    <label class="!text-[11px] flex items-center gap-1.5">
+                    <label class="!text-[13px] flex items-center gap-1.5">
                         <input type="checkbox" name="services" value="{{ key }}" class="!w-3 !h-3"> {{ label }}
                     </label>
                     {% endfor %}
@@ -61,21 +61,21 @@
             {% for a in accounts %}
                 <tr>
                     <td><b class="text-xs">{{ a.username }}</b></td>
-                    <td class="mono text-[10px]">{{ a.uid }}</td>
+                    <td class="mono text-[14px]">{{ a.uid }}</td>
                     <td>
                         <span class="badge {{ 'err' if a.privilege == 'root' else ('warn' if a.privilege == 'admin' else 'info') }}">
                             {{ a.privilege }}
                         </span>
                         {% if a.locked %}<span class="badge err">🔒</span>{% endif %}
                     </td>
-                    <td class="mono text-[10px]">{{ a.shell }}</td>
-                    <td class="mono text-[10px]">{{ a.home }}</td>
+                    <td class="mono text-[14px]">{{ a.shell }}</td>
+                    <td class="mono text-[14px]">{{ a.home }}</td>
                     <td>
                         <div class="flex flex-wrap gap-0.5">
                         {% for s in a.services %}
-                            <span class="badge info text-[9px]">{{ s }}</span>
+                            <span class="badge info text-[13px]">{{ s }}</span>
                         {% else %}
-                            <span class="text-t3 text-[10px]">—</span>
+                            <span class="text-t3 text-[14px]">—</span>
                         {% endfor %}
                         </div>
                     </td>
@@ -101,26 +101,26 @@
 {# ── Access Options Reference ── #}
 <div class="card mt-4">
     <h3 class="text-xs font-bold mb-2">📡 Remote Access Options</h3>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-[14px]">
         <div class="bg-black/10 rounded p-2">
-            <div class="font-bold text-[11px]">🔑 SSH</div>
+            <div class="font-bold text-[13px]">🔑 SSH</div>
             <div class="text-t3">Port 22 · Terminal & SFTP</div>
-            <code class="text-[9px]">ssh user@server</code>
+            <code class="text-[13px]">ssh user@server</code>
         </div>
         <div class="bg-black/10 rounded p-2">
-            <div class="font-bold text-[11px]">🖥️ RDP</div>
+            <div class="font-bold text-[13px]">🖥️ RDP</div>
             <div class="text-t3">Port 3389 · Desktop (xrdp)</div>
-            <code class="text-[9px]">rdp://server</code>
+            <code class="text-[13px]">rdp://server</code>
         </div>
         <div class="bg-black/10 rounded p-2">
-            <div class="font-bold text-[11px]">📂 SFTP</div>
+            <div class="font-bold text-[13px]">📂 SFTP</div>
             <div class="text-t3">Port 22 · File transfer</div>
-            <code class="text-[9px]">sftp user@server</code>
+            <code class="text-[13px]">sftp user@server</code>
         </div>
         <div class="bg-black/10 rounded p-2">
-            <div class="font-bold text-[11px]">🖥️ VNC</div>
+            <div class="font-bold text-[13px]">🖥️ VNC</div>
             <div class="text-t3">Port 5900 · Remote desktop</div>
-            <code class="text-[9px]">vnc://server:5900</code>
+            <code class="text-[13px]">vnc://server:5900</code>
         </div>
     </div>
 </div>

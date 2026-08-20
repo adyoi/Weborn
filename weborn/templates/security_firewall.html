@@ -22,9 +22,9 @@
     <div class="card">
         <h3 class="text-xs font-bold mb-3">➕ Tambah Rule</h3>
         <form id="ufw-add-form" class="space-y-2">
-            <div><label class="text-[11px]">Port</label>
+            <div><label class="text-[13px]">Port</label>
                 <input name="port" placeholder="22, 80, 443, 8000:8100" required class="sm"></div>
-            <div><label class="text-[11px]">Protocol</label>
+            <div><label class="text-[13px]">Protocol</label>
                 <select name="proto" class="sm">
                     <option value="tcp">TCP</option>
                     <option value="udp">UDP</option>
@@ -35,7 +35,7 @@
             </div>
         </form>
         <div class="border-t border-line/40 mt-3 pt-3">
-            <h4 class="text-[11px] font-bold mb-2">Quick Actions</h4>
+            <h4 class="text-[13px] font-bold mb-2">Quick Actions</h4>
             <div class="flex flex-wrap gap-1">
                 <button onclick="quickAllow('22')" class="btn sm">SSH</button>
                 <button onclick="quickAllow('80')" class="btn sm">HTTP</button>
@@ -49,13 +49,13 @@
     <div class="card !p-0 overflow-hidden">
         <div class="px-4 py-2.5 border-b border-line/40 flex items-center justify-between">
             <h3 class="text-xs font-bold">📋 Rules</h3>
-            <span class="text-t3 text-[10px]">{{ rules|length }} rules</span>
+            <span class="text-t3 text-[14px]">{{ rules|length }} rules</span>
         </div>
         {% if rules %}
         <div class="max-h-[400px] overflow-y-auto">
             {% for rule in rules %}
             <div class="px-4 py-2 border-b border-line/20 flex items-center gap-3 hover:bg-white/[.02]">
-                <code class="mono text-[11px] flex-1">{{ rule }}</code>
+                <code class="mono text-[13px] flex-1">{{ rule }}</code>
             </div>
             {% endfor %}
         </div>

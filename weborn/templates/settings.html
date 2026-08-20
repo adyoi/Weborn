@@ -14,11 +14,11 @@
 <div class="grid grid-cols-1 lg:grid-cols-[240px_1fr] items-start gap-4">
     {# ── Config File List ── #}
     <div class="card !p-2">
-        <div class="text-[10px] uppercase text-t3 tracking-wider px-2.5 py-1.5 font-bold">Config Files</div>
+        <div class="text-[14px] uppercase text-t3 tracking-wider px-2.5 py-1.5 font-bold">Config Files</div>
         {% for name, cfg in configs.items() %}
         <a href="/settings?path={{ cfg.path }}"
-           class="flex items-center gap-2 px-2.5 py-1.5 rounded text-[11px] text-t2 hover:bg-white/5 no-underline {{ 'bg-accent/10 text-accent font-bold' if current and current.path == cfg.path else '' }}">
-            <span class="text-[10px]">{{ '📄' if not name.endswith('.env') else '🔐' }}</span>
+           class="flex items-center gap-2 px-2.5 py-1.5 rounded text-[13px] text-t2 hover:bg-white/5 no-underline {{ 'bg-accent/10 text-accent font-bold' if current and current.path == cfg.path else '' }}">
+            <span class="text-[14px]">{{ '📄' if not name.endswith('.env') else '🔐' }}</span>
             {{ name }}
         </a>
         {% endfor %}
@@ -31,18 +31,18 @@
             <div class="flex items-center justify-between mb-2">
                 <div>
                     <h3 class="text-xs font-bold">{{ current.path }}</h3>
-                    <p class="text-t3 text-[10px]">{{ current.desc }}</p>
+                    <p class="text-t3 text-[14px]">{{ current.desc }}</p>
                 </div>
                 {% if current.path.endswith('.env') %}
-                <span class="badge warn text-[9px]">ENV — restart required</span>
+                <span class="badge warn text-[13px]">ENV — restart required</span>
                 {% endif %}
             </div>
             <form method="post" action="/settings/save"
                   onsubmit="event.preventDefault(); weborn.formPost(this.action, this, 'Menyimpan {{ current.path }}', true)">
                 <input type="hidden" name="path" value="{{ current.path }}">
-                <textarea name="content" rows="24" class="!font-mono !text-[11px] !leading-relaxed">{{ content }}</textarea>
+                <textarea name="content" rows="24" class="!font-mono !text-[13px] !leading-relaxed">{{ content }}</textarea>
                 <div class="flex justify-between items-center mt-2">
-                    <span class="text-t3 text-[10px]">
+                    <span class="text-t3 text-[14px]">
                         {% if content %}{{ content|length }} bytes · {{ content.count('\n') }} lines{% endif %}
                     </span>
                     <button type="submit" class="btn primary sm">💾 Simpan</button>
@@ -51,7 +51,7 @@
         </div>
         {% else %}
         <div class="card">
-            <p class="text-t2 text-[12px]">Pilih file konfigurasi di kiri untuk melihat & mengedit.</p>
+            <p class="text-t2 text-[14px]">Pilih file konfigurasi di kiri untuk melihat & mengedit.</p>
         </div>
         {% endif %}
 
@@ -59,7 +59,7 @@
         {% if not current or current.path == '/opt/weborn/.env' %}
         <div class="card">
             <h3 class="text-xs font-bold mb-2">📋 /opt/weborn/.env Example</h3>
-            <pre class="bg-black/10 rounded p-3 text-[10px] font-mono leading-relaxed overflow-auto max-h-64"># Weborn Panel Environment
+            <pre class="bg-black/10 rounded p-3 text-[14px] font-mono leading-relaxed overflow-auto max-h-64"># Weborn Panel Environment
 PANEL_PORT=2025
 PANEL_HOST=127.0.0.1
 DB_PATH=/opt/weborn/data/panel.db

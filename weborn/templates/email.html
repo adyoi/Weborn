@@ -16,14 +16,14 @@
     <div class="flex items-center justify-between mb-2">
         <h3 class="text-xs font-bold">🚀 Mail Server Setup Wizard</h3>
     </div>
-    <p class="text-[11px] text-t3 mb-3">
+    <p class="text-[13px] text-t3 mb-3">
         Instalasi: Postfix (SMTP) + Dovecot (IMAP/POP3) + Rspamd (anti-spam) + OpenDKIM + Roundcube.
         Butuh domain yang sudah terdaftar di panel.
     </p>
     {% if domains %}
     <div class="flex gap-2 items-end">
         <div class="flex-1">
-            <label class="text-[11px]">Pilih Domain</label>
+            <label class="text-[13px]">Pilih Domain</label>
             <select id="mail-domain" class="sm">
                 {% for d in domains %}
                 <option value="{{ d.name }}">{{ d.name }}</option>
@@ -50,7 +50,7 @@
             <h3 class="text-xs font-bold">{{ svc_name }}</h3>
             <span class="st {{ 'active' if stack[svc_key].active else ('inactive' if stack[svc_key].installed else 'failed') }}">{{ 'active' if stack[svc_key].active else ('stopped' if stack[svc_key].installed else 'not installed') }}</span>
         </div>
-        <div class="text-[10px] text-t3 mb-2">Port {{ svc_port }} — {{ svc_desc }}</div>
+        <div class="text-[14px] text-t3 mb-2">Port {{ svc_port }} — {{ svc_desc }}</div>
         {% if stack[svc_key].installed %}
         <div class="flex gap-1.5">
             {% if not stack[svc_key].active %}
@@ -76,7 +76,7 @@
             <h3 class="text-xs font-bold">{{ svc_name }}</h3>
             <span class="st {{ 'active' if stack[svc_key].active else ('inactive' if stack[svc_key].installed else 'failed') }}">{{ 'active' if stack[svc_key].active else ('stopped' if stack[svc_key].installed else 'not installed') }}</span>
         </div>
-        <div class="text-[10px] text-t3 mb-2">{{ svc_desc }}</div>
+        <div class="text-[14px] text-t3 mb-2">{{ svc_desc }}</div>
         {% if stack[svc_key].installed %}
         <div class="flex gap-1.5">
             {% if not stack[svc_key].active %}
@@ -94,7 +94,7 @@
 {% if all_installed and domains %}
 <div class="card mt-4">
     <h3 class="text-xs mb-2 font-bold">ℹ️ Info Koneksi</h3>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-[13px]">
         <div><span class="text-t3">SMTP:</span> <code class="mono">mail.{{ domains[0].name }}:587</code></div>
         <div><span class="text-t3">IMAP:</span> <code class="mono">mail.{{ domains[0].name }}:993</code></div>
         <div><span class="text-t3">POP3:</span> <code class="mono">mail.{{ domains[0].name }}:995</code></div>

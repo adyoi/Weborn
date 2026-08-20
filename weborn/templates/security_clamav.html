@@ -20,9 +20,9 @@
     {# ── Status + Update ── #}
     <div class="card">
         <h3 class="text-xs font-bold mb-3">ℹ️ Status</h3>
-        <div class="space-y-1.5 text-[12px]">
-            <div class="flex justify-between"><span class="text-t3">Version:</span><code class="mono text-[11px]">{{ version or '—' }}</code></div>
-            <div class="flex justify-between"><span class="text-t3">DB Updated:</span><code class="mono text-[11px]">{{ db_date or '—' }}</code></div>
+        <div class="space-y-1.5 text-[14px]">
+            <div class="flex justify-between"><span class="text-t3">Version:</span><code class="mono text-[13px]">{{ version or '—' }}</code></div>
+            <div class="flex justify-between"><span class="text-t3">DB Updated:</span><code class="mono text-[13px]">{{ db_date or '—' }}</code></div>
         </div>
         <div class="border-t border-line/40 mt-3 pt-3">
             <button onclick="weborn.confirmAction('/security/clamav/update','Update Database ClamAV',false)"
@@ -37,7 +37,7 @@
             <input id="clamav-path" value="/home" placeholder="Path scan" class="flex-1 sm">
             <button onclick="clamavScan()" class="btn primary sm">🔍 Scan Sekarang</button>
         </div>
-        <div class="flex gap-1.5 mb-3 text-[10px] text-t3 flex-wrap">
+        <div class="flex gap-1.5 mb-3 text-[14px] text-t3 flex-wrap">
             <span>Quick:</span>
             <button onclick="setPath('/home')" class="btn sm">/home</button>
             <button onclick="setPath('/tmp')" class="btn sm">/tmp</button>
@@ -46,7 +46,7 @@
             <button onclick="setPath('/')" class="btn sm">/ full</button>
         </div>
 
-        <div id="clamav-result" class="hidden bg-black/20 rounded-lg p-3 max-h-[300px] overflow-y-auto font-mono text-[11px]"></div>
+        <div id="clamav-result" class="hidden bg-black/20 rounded-lg p-3 max-h-[300px] overflow-y-auto font-mono text-[13px]"></div>
     </div>
 </div>
 

@@ -53,9 +53,6 @@
             {% else %}
             <span class="px-2 py-0.5 rounded bg-gray-500/20 text-gray-400 text-[13px] font-mono">● stopped</span>
             {% endif %}
-
-            <span class="text-t3 text-[13px] font-mono">PID {{ panel_info.master_pid or '—' }}</span>
-
             {# ── Trace log button ── #}
             <button onclick="openTrace('panel', 'Weborn Panel')"
                     class="btn sm accent">📜 Trace</button>

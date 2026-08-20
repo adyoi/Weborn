@@ -15,12 +15,12 @@
 
 <div class="grid grid-cols-2 gap-3 mb-4">
     <div class="card">
-        <div class="text-t3 text-[10px] mb-1">Version</div>
-        <div class="font-mono text-[12px]">{{ nginx_version or '—' }}</div>
+        <div class="text-t3 text-[14px] mb-1">Version</div>
+        <div class="font-mono text-[14px]">{{ nginx_version or '—' }}</div>
     </div>
     <div class="card">
-        <div class="text-t3 text-[10px] mb-1">Config Test</div>
-        <div id="nginx-test" class="font-mono text-[12px]">—</div>
+        <div class="text-t3 text-[14px] mb-1">Config Test</div>
+        <div id="nginx-test" class="font-mono text-[14px]">—</div>
         <button onclick="testNginx()" class="btn sm mt-1.5">Test Config</button>
     </div>
 </div>
@@ -30,19 +30,19 @@
     {% if sites %}
     <div class="space-y-1">
         {% for site in sites %}
-        <div class="flex items-center justify-between p-2 bg-black/10 rounded text-[11px]">
+        <div class="flex items-center justify-between p-2 bg-black/10 rounded text-[13px]">
             <code class="mono">{{ site }}</code>
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="text-t3 text-[11px]">Belum ada site config</div>
+    <div class="text-t3 text-[13px]">Belum ada site config</div>
     {% endif %}
 </div>
 
 <div class="card">
     <h2 class="font-bold text-xs mb-2">Data Flow</h2>
-    <div class="bg-black/10 rounded p-3 font-mono text-[10px] leading-relaxed">
+    <div class="bg-black/10 rounded p-3 font-mono text-[14px] leading-relaxed">
         <div><span class="text-[var(--accent)]">Nginx</span> (80/443)</div>
         <div class="pl-2 text-t3">├─ static → direct</div>
         <div class="pl-2 text-t3">├─ PHP → <span class="text-[var(--accent-2)]">PHP-FPM</span> (socket)</div>

@@ -16,15 +16,15 @@
         <h3 class="text-xs font-bold mb-2">➕ Tambah Akun Panel</h3>
         <form method="post" action="/panel-accounts/create">
             <div class="field">
-                <label class="text-[11px]">Username</label>
+                <label class="text-[13px]">Username</label>
                 <input name="username" required minlength="3" class="sm" placeholder="joko">
             </div>
             <div class="field">
-                <label class="text-[11px]">Password</label>
+                <label class="text-[13px]">Password</label>
                 <input name="password" type="password" required minlength="6" class="sm">
             </div>
             <div class="field">
-                <label class="text-[11px]">Role</label>
+                <label class="text-[13px]">Role</label>
                 <select name="role" class="sm">
                     <option value="user">User (view only)</option>
                     <option value="admin">Admin (full access)</option>
@@ -51,7 +51,7 @@
                             <span class="st inactive">inactive</span>
                             {% endif %}
                         </td>
-                        <td class="mono text-[10px]">{{ a.created_at[:10] }}</td>
+                        <td class="mono text-[14px]">{{ a.created_at[:10] }}</td>
                         <td class="whitespace-nowrap">
                             {# Change Password Modal Trigger #}
                             <button onclick="openPassModal({{ a.id }},'{{ a.username }}')" class="btn sm" data-tip="Ganti password">🔑</button>
@@ -78,7 +78,7 @@
             <h3 class="text-xs font-bold mb-2">📄 Login Log (50 terakhir)</h3>
             {% if logs %}
             <div class="max-h-48 overflow-auto">
-                <table class="text-[10px]">
+                <table class="text-[14px]">
                     <thead><tr><th>Waktu</th><th>Username</th><th>IP</th><th>Status</th></tr></thead>
                     <tbody>
                     {% for l in logs %}
@@ -93,7 +93,7 @@
                 </table>
             </div>
             {% else %}
-            <div class="text-t3 text-[11px]">Belum ada log login</div>
+            <div class="text-t3 text-[13px]">Belum ada log login</div>
             {% endif %}
         </div>
     </div>
@@ -106,11 +106,11 @@
         <form id="pass-form" method="post">
             <input type="hidden" name="role" value="admin">
             <div class="field">
-                <label class="text-[11px]">Username</label>
+                <label class="text-[13px]">Username</label>
                 <input id="pass-user" class="sm" readonly>
             </div>
             <div class="field">
-                <label class="text-[11px]">Password Baru</label>
+                <label class="text-[13px]">Password Baru</label>
                 <input name="password" type="password" required minlength="6" class="sm">
             </div>
             <div class="flex gap-2 justify-end">

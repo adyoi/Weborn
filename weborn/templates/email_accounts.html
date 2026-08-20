@@ -43,7 +43,7 @@
         <div class="px-4 py-3 border-b border-line flex items-center gap-3">
             <span class="text-sm font-bold">📧 Mailboxes</span>
             {% if domains|length > 1 %}
-            <select class="text-[12px] !py-1" onchange="window.location='?domain='+this.value">
+            <select class="text-[14px] !py-1" onchange="window.location='?domain='+this.value">
                 {% for d in domains %}
                 <option value="{{ d.name }}" {{ 'selected' if d.name == selected_domain }}>{{ d.name }}</option>
                 {% endfor %}
@@ -56,13 +56,13 @@
             {% for m in mailboxes %}
             <tr>
                 <td class="mono text-[13px]">{{ m.user }}@{{ selected_domain }}</td>
-                <td class="mono text-[11px] text-t3">{{ m.home }}</td>
+                <td class="mono text-[13px] text-t3">{{ m.home }}</td>
                 <td class="text-right">
                     <form method="post" action="/email/accounts/delete" style="display:inline"
                           onsubmit="return confirm('Hapus akun {{ m.user }}@{{ selected_domain }}?')">
                         <input type="hidden" name="username" value="{{ m.user }}">
                         <input type="hidden" name="domain" value="{{ selected_domain }}">
-                        <button class="btn danger !py-0.5 !px-2 text-[11px]">🗑</button>
+                        <button class="btn danger !py-0.5 !px-2 text-[13px]">🗑</button>
                     </form>
                 </td>
             </tr>

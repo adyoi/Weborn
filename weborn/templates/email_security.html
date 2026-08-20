@@ -21,7 +21,7 @@
             <h3 class="text-xs font-bold">🚦 Rspamd (Anti-Spam)</h3>
             <span class="st {{ 'active' if rspamd_active else ('inactive' if rspamd_installed else 'failed') }}">{{ 'active' if rspamd_active else ('stopped' if rspamd_installed else 'not installed') }}</span>
         </div>
-        <div class="text-[11px] text-t3 mb-2">Modern anti-spam dengan ML. Integrasi langsung via milter.</div>
+        <div class="text-[13px] text-t3 mb-2">Modern anti-spam dengan ML. Integrasi langsung via milter.</div>
         {% if rspamd_installed %}
         <div class="flex gap-1.5">
             {% if not rspamd_active %}
@@ -32,7 +32,7 @@
             <button onclick="weborn.simplePost('/email/security/service/rspamd/restart','Restart Rspamd',false)" class="btn sm">🔄</button>
         </div>
         {% else %}
-        <div class="text-t3 text-[11px]">Belum terpasang. Klik "Install Stack" di atas.</div>
+        <div class="text-t3 text-[13px]">Belum terpasang. Klik "Install Stack" di atas.</div>
         {% endif %}
     </div>
 
@@ -42,7 +42,7 @@
             <h3 class="text-xs font-bold">🚧 SpamAssassin (Legacy)</h3>
             <span class="st {{ 'active' if spamassassin_active else ('inactive' if spamassassin_installed else 'failed') }}">{{ 'active' if spamassassin_active else ('stopped' if spamassassin_installed else 'not installed') }}</span>
         </div>
-        <div class="text-[11px] text-t3 mb-2">Heuristic spam filter. Threshold: 5.0</div>
+        <div class="text-[13px] text-t3 mb-2">Heuristic spam filter. Threshold: 5.0</div>
         {% if spamassassin_installed %}
         <div class="flex gap-1.5">
             {% if not spamassassin_active %}
@@ -53,7 +53,7 @@
             <button onclick="weborn.simplePost('/email/security/service/spamassassin/restart','Restart SpamAssassin',false)" class="btn sm">🔄</button>
         </div>
         {% else %}
-        <div class="text-t3 text-[11px]">Belum terpasang.</div>
+        <div class="text-t3 text-[13px]">Belum terpasang.</div>
         {% endif %}
     </div>
 
@@ -63,7 +63,7 @@
             <h3 class="text-xs font-bold">🔑 OpenDKIM</h3>
             <span class="st {{ 'active' if opendkim_active else ('inactive' if opendkim_installed else 'failed') }}">{{ 'active' if opendkim_active else ('stopped' if opendkim_installed else 'not installed') }}</span>
         </div>
-        <div class="text-[11px] text-t3 mb-2">DKIM signing — tanda tangan kriptografis email.</div>
+        <div class="text-[13px] text-t3 mb-2">DKIM signing — tanda tangan kriptografis email.</div>
         {% if opendkim_installed %}
         <div class="flex gap-1.5">
             {% if not opendkim_active %}
@@ -74,7 +74,7 @@
             <button onclick="weborn.simplePost('/email/security/service/opendkim/restart','Restart OpenDKIM',false)" class="btn sm">🔄</button>
         </div>
         {% else %}
-        <div class="text-t3 text-[11px]">Belum terpasang.</div>
+        <div class="text-t3 text-[13px]">Belum terpasang.</div>
         {% endif %}
     </div>
 
@@ -84,7 +84,7 @@
             <h3 class="text-xs font-bold">🦠 ClamAV (Mail Scanner)</h3>
             <span class="st {{ 'active' if clamav_active else ('inactive' if clamav_installed else 'failed') }}">{{ 'active' if clamav_active else ('stopped' if clamav_installed else 'not installed') }}</span>
         </div>
-        <div class="text-[11px] text-t3 mb-2">Antivirus untuk scan lampiran email.</div>
+        <div class="text-[13px] text-t3 mb-2">Antivirus untuk scan lampiran email.</div>
         {% if clamav_installed %}
         <div class="flex gap-1.5">
             {% if not clamav_active %}
@@ -95,7 +95,7 @@
             <button onclick="weborn.simplePost('/email/security/service/clamav/restart','Restart ClamAV',false)" class="btn sm">🔄</button>
         </div>
         {% else %}
-        <div class="text-t3 text-[11px]">Belum terpasang.</div>
+        <div class="text-t3 text-[13px]">Belum terpasang.</div>
         {% endif %}
     </div>
 </div>
@@ -103,7 +103,7 @@
 {# ─── Email Auth Info ─── #}
 <div class="card p-4 mt-4">
     <h2 class="font-bold text-xs mb-2">Email Authentication Stack</h2>
-    <div class="bg-black/10 rounded-lg p-3 font-mono text-[10px] leading-relaxed">
+    <div class="bg-black/10 rounded-lg p-3 font-mono text-[14px] leading-relaxed">
         <div>├─ <span class="text-[var(--ok)]">SPF</span> — Sender Policy Framework (DNS TXT)</div>
         <div>├─ <span class="text-[var(--accent)]">DKIM</span> — DomainKeys Identified Mail (OpenDKIM)</div>
         <div>├─ <span class="text-[var(--accent-2)]">DMARC</span> — Domain-based Message Auth</div>

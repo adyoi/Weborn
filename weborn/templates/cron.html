@@ -39,9 +39,9 @@
                 {% for c in crons %}
                     <tr>
                         <td>{{ c.name }}</td>
-                        <td class="mono text-[11px]">{{ c.schedule }}</td>
+                        <td class="mono text-[13px]">{{ c.schedule }}</td>
                         <td class="mono">{{ c.user }}</td>
-                        <td class="mono text-[11px] max-w-[220px] truncate">{{ c.command }}</td>
+                        <td class="mono text-[13px] max-w-[220px] truncate">{{ c.command }}</td>
                         <td><span class="badge {{ 'ok' if c.enabled else 'err' }}">{{ 'AKTIF' if c.enabled else 'NONAKTIF' }}</span></td>
                         <td class="whitespace-nowrap">
                             <form method="post" action="/cron/{{ c.id }}/toggle" style="display:inline">

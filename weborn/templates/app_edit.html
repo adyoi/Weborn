@@ -39,13 +39,13 @@
         <h3 class="text-sm mb-3.5">ℹ️ Info Aplikasi</h3>
         <table class="text-[13px]">
             <tr><td class="text-t3 pr-3 py-1">User OS</td><td class="mono">{{ app.user }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Direktori</td><td class="mono text-[11px]">{{ app.home_dir }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Unit Systemd</td><td class="mono text-[11px]">{{ app.unit }}</td></tr>
+            <tr><td class="text-t3 pr-3 py-1">Direktori</td><td class="mono text-[13px]">{{ app.home_dir }}</td></tr>
+            <tr><td class="text-t3 pr-3 py-1">Unit Systemd</td><td class="mono text-[13px]">{{ app.unit }}</td></tr>
             <tr><td class="text-t3 pr-3 py-1">Status</td>
                 <td>{% if app.status == 'running' %}<span class="badge ok">🟢 RUNNING</span>
                     {% elif app.status == 'error' %}<span class="badge err">🔴 ERROR</span>
                     {% else %}<span class="badge warn">⚪ STOPPED</span>{% endif %}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Env File</td><td class="mono text-[11px]">{{ app.env_file }}</td></tr>
+            <tr><td class="text-t3 pr-3 py-1">Env File</td><td class="mono text-[13px]">{{ app.env_file }}</td></tr>
             <tr><td class="text-t3 pr-3 py-1">Dibuat</td><td>{{ app.created_at[:10] }}</td></tr>
         </table>
     </div>

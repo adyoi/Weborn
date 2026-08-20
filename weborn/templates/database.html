@@ -29,7 +29,7 @@
                 <td class="text-right">
                     <form method="post" action="/database/{{ db }}/drop" style="display:inline"
                           onsubmit="return confirm('Hapus {{ db }}?')">
-                        <button class="btn danger !py-0.5 !px-2 text-[11px]">🗑</button>
+                        <button class="btn danger !py-0.5 !px-2 text-[13px]">🗑</button>
                     </form>
                 </td>
             </tr>
@@ -47,10 +47,10 @@
             <input name="username" placeholder="username" required class="text-[13px]">
             <input name="password" type="password" placeholder="password" required class="text-[13px]">
             <input name="host" value="localhost" class="text-[13px]">
-            <div class="col-span-2 text-[11px] text-t3">Grant ke database:</div>
+            <div class="col-span-2 text-[13px] text-t3">Grant ke database:</div>
             <div class="col-span-2 flex flex-wrap gap-1">
                 {% for db in dbs %}
-                <label class="text-[11px]"><input type="checkbox" name="privileges" value="{{ db }}"> {{ db }}</label>
+                <label class="text-[13px]"><input type="checkbox" name="privileges" value="{{ db }}"> {{ db }}</label>
                 {% endfor %}
             </div>
             <button type="submit" class="btn primary col-span-2">+ Buat User</button>
@@ -61,12 +61,12 @@
             {% for u in users %}
             <tr>
                 <td class="mono text-[13px]">{{ u.user }}</td>
-                <td class="text-[11px] text-t3">{{ u.host }}</td>
-                <td class="text-[11px]">{{ user_dbs_map.get(u.user, [])|join(', ') or '—' }}</td>
+                <td class="text-[13px] text-t3">{{ u.host }}</td>
+                <td class="text-[13px]">{{ user_dbs_map.get(u.user, [])|join(', ') or '—' }}</td>
                 <td class="text-right">
                     <form method="post" action="/database/user/{{ u.user }}/delete" style="display:inline"
                           onsubmit="return confirm('Hapus user {{ u.user }}?')">
-                        <button class="btn danger !py-0.5 !px-2 text-[11px]">🗑</button>
+                        <button class="btn danger !py-0.5 !px-2 text-[13px]">🗑</button>
                     </form>
                 </td>
             </tr>

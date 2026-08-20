@@ -67,7 +67,7 @@
                         <b>{{ d.name }}</b>
                     </td>
                     <td>{{ app_types[d.app_type].label if d.app_type in app_types else d.app_type }}</td>
-                    <td class="mono text-[11px]">{{ d.document_root }}</td>
+                    <td class="mono text-[13px]">{{ d.document_root }}</td>
                     <td>{{ '🔒' if d.ssl else '—' }}</td>
                     <td>
                         {% if d.enabled %}<span class="badge ok">ENABLED</span>

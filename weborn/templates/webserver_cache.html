@@ -16,9 +16,9 @@
             <span class="st {{ 'active' if redis_status == 'active' else 'inactive' }}">{{ redis_status }}</span>
         </div>
         {% if redis_info %}
-        <pre class="bg-black/10 rounded p-2 text-[10px] font-mono overflow-auto max-h-32 mb-2">{{ redis_info }}</pre>
+        <pre class="bg-black/10 rounded p-2 text-[14px] font-mono overflow-auto max-h-32 mb-2">{{ redis_info }}</pre>
         {% else %}
-        <div class="bg-black/10 rounded p-2 text-t3 text-[10px] font-mono">Redis tidak aktif</div>
+        <div class="bg-black/10 rounded p-2 text-t3 text-[14px] font-mono">Redis tidak aktif</div>
         {% endif %}
         <div class="flex gap-1.5">
             <button onclick="weborn.simplePost('/web-server/redis/start','Start Redis',false)" class="btn sm">▶ Start</button>
@@ -33,7 +33,7 @@
             <h2 class="font-bold text-xs">⚡ Memcached</h2>
             <span class="st {{ 'active' if memcached_status == 'active' else 'inactive' }}">{{ memcached_status }}</span>
         </div>
-        <div class="bg-black/10 rounded p-2 text-[10px] font-mono mb-2">
+        <div class="bg-black/10 rounded p-2 text-[14px] font-mono mb-2">
             <div class="text-t3">Port: 11211 · Default memory: 64MB</div>
             <div class="text-t3">Use case: Session store, object cache</div>
         </div>
@@ -47,7 +47,7 @@
 
 <div class="card mt-3">
     <h2 class="font-bold text-xs mb-2">Cache Architecture</h2>
-    <div class="bg-black/10 rounded p-3 font-mono text-[10px] leading-relaxed">
+    <div class="bg-black/10 rounded p-3 font-mono text-[14px] leading-relaxed">
         <div>├─ <span class="text-[var(--warn)]">Redis</span> — Object cache + Session + Queue</div>
         <div>├─ <span class="text-[var(--accent)]">Memcached</span> — Lightweight cache + Session</div>
         <div>└─ <span class="text-[var(--ok)]">OPcache</span> — PHP bytecode cache (built-in)</div>

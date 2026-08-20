@@ -18,12 +18,12 @@
 
 {# ── Status Legend ── #}
 <div class="card mb-3 !py-2 !px-3">
-    <div class="flex gap-3 flex-wrap text-[10px] text-t3">
-        <span><span class="st active text-[9px]">active</span> = Berjalan</span>
-        <span><span class="st inactive text-[9px]">inactive</span> = Terpasang, berhenti</span>
-        <span><span class="st failed text-[9px]">failed</span> = Error (cek log)</span>
-        <span><span class="st inactive text-[9px]">unknown</span> = Runtime tanpa systemd (normal)</span>
-        <span><span class="st failed text-[9px]">not installed</span> = Belum terpasang</span>
+    <div class="flex gap-3 flex-wrap text-[14px] text-t3">
+        <span><span class="st active text-[13px]">active</span> = Berjalan</span>
+        <span><span class="st inactive text-[13px]">inactive</span> = Terpasang, berhenti</span>
+        <span><span class="st failed text-[13px]">failed</span> = Error (cek log)</span>
+        <span><span class="st inactive text-[13px]">unknown</span> = Runtime tanpa systemd (normal)</span>
+        <span><span class="st failed text-[13px]">not installed</span> = Belum terpasang</span>
     </div>
 </div>
 
@@ -43,21 +43,21 @@
             {% endif %}
         </div>
         <h3 class="text-[13px] font-bold mt-1.5">{{ a.name }}</h3>
-        <p class="text-t2 text-[11px] leading-[1.5] mb-1.5">{{ a.description }}</p>
-        <div class="text-[10px] text-t3 mb-2">
+        <p class="text-t2 text-[13px] leading-[1.5] mb-1.5">{{ a.description }}</p>
+        <div class="text-[14px] text-t3 mb-2">
             {{ a.category }} • {{ a.type }}
             {% if a.ports %} • :{{ a.ports|join('/:') }}{% endif %}
             {% if st.installed and st.version and st.version != '—' %} • v{{ st.version[:20] }}{% endif %}
         </div>
 
         {% if st.installed and not st.active and st.state == 'unknown' %}
-        <div class="bg-black/10 rounded p-1.5 text-[9px] text-t3 mb-2">
+        <div class="bg-black/10 rounded p-1.5 text-[13px] text-t3 mb-2">
             ℹ️ Runtime/plugin — tidak punya systemd unit
         </div>
         {% endif %}
 
         {% if st.state == 'failed' %}
-        <div class="bg-red-500/10 rounded p-1.5 text-[9px] text-red-400 mb-2">
+        <div class="bg-red-500/10 rounded p-1.5 text-[13px] text-red-400 mb-2">
             ⚠️ Service error — cek log atau restart
         </div>
         {% endif %}
@@ -80,7 +80,7 @@
         </div>
     </div>
     {% else %}
-    <div class="card col-span-full text-center text-t3 text-[12px] py-6">
+    <div class="card col-span-full text-center text-t3 text-[14px] py-6">
         Tidak ada addon ditemukan.
     </div>
     {% endfor %}
@@ -88,9 +88,9 @@
 
 <div class="card mt-4">
     <h3 class="text-xs font-bold mb-1.5">➕ Install Addon 3rd Party</h3>
-    <p class="text-t2 text-[11px] leading-[1.5]">
-        Drop manifest <code class="mono text-[10px]">.json</code> ke
-        <code class="mono text-[10px]">data/addons/</code> lalu muat ulang halaman.
+    <p class="text-t2 text-[13px] leading-[1.5]">
+        Drop manifest <code class="mono text-[14px]">.json</code> ke
+        <code class="mono text-[14px]">data/addons/</code> lalu muat ulang halaman.
     </p>
 </div>
 {% endblock %}

@@ -27,17 +27,17 @@
     {# ── Info + Ban Form ── #}
     <div class="card">
         <h3 class="text-xs font-bold mb-3">ℹ️ Status</h3>
-        <div class="space-y-1.5 text-[12px] mb-3">
+        <div class="space-y-1.5 text-[14px] mb-3">
             <div class="flex justify-between"><span class="text-t3">Jails aktif:</span><b>{{ jails|length }}</b></div>
-            <div class="text-[11px] text-t3">Jails: {{ jails|join(', ') or '—' }}</div>
+            <div class="text-[13px] text-t3">Jails: {{ jails|join(', ') or '—' }}</div>
         </div>
 
         <div class="border-t border-line/40 pt-3">
-            <h4 class="text-[11px] font-bold mb-2">🚫 Manual Ban</h4>
+            <h4 class="text-[13px] font-bold mb-2">🚫 Manual Ban</h4>
             <form id="f2b-ban-form" class="space-y-2">
-                <div><label class="text-[11px]">IP Address</label>
+                <div><label class="text-[13px]">IP Address</label>
                     <input name="ip" placeholder="192.168.1.100" required class="sm" id="f2b-ip"></div>
-                <div><label class="text-[11px]">Jail</label>
+                <div><label class="text-[13px]">Jail</label>
                     <input name="jail" value="sshd" class="sm" id="f2b-jail"></div>
                 <button type="button" onclick="f2bBan()" class="btn danger sm w-full justify-center">🚫 Ban IP</button>
             </form>
@@ -48,14 +48,14 @@
     <div class="card !p-0 overflow-hidden">
         <div class="px-4 py-2.5 border-b border-line/40 flex items-center justify-between">
             <h3 class="text-xs font-bold">🚫 Banned IPs</h3>
-            <span class="text-t3 text-[10px]">{{ banned|length }} banned</span>
+            <span class="text-t3 text-[14px]">{{ banned|length }} banned</span>
         </div>
         {% if banned %}
         <div class="max-h-[350px] overflow-y-auto">
             {% for b in banned %}
             <div class="px-4 py-2 border-b border-line/20 flex items-center gap-3 hover:bg-white/[.02]">
-                <code class="mono text-[11px] flex-1">{{ b.ip }}</code>
-                <span class="text-t3 text-[10px]">{{ b.jail }}</span>
+                <code class="mono text-[13px] flex-1">{{ b.ip }}</code>
+                <span class="text-t3 text-[14px]">{{ b.jail }}</span>
                 <button onclick="f2bUnban('{{ b.ip }}','{{ b.jail }}')" class="btn sm">🔓 Unban</button>
             </div>
             {% endfor %}
