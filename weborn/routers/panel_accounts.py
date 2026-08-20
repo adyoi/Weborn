@@ -53,17 +53,28 @@ async def panel_accounts_create(
 @router.post("/panel-accounts/{user_id}/password")
 async def panel_accounts_password(
     user_id: int,
+    current_password: str = Form(""),
     password: str = Form(...),
     user: dict = Depends(require_admin),
 ):
     if hasattr(user, "headers"):
         return user
     if len(password) < 6:
-        return RedirectResponse("/panel-accounts?msg=Password%20minimal%206%20karakter",
+        return RedirectResponse("/panel-accounts?msg=Password%20baru%20minimal%206%20karakter",
                                 status_code=303)
-    from ..db import get_conn
+    from ..db import get_conn, verify_password
+    if user_id == user.get("id"):
+        if not current_password:
+            return RedirectResponse("/panel-accounts?msg=Password%20sekarang%20wajib%20diisi",
+                                    status_code=303)
+        with get_conn() as conn:
+            row = conn.execute("SELECT password_hash FROM users WHERE id = ?",
+                               (user_id,)).fetchone()
+        if not row or not verify_password(current_password, row["password_hash"]):
+            return RedirectResponse("/panel-accounts?msg=Password%20sekarang%20salah",
+                                    status_code=303)
     with get_conn() as conn:
-        conn.execute("UPDATE panel_users SET password_hash = ? WHERE id = ?",
+        conn.execute("UPDATE users SET password_hash = ? WHERE id = ?",
                      (hash_password(password), user_id))
         conn.commit()
     return RedirectResponse("/panel-accounts?msg=Password%20diperbarui", status_code=303)
@@ -88,7 +99,7 @@ async def panel_accounts_role(user_id: int, role: str = Form("user"),
                                 status_code=303)
     from ..db import get_conn
     with get_conn() as conn:
-        conn.execute("UPDATE panel_users SET role = ? WHERE id = ?", (role, user_id))
+        conn.execute("UPDATE users SET role = ? WHERE id = ?", (role, user_id))
         conn.commit()
     return RedirectResponse("/panel-accounts?msg=Role%20diperbarui", status_code=303)
 
