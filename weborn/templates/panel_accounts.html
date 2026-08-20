@@ -102,7 +102,7 @@
 </div>
 
 {# ── Change Password Modal ── #}
-<div id="pass-modal" class="overlay hidden">
+<div id="pass-modal" class="overlay">
     <div class="progress-card w-[380px] bg-pane border border-line rounded-2xl p-5 shadow-glow-purple">
         <h3 class="text-sm font-bold mb-3">🔑 Ganti Password</h3>
         <form id="pass-form" method="post">
@@ -115,7 +115,7 @@
                 <input name="password" type="password" required minlength="6" class="sm">
             </div>
             <div class="flex gap-2 justify-end">
-                <button type="button" class="btn sm" onclick="document.getElementById('pass-modal').classList.add('hidden')">Batal</button>
+                <button type="button" class="btn sm" onclick="document.getElementById('pass-modal').classList.remove('visible')">Batal</button>
                 <button type="submit" class="btn primary sm">Simpan</button>
             </div>
         </form>
@@ -123,7 +123,7 @@
 </div>
 
 {# ── Change Role Modal ── #}
-<div id="role-modal" class="overlay hidden">
+<div id="role-modal" class="overlay">
     <div class="progress-card w-[380px] bg-pane border border-line rounded-2xl p-5 shadow-glow-purple">
         <h3 class="text-sm font-bold mb-3">🏷️ Ganti Role</h3>
         <form id="role-form" method="post">
@@ -139,7 +139,7 @@
                 </select>
             </div>
             <div class="flex gap-2 justify-end">
-                <button type="button" class="btn sm" onclick="document.getElementById('role-modal').classList.add('hidden')">Batal</button>
+                <button type="button" class="btn sm" onclick="document.getElementById('role-modal').classList.remove('visible')">Batal</button>
                 <button type="submit" class="btn primary sm">Simpan</button>
             </div>
         </form>
@@ -150,13 +150,13 @@
 function openPassModal(id, username) {
     document.getElementById('pass-form').action = '/panel-accounts/' + id + '/password';
     document.getElementById('pass-user').value = username;
-    document.getElementById('pass-modal').classList.remove('hidden');
+    document.getElementById('pass-modal').classList.add('visible');
 }
 function openRoleModal(id, username, currentRole) {
     document.getElementById('role-form').action = '/panel-accounts/' + id + '/role';
     document.getElementById('role-user').value = username;
     document.getElementById('role-select').value = currentRole;
-    document.getElementById('role-modal').classList.remove('hidden');
+    document.getElementById('role-modal').classList.add('visible');
 }
 </script>
 {% endblock %}
