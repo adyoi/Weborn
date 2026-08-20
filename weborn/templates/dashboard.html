@@ -15,18 +15,18 @@
 <div class="card mb-3 flex items-center gap-3 flex-wrap">
     <span class="badge info text-[13px] px-3 py-1">🐧 {{ os }}</span>
     {% if updates and updates > 0 %}
-    <a class="btn danger sm" href="/packages">{{ updates }} update tersedia ⚠️</a>
+    <a class="btn danger sm" href="/packages">⚠️ {{ updates }} update tersedia</a>
     {% else %}
     <span class="badge ok text-[13px] px-3 py-1">✅ Up-to-date</span>
     {% endif %}
     <a class="btn sm" href="/packages">📦 {{ packages_total }} paket</a>
     <span class="badge info text-[13px] px-3 py-1">🔌 {{ installed_count }}/{{ total_addons }} Terpasang</span>
     <span class="badge ok text-[13px] px-3 py-1">▶ {{ services_running }} Berjalan</span>
-    <span class="badge text-[13px] px-3 py-1" style="background:var(--bg-3);color:var(--text-3)">⏹ {{ services_stopped }} Berhenti</span>
+    <span class="badge warn text-[13px] px-3 py-1">⏹ {{ services_stopped }} Berhenti</span>
 </div>
 
 {# ── Stats Row ── #}
-<div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 mb-4">
+<div class="grid grid-cols-4 gap-3 mb-4">
     <div class="card">
         <div class="text-t3 text-[14px] uppercase tracking-wide">CPU</div>
         <div class="text-[24px] font-bold mt-1">{{ stats.cpu }}<small class="text-[14px] text-t2 font-normal ml-0.5">%</small></div>
