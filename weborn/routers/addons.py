@@ -9,7 +9,7 @@ from ..addons import AddonManager, get_addon_manager
 from ..auth import require_admin, require_user
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Addon Store"])
 
 
 def _sse(event: str, data: dict) -> str:

@@ -11,7 +11,7 @@ from ..managers.nginx import NginxManager
 from ..ui import render
 from starlette.responses import JSONResponse
 
-router = APIRouter()
+router = APIRouter(tags=["Web Server"])
 
 
 def _list_proxies(kind: str | None = None):

@@ -14,7 +14,7 @@ from ..executors import get_executor
 from ..managers.apps import AppManager, _app_type_for, _detect_pm, _slug
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Process Monitor"])
 
 
 # ─────────────────────────────────────────────────────────────────────────────

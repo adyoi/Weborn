@@ -7,7 +7,7 @@ from ..executors import get_executor
 from ..managers.nginx import NginxManager
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Web Server"])
 
 
 @router.get("/web-server", response_class=HTMLResponse)

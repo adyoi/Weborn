@@ -10,7 +10,7 @@ from ..executors import get_executor
 from ..managers.cron import CronManager, valid_schedule
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Monitoring"])
 
 USER_RE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_.-]{0,31}$")
 

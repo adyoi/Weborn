@@ -12,7 +12,7 @@ from ..executors import get_executor
 from ..managers.apps import AppManager
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Weborn Apps"])
 
 
 @router.get("/apps", response_class=HTMLResponse)

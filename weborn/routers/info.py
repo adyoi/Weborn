@@ -10,7 +10,7 @@ from ..config import BASE_DIR, VERSION
 from ..executors import get_executor
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Info"])
 
 
 @router.get("/info/status", response_class=HTMLResponse)

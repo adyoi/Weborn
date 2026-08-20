@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from ..auth import require_user
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Misc"])
 
 PLACEHOLDERS = {
     "ai": "AI Agent (Gemini)",

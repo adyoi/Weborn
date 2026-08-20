@@ -1,5 +1,6 @@
 """Manajemen database: MySQL/MariaDB + PostgreSQL + Redis/MongoDB/Memcached."""
 import re
+import shlex
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -9,7 +10,7 @@ from ..db import get_conn
 from ..executors import get_executor
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Database"])
 
 DB_NAME_RE = re.compile(r"^[a-zA-Z0-9_]{1,64}$")
 USER_RE = re.compile(r"^[a-zA-Z0-9_]{1,64}$")
@@ -116,7 +117,6 @@ async def database_user_create(username: str = Form(...), password: str = Form(.
         return RedirectResponse("/database?msg=Nama%20user%20tidak%20valid", status_code=303)
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        import shlex
         r = await ex.run("mysql", "-uroot", "-e",
                          f"CREATE USER {shlex.quote(username)}@{shlex.quote(host)} "
                          f"IDENTIFIED BY {shlex.quote(password)};")
@@ -139,7 +139,6 @@ async def database_user_grant(username: str, db: str = Form(...),
         return user
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        import shlex
         await ex.run("mysql", "-uroot", "-e",
                      f"GRANT ALL PRIVILEGES ON `{db}`.* TO "
                      f"{shlex.quote(username)}@'localhost'; FLUSH PRIVILEGES;")
@@ -152,7 +151,6 @@ async def database_user_delete(username: str, user: dict = Depends(require_admin
         return user
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        import shlex
         await ex.run("mysql", "-uroot", "-e",
                      f"DROP USER {shlex.quote(username)}@'localhost'; FLUSH PRIVILEGES;")
     return RedirectResponse("/database?msg=User%20dihapus", status_code=303)
@@ -205,10 +203,12 @@ async def pg_create(name: str = Form(...), user: dict = Depends(require_admin)):
 async def pg_drop(db: str, user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    if not DB_NAME_RE.match(db):
+        return RedirectResponse("/database/pg?msg=Nama%20tidak%20valid", status_code=303)
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
         await ex.run("sudo", "-u", "postgres", "psql", "-c",
-                     f"DROP DATABASE IF EXISTS {db};")
+                     f"DROP DATABASE IF EXISTS {shlex.quote(db)};")
     return RedirectResponse("/database/pg?msg=Database%20dihapus", status_code=303)
 
 
@@ -222,7 +222,6 @@ async def pg_user_create(username: str = Form(...), password: str = Form(...),
         return RedirectResponse("/database/pg?msg=Nama%20user%20tidak%20valid", status_code=303)
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        import shlex
         await ex.run("sudo", "-u", "postgres", "psql", "-c",
                      f"CREATE USER {shlex.quote(username)} WITH PASSWORD {shlex.quote(password)};")
     return RedirectResponse("/database/pg?msg=User%20dibuat", status_code=303)
@@ -234,7 +233,6 @@ async def pg_user_delete(username: str, user: dict = Depends(require_admin)):
         return user
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        import shlex
         await ex.run("sudo", "-u", "postgres", "psql", "-c",
                      f"DROP USER IF EXISTS {shlex.quote(username)};")
     return RedirectResponse("/database/pg?msg=User%20dihapus", status_code=303)
@@ -247,7 +245,6 @@ async def pg_user_grant(username: str, db: str = Form(...),
         return user
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        import shlex
         await ex.run("sudo", "-u", "postgres", "psql", "-c",
                      f"GRANT ALL PRIVILEGES ON DATABASE {shlex.quote(db)} TO {shlex.quote(username)};")
     return RedirectResponse("/database/pg?msg=Privilege%20ditambahkan", status_code=303)

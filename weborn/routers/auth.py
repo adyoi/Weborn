@@ -8,7 +8,7 @@ from ..config import SESSION_COOKIE
 from ..db import has_panel_users
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Auth"])
 
 _LOGIN_ATTEMPTS: dict[str, list[float]] = defaultdict(list)
 _RATE_LIMIT_MAX = 5

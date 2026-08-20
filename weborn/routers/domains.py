@@ -13,7 +13,7 @@ from ..executors import get_executor
 from ..managers.nginx import NginxManager
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Domains"])
 
 
 def _get_server_ip() -> str:

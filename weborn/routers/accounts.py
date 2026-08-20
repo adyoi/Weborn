@@ -8,7 +8,7 @@ from ..executors import get_executor
 from ..managers.accounts import AccountManager, PRIVILEGE_LEVELS
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["OS Users"])
 SERVICE_NAMES = {
     "ssh": "SSH", "sftp": "SFTP", "rdp": "RDP",
     "vnc": "VNC", "nfs": "NFS", "ftp": "FTP", "telnet": "Telnet",

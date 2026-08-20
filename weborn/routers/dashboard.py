@@ -8,7 +8,7 @@ from ..executors import get_executor
 from ..managers.accounts import AccountManager
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Dashboard"])
 
 
 def system_stats() -> dict:

@@ -4,12 +4,16 @@
 <div class="page-title text-[22px] font-bold mb-1">📦 Paket Terinstall</div>
 <div class="page-sub text-t3 text-[13px] mb-5">{{ total }} paket (dpkg). Cari nama/versi:</div>
 
-<div class="mb-4">
-    <form method="get" action="/packages" class="flex gap-2 max-w-[420px]">
+<div class="flex gap-2 mb-4 items-center flex-wrap">
+    <form method="get" action="/packages" class="flex gap-2 flex-1 min-w-[280px] max-w-[420px]">
         <input name="q" value="{{ q }}" placeholder="cari paket…" class="flex-1">
         <button type="submit" class="btn primary">🔍 Cari</button>
         {% if q %}<a class="btn" href="/packages">Reset</a>{% endif %}
     </form>
+    <div class="flex gap-2">
+        <button class="btn" onclick="runApt('update')" id="btn-update">🔄 Update Index</button>
+        <button class="btn" onclick="runApt('upgrade')" id="btn-upgrade">⬆️ Upgrade Semua</button>
+    </div>
 </div>
 
 <div class="card !p-0 overflow-hidden">
@@ -19,8 +23,8 @@
         {% for p in packages %}
             <tr>
                 <td class="mono">{{ p.name }}</td>
-                <td class="mono text-[11px]">{{ p.version }}</td>
-                <td class="text-[11px] text-t3">{{ p.section }}</td>
+                <td class="mono text-[13px]">{{ p.version }}</td>
+                <td class="text-[13px] text-t3">{{ p.section }}</td>
             </tr>
         {% else %}
             <tr><td colspan="3" class="text-center text-t3 py-7">Tidak ditemukan.</td></tr>
@@ -28,4 +32,65 @@
         </tbody>
     </table>
 </div>
+
+<div id="apt-output" class="hidden mt-4">
+    <div class="card">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-[13px] font-bold" id="apt-title">Output</span>
+            <span class="text-[12px] text-t3" id="apt-status"></span>
+        </div>
+        <pre id="apt-log" class="bg-black text-green-400 p-3 rounded text-[12px] max-h-[400px] overflow-auto font-mono whitespace-pre-wrap"></pre>
+    </div>
+</div>
+
+<script>
+(function() {
+    const csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
+
+    window.runApt = async function(action) {
+        const title = document.getElementById('apt-title');
+        const log = document.getElementById('apt-log');
+        const status = document.getElementById('apt-status');
+        const output = document.getElementById('apt-output');
+        const btn = document.getElementById('btn-' + action);
+
+        output.classList.remove('hidden');
+        log.textContent = '';
+        title.textContent = action === 'update' ? '🔄 apt update' : '⬆️ apt upgrade';
+        status.textContent = 'Running...';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/packages/' + action, {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': csrfToken }
+            });
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const text = line.slice(6);
+                        if (text.startsWith('[DONE]')) {
+                            status.textContent = text;
+                        } else {
+                            log.textContent += text + '\n';
+                            log.scrollTop = log.scrollHeight;
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            log.textContent += '[error] ' + e.message + '\n';
+            status.textContent = 'Error';
+        } finally {
+            btn.disabled = false;
+        }
+    };
+})();
+</script>
 {% endblock %}

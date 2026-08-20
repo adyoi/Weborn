@@ -15,6 +15,21 @@ if os.name == "posix":
 else:
     grp = pwd = None
 
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
+_pty = _fcntl = _struct = _termios = None
+if os.name == "posix":
+    try:
+        import pty as _pty
+        import fcntl as _fcntl
+        import struct as _struct
+        import termios as _termios
+    except ImportError:
+        pass
+
 from fastapi import APIRouter, Depends, Form, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 
@@ -24,10 +39,9 @@ from ..db import get_conn, get_setting, set_setting
 from ..executors import get_executor
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["System"])
 
-ALLOWED_FS_ROOTS = ("/var/www", "/etc", "/opt", "/home", "/srv", "/usr/share",
-                    "/srv/www", str(BASE_DIR), "/mnt/d/Documents")
+ALLOWED_FS_ROOTS = ("/var/www", "/etc", "/opt", "/home", "/srv", "/usr/share", "/srv/www", str(BASE_DIR))
 
 SYSTEMD_ACTIONS = ("start", "stop", "restart", "reload", "enable", "disable")
 
@@ -134,8 +148,7 @@ async def processes_page(request: Request, user: dict = Depends(require_user)):
     if hasattr(user, "headers"):
         return user
     procs = []
-    try:
-        import psutil
+    if psutil:
         for p in psutil.process_iter(["pid", "name", "username", "cpu_percent", "memory_percent", "status"]):
             try:
                 info = p.info
@@ -146,7 +159,7 @@ async def processes_page(request: Request, user: dict = Depends(require_user)):
                 })
             except Exception:
                 continue
-    except Exception:
+    if not procs:
         procs = [{"pid": 1, "name": "init", "user": "root", "cpu": 0, "mem": 0, "status": "running"}]
     procs.sort(key=lambda x: -x["cpu"])
     total = len(procs)
@@ -169,22 +182,22 @@ async def network_page(request: Request, user: dict = Depends(require_user)):
     if hasattr(user, "headers"):
         return user
     interfaces, listeners, connections = [], [], []
-    try:
-        import psutil
-        for name, addrs in psutil.net_if_addrs().items():
-            for a in addrs:
-                if a.family.name == "AF_INET":
-                    interfaces.append({"name": name, "addr": a.address, "netmask": a.netmask})
-        for c in psutil.net_connections("tcp"):
-            if c.status == "LISTEN" and c.laddr:
-                connections.append({"type": "listen", "addr": f"{c.laddr.ip}:{c.laddr.port}",
-                                    "pid": c.pid})
-            elif c.status == "ESTABLISHED" and c.raddr:
-                connections.append({"type": "conn",
-                                    "addr": f"{c.laddr.ip}:{c.laddr.port} → {c.raddr.ip}:{c.raddr.port}",
-                                    "pid": c.pid})
-    except Exception:
-        pass
+    if psutil:
+        try:
+            for name, addrs in psutil.net_if_addrs().items():
+                for a in addrs:
+                    if a.family.name == "AF_INET":
+                        interfaces.append({"name": name, "addr": a.address, "netmask": a.netmask})
+            for c in psutil.net_connections("tcp"):
+                if c.status == "LISTEN" and c.laddr:
+                    connections.append({"type": "listen", "addr": f"{c.laddr.ip}:{c.laddr.port}",
+                                        "pid": c.pid})
+                elif c.status == "ESTABLISHED" and c.raddr:
+                    connections.append({"type": "conn",
+                                        "addr": f"{c.laddr.ip}:{c.laddr.port} → {c.raddr.ip}:{c.raddr.port}",
+                                        "pid": c.pid})
+        except Exception:
+            pass
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
         r = await ex.run("ss", "-ltnp")
@@ -281,7 +294,54 @@ async def packages_page(request: Request, q: str = "", user: dict = Depends(requ
         packages = [p for p in packages if q.lower() in p["name"].lower() or q.lower() in p["version"].lower()]
     total = len(packages)
     return render(request, "packages.html", {"user": user, "packages": packages[:400],
-                                             "total": total, "q": q, "active": "packages"})
+                                              "total": total, "q": q, "active": "packages"})
+
+
+async def _apt_stream(cmd: str):
+    """Generator for apt command streaming via SSE."""
+    import asyncio as _aio
+    ex = get_executor()
+    if ex.mode not in ("local", "wsl"):
+        yield f"data: [dry-run] {cmd}\n\n"
+        yield "data: [DONE]\n\n"
+        return
+    proc = await _aio.create_subprocess_exec(
+        "bash", "-c", cmd,
+        stdout=_aio.subprocess.PIPE,
+        stderr=_aio.subprocess.STDOUT,
+    )
+    while True:
+        line = await proc.stdout.readline()
+        if not line:
+            break
+        text = line.decode("utf-8", errors="replace").rstrip("\n")
+        if text:
+            yield f"data: {text}\n\n"
+    await proc.wait()
+    yield f"data: [DONE] exit={proc.returncode}\n\n"
+
+
+@router.post("/packages/update")
+async def packages_update(user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    from starlette.responses import StreamingResponse
+    return StreamingResponse(
+        _apt_stream("sudo apt update 2>&1"),
+        media_type="text/event-stream",
+    )
+
+
+@router.post("/packages/upgrade")
+async def packages_upgrade(user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    from starlette.responses import StreamingResponse
+    return StreamingResponse(
+        _apt_stream("sudo DEBIAN_FRONTEND=noninteractive apt upgrade -y 2>&1"),
+        media_type="text/event-stream",
+    )
+
 
 
 async def os_update_info(ex):
@@ -763,19 +823,19 @@ async def terminal_ws(websocket: WebSocket):
         await websocket.close()
         return
     try:
-        import pty
-        import fcntl
-        import struct
-        import termios
-        master_fd, slave_fd = pty.openpty()
+        if not _pty or not _fcntl or not _struct or not _termios:
+            await websocket.send_text("[error] Terminal tidak tersedia di platform ini\r\n")
+            await websocket.close()
+            return
+        master_fd, slave_fd = _pty.openpty()
         # Set non-blocking
-        flags = fcntl.fcntl(master_fd, fcntl.F_GETFL)
-        fcntl.fcntl(master_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+        flags = _fcntl.fcntl(master_fd, _fcntl.F_GETFL)
+        _fcntl.fcntl(master_fd, _fcntl.F_SETFL, flags | os.O_NONBLOCK)
         pid = os.fork()
         if pid == 0:
             os.close(master_fd)
             os.setsid()
-            fcntl.ioctl(slave_fd, termios.TIOCSCTTY, 0)
+            _fcntl.ioctl(slave_fd, _termios.TIOCSCTTY, 0)
             os.dup2(slave_fd, 0)
             os.dup2(slave_fd, 1)
             os.dup2(slave_fd, 2)
@@ -796,12 +856,11 @@ async def terminal_ws(websocket: WebSocket):
                 data = await websocket.receive_text()
                 if data.startswith("\x1b["):
                     # Resize event: \x1b[rows;colsR
-                    import re as _re
-                    m = _re.match(r"\x1b\[(\d+);(\d+)R", data)
+                    m = re.match(r"\x1b\[(\d+);(\d+)R", data)
                     if m:
                         rows, cols = int(m.group(1)), int(m.group(2))
-                        winsize = struct.pack("HHHH", rows, cols, 0, 0)
-                        fcntl.ioctl(slave_fd, termios.TIOCSWINSZ, winsize)
+                        winsize = _struct.pack("HHHH", rows, cols, 0, 0)
+                        _fcntl.ioctl(slave_fd, _termios.TIOCSWINSZ, winsize)
                         continue
                 os.write(master_fd, data.encode("utf-8"))
         done, pending = await asyncio.wait(

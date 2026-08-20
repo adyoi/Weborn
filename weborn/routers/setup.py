@@ -8,7 +8,7 @@ from ..db import create_panel_user, has_panel_users
 from ..executors import get_executor
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Setup"])
 
 
 @router.get("/setup", response_class=HTMLResponse)

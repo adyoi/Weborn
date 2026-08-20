@@ -15,7 +15,7 @@ from ..db import get_conn
 from ..executors import get_executor
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Mail Server"])
 
 MAIL_STACK = {
     "postfix": {"pkg": "postfix", "unit": "postfix", "bin": "postfix"},

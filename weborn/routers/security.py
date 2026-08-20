@@ -8,7 +8,7 @@ from ..auth import require_admin, require_user
 from ..executors import get_executor
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Security"])
 
 
 # ────────────────────────────────── ClamAV ────────────────────────────────────

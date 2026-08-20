@@ -6,7 +6,7 @@ from ..auth import require_admin, require_user
 from ..managers.backup import BackupManager
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Backup"])
 
 
 @router.get("/backup", response_class=HTMLResponse)

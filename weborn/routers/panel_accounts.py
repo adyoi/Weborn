@@ -7,7 +7,7 @@ from ..db import (create_panel_user, delete_panel_user, get_login_logs,
                   list_panel_users, toggle_panel_user_active, update_panel_user)
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Panel Users"])
 
 
 @router.get("/panel-accounts", response_class=HTMLResponse)

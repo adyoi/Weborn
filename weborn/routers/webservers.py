@@ -9,7 +9,7 @@ from ..executors import get_executor
 from ..managers.apps import _app_type_for
 from ..ui import render
 
-router = APIRouter()
+router = APIRouter(tags=["Web Server"])
 
 
 # ── Nginx ────────────────────────────────────────────────────────────────────
