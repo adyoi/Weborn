@@ -1,4 +1,6 @@
 """Router aplikasi: kelola environment app (Node/PHP/Python/Go/Ruby/Rust)."""
+import shlex
+
 from fastapi import APIRouter, Depends, Form, Request, WebSocket
 from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.responses import JSONResponse
@@ -42,15 +44,16 @@ async def api_check_dir(path: str = "", user: dict = Depends(require_admin)):
         return JSONResponse({"ok": False, "error": "path kosong"})
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
+        qpath = shlex.quote(path)
         r = await ex.run("bash", "-c",
-                         f"if [ -d '{path}' ]; then "
+                         f"if [ -d {qpath} ]; then "
                          f"  echo EXISTS; "
-                         f"  sudo ls -1 '{path}' 2>/dev/null | head -20; "
+                         f"  sudo ls -1 {qpath} 2>/dev/null | head -20; "
                          f"  echo '---'; "
-                         f"  sudo test -w '{path}' && echo WRITABLE || echo NOWRIT; "
+                         f"  sudo test -w {qpath} && echo WRITABLE || echo NOWRIT; "
                          f"else "
                          f"  echo MISSING; "
-                         f"  pdir=$(dirname '{path}'); "
+                         f"  pdir=$(dirname {qpath}); "
                          f"  [ -d \"$pdir\" ] && sudo test -w \"$pdir\" && echo PARENT_WRITABLE || echo PARENT_NOWRIT; "
                          f"fi")
         out = r.stdout.strip()
@@ -88,11 +91,13 @@ async def api_validate_module(dir: str = "", module: str = "", app_name: str = "
         return JSONResponse({"ok": False, "error": "format module salah"})
     if ex.mode in ("local", "wsl"):
         check_dir = dir.strip() or "/tmp"
+        qdir = shlex.quote(check_dir)
+        qmod = shlex.quote(mod_name)
         r = await ex.run("bash", "-c",
-                         f"cd '{check_dir}' 2>/dev/null && "
+                         f"cd {qdir} 2>/dev/null && "
                          f"python3 -c \""
                          f"import importlib.util, sys; "
-                         f"spec = importlib.util.find_spec('{mod_name}'); "
+                         f"spec = importlib.util.find_spec({qmod}); "
                          f"exit(0 if spec else 1)"
                          f"\" 2>/dev/null && echo MODULE_OK || echo MODULE_MISSING")
         mod_ok = "MODULE_OK" in r.stdout
@@ -272,7 +277,10 @@ async def apps_logs_stream(app_id: int, user: dict = Depends(require_admin)):
 
 @router.websocket("/ws/apps/{app_id}/logs")
 async def apps_logs_ws(websocket: WebSocket, app_id: int):
-    await websocket.accept()
+    from ..auth import ws_require_admin
+    user = await ws_require_admin(websocket)
+    if not user:
+        return
     app = get_app(app_id)
     if not app:
         await websocket.send_text("[error] App tidak ditemukan\n")

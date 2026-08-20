@@ -1,4 +1,5 @@
 """Weborn Control Panel - entry point FastAPI."""
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -6,7 +7,8 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import RedirectResponse
 
-from .config import STATIC_DIR
+from .config import SESSION_COOKIE, STATIC_DIR
+from .csrf import CSRFMiddleware
 from .db import get_secret_key, has_panel_users, init_db
 from .executors import get_executor
 from .managers.accounts import AccountManager
@@ -22,10 +24,27 @@ async def lifespan(app: FastAPI):
     yield
 
 
+def _csrf_token_context(request):
+    """Jinja2 context processor: inject csrf_token into all templates."""
+    from .csrf import generate_csrf_token
+    session_id = request.session.get(SESSION_COOKIE, "")
+    return {"csrf_token": generate_csrf_token(session_id) if session_id else ""}
+
+
 def create_app() -> FastAPI:
     init_db()
-    app = FastAPI(title="Weborn Control Panel", version="0.1.0", lifespan=lifespan)
-    app.add_middleware(SessionMiddleware, secret_key=get_secret_key(), same_site="lax")
+    app = FastAPI(title="Weborn Engine", version="1.0.0", lifespan=lifespan)
+
+    is_secure = os.environ.get("WEBORN_SSL_CERT") is not None
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=get_secret_key(),
+        same_site="lax",
+        session_cookie="session",
+        max_age=60 * 60 * 24,  # 24 hours
+        https_only=is_secure,
+    )
+    app.add_middleware(CSRFMiddleware)
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
     for router in (setup.router, auth.router, panel_accounts.router,

@@ -25,6 +25,7 @@
             <div class="msg ok">{{ request.query_params.get('msg')|replace('%20', ' ') }}</div>
         {% endif %}
         <form method="post" action="/login">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
             <div class="field">
                 <label>Username</label>
                 <input name="username" required autofocus>

@@ -128,6 +128,22 @@
 </div>
 
 <script src="/static/js/panel.js"></script>
+<script>
+/* Auto-inject CSRF token into all forms */
+(function() {
+    var token = '{{ csrf_token }}';
+    if (!token) return;
+    document.querySelectorAll('form[method="post"]').forEach(function(form) {
+        if (!form.querySelector('input[name="_csrf_token"]')) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = '_csrf_token';
+            input.value = token;
+            form.prepend(input);
+        }
+    });
+})();
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

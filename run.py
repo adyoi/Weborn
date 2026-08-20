@@ -3,43 +3,169 @@
 Jalankan:  python run.py          (dev, dry-run)
            python run.py --local  (linux: eksekusi sistem nyata)
 """
-import argparse
+
 import os
+import re
+import sys
+import time
 import signal
 import socket
-import subprocess
-import sys
-
 import uvicorn
+import argparse
+import subprocess
 
 from weborn.config import PANEL_HTTP_PORT
 
 
 def _kill_port(port: int):
-    """Hentikan proses yang menduduki port tertentu (Linux/WSL only)."""
+    """
+    Hentikan SEMUA proses yang menduduki port tertentu (cross-platform).
+    Mengembalikan True jika berhasil, False jika gagal atau tidak ada proses.
+    """
     if sys.platform == "win32":
-        return
-    try:
-        r = subprocess.run(
-            ["ss", "-tlnp"], capture_output=True, text=True, timeout=3
-        )
-        for line in r.stdout.splitlines():
-            if f":{port}" in line:
-                # ss output: LISTEN  0  128  0.0.0.0:2025  ... users:(("python3",pid=1234,fd=7))
-                import re
-                m = re.search(r'pid=(\d+)', line)
-                if m:
-                    pid = int(m.group(1))
-                    if pid != os.getpid():
-                        os.kill(pid, signal.SIGTERM)
-                        import time
-                        time.sleep(0.5)
+        # Windows: netstat -> taskkill
+        try:
+            result = subprocess.run(
+                ["netstat", "-ano", "-p", "TCP"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False
+            )
+            
+            if result.returncode != 0:
+                return False
+            
+            pids = []
+            for line in result.stdout.splitlines():
+                parts = line.split()
+                if len(parts) >= 5 and f":{port}" in parts[1]:
+                    try:
+                        pid = int(parts[-1])
+                        if pid != os.getpid() and pid not in pids:
+                            pids.append(pid)
+                    except ValueError:
+                        continue
+            
+            if not pids:
+                return False
+            
+            # Kill semua PID (taskkill /F selalu force di Windows)
+            success_count = 0
+            for pid in pids:
+                try:
+                    subprocess.run(
+                        ["taskkill", "/F", "/PID", str(pid)],
+                        capture_output=True,
+                        timeout=10,
+                        check=True
+                    )
+                    success_count += 1
+                except (subprocess.TimeoutExpired, subprocess.SubprocessError):
+                    continue
+            
+            # Tunggu sebentar
+            time.sleep(0.3)
+            
+            # Verifikasi
+            result = subprocess.run(
+                ["netstat", "-ano", "-p", "TCP"],
+                capture_output=True,
+                text=True,
+                timeout=3,
+                check=False
+            )
+            
+            for line in result.stdout.splitlines():
+                if f":{port}" in line:
+                    return False
+            
+            return success_count > 0
+            
+        except Exception:
+            return False
+    
+    else:
+        # Linux/WSL: ss -> multiple PIDs -> signals
+        try:
+            result = subprocess.run(
+                ["ss", "-tlnp", "--numeric"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False
+            )
+            
+            if result.returncode != 0:
+                return False
+            
+            # Regex untuk menangkap SEMUA pid=XXX
+            pattern = r'pid=(\d+)'
+            pids = []
+            
+            for line in result.stdout.splitlines():
+                if f":{port}" in line:
+                    matches = re.findall(pattern, line)
+                    for match in matches:
                         try:
-                            os.kill(pid, signal.SIGKILL)
-                        except OSError:
-                            pass
-    except Exception:
-        pass
+                            pid = int(match)
+                            if pid != os.getpid() and pid not in pids:
+                                pids.append(pid)
+                        except ValueError:
+                            continue
+            
+            # Validasi PID masih aktif
+            valid_pids = []
+            for pid in pids:
+                try:
+                    os.kill(pid, 0)
+                    valid_pids.append(pid)
+                except OSError:
+                    continue
+            
+            if not valid_pids:
+                return False
+            
+            # Kill semua PIDs (SIGTERM dulu, lalu SIGKILL)
+            killed_count = 0
+            for pid in valid_pids:
+                try:
+                    os.kill(pid, signal.SIGTERM)
+                    time.sleep(0.5)
+                    
+                    # Cek apakah masih hidup
+                    try:
+                        os.kill(pid, 0)
+                        os.kill(pid, signal.SIGKILL)
+                    except OSError:
+                        pass  # Sudah mati graceful
+                    
+                    killed_count += 1
+                    
+                except (OSError, ProcessLookupError):
+                    continue
+            
+            # Tunggu sistem membersihkan resource
+            time.sleep(0.3)
+            
+            # Verifikasi port benar-benar bebas
+            result = subprocess.run(
+                ["ss", "-tlnp", "--numeric"],
+                capture_output=True,
+                text=True,
+                timeout=3,
+                check=False
+            )
+            
+            for line in result.stdout.splitlines():
+                if f":{port}" in line:
+                    if re.search(pattern, line):
+                        return False
+            
+            return killed_count > 0
+            
+        except Exception:
+            return False
 
 
 def main():
@@ -74,9 +200,10 @@ def main():
     ssl_kwargs = {}
     if args.ssl_cert and args.ssl_key:
         ssl_kwargs = {"ssl_certfile": args.ssl_cert, "ssl_keyfile": args.ssl_key}
+        os.environ["WEBORN_SSL_CERT"] = args.ssl_cert
 
     uvicorn.run("weborn.main:app", host=args.host, port=args.port,
-                reload=args.reload, **ssl_kwargs)
+                reload=args.reload, workers=1, **ssl_kwargs)
 
 
 if __name__ == "__main__":

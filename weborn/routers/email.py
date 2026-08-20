@@ -1,6 +1,7 @@
 """Email management: Postfix + Dovecot + Rspamd + OpenDKIM + Roundcube stack."""
 import json
 import secrets
+import shlex
 import socket
 import string
 from datetime import datetime
@@ -122,17 +123,20 @@ async def email_setup_wizard(domain: str = Form(...),
         await ex.run("bash", "-c", f"DEBIAN_FRONTEND=noninteractive apt-get install -y -qq {pkgs}")
 
         # ── Step 2: Set hostname ──
-        await ex.run("bash", "-c", f"echo 'mail.{domain}' > /etc/hostname")
-        await ex.run("bash", "-c", f"hostname mail.{domain}")
+        qdomain = shlex.quote(f"mail.{domain}")
+        await ex.run("bash", "-c", f"echo {qdomain} > /etc/hostname")
+        await ex.run("bash", "-c", f"hostname {qdomain}")
 
         # ── Step 3: Create SSL cert (self-signed if no certbot) ──
         ssl_dir = f"/etc/ssl/mail.{domain}"
+        qssl_dir = shlex.quote(ssl_dir)
+        qdomain_cn = shlex.quote(f"mail.{domain}")
         await ex.run("bash", "-c",
-                     f"sudo mkdir -p {ssl_dir} && "
+                     f"sudo mkdir -p {qssl_dir} && "
                      f"sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 "
-                     f"-keyout {ssl_dir}/privkey.pem "
-                     f"-out {ssl_dir}/fullchain.pem "
-                     f'-subj "/CN=mail.{domain}" 2>/dev/null')
+                     f"-keyout {qssl_dir}/privkey.pem "
+                     f"-out {qssl_dir}/fullchain.pem "
+                     f'-subj "/CN={qdomain_cn}" 2>/dev/null')
 
         # ── Step 4: Configure Postfix ──
         ctx = {"domain": domain, "generated_at": datetime.now().isoformat()}

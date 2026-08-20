@@ -753,7 +753,10 @@ async def terminal_run(cmd: str = Form(...), user: dict = Depends(require_admin)
 
 @router.websocket("/ws/terminal")
 async def terminal_ws(websocket: WebSocket):
-    await websocket.accept()
+    from ..auth import ws_require_admin
+    user = await ws_require_admin(websocket)
+    if not user:
+        return
     ex = get_executor()
     if ex.mode not in ("local", "wsl"):
         await websocket.send_text("[error] Terminal WebSocket hanya tersedia di mode local/WSL\r\n")

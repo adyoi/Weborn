@@ -9,8 +9,9 @@ Alur login:
 """
 import platform
 
-from fastapi import Request
+from fastapi import Request, WebSocket
 from fastapi.responses import JSONResponse, RedirectResponse
+from itsdangerous import BadSignature, URLSafeTimedSerializer
 
 from . import db
 from .config import SESSION_COOKIE, USE_PAM
@@ -153,4 +154,65 @@ def require_admin(request: Request):
             {"ok": False, "error": "akses ditolak: dibutuhkan admin (root)"},
             status_code=403,
         )
+    return user
+
+
+# ── WebSocket auth ──────────────────────────────────────────────────────────
+
+def _decode_session_cookie(cookie_value: str, secret_key: str) -> dict | None:
+    """Decode Starlette session cookie and return session data dict."""
+    serializer = URLSafeTimedSerializer(secret_key)
+    try:
+        data = serializer.loads(cookie_value)
+        if isinstance(data, dict):
+            return data
+    except (BadSignature, Exception):
+        pass
+    return None
+
+
+def get_ws_user(websocket: WebSocket):
+    """Validate WebSocket session from cookie. Returns user dict or None."""
+    from .db import get_secret_key
+    cookie_header = websocket.headers.get("cookie", "")
+    if not cookie_header:
+        return None
+    # Parse cookies
+    cookies = {}
+    for part in cookie_header.split(";"):
+        part = part.strip()
+        if "=" in part:
+            k, _, v = part.partition("=")
+            cookies[k.strip()] = v.strip()
+    # Starlette default session cookie name is "session"
+    raw_cookie = cookies.get("session", "")
+    if not raw_cookie:
+        return None
+    secret = get_secret_key()
+    session_data = _decode_session_cookie(raw_cookie, secret)
+    if not session_data:
+        return None
+    token = session_data.get(SESSION_COOKIE)
+    if not token:
+        return None
+    return db.get_user_from_session(token)
+
+
+async def ws_require_admin(websocket: WebSocket) -> dict | None:
+    """For WebSocket: accept then close if unauthenticated. Returns user or None."""
+    await websocket.accept()
+    user = get_ws_user(websocket)
+    if not user:
+        await websocket.close(code=4001, reason="unauthenticated")
+        return None
+    return user
+
+
+async def ws_require_user(websocket: WebSocket) -> dict | None:
+    """For WebSocket: accept then close if unauthenticated. Returns user or None."""
+    await websocket.accept()
+    user = get_ws_user(websocket)
+    if not user:
+        await websocket.close(code=4001, reason="unauthenticated")
+        return None
     return user

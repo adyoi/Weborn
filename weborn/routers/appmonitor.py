@@ -412,7 +412,10 @@ async def kill_all_orphans(request: Request, user: dict = Depends(require_admin)
 
 @router.websocket("/ws/panel/logs")
 async def panel_logs_ws(websocket: WebSocket):
-    await websocket.accept()
+    from ..auth import ws_require_admin
+    user = await ws_require_admin(websocket)
+    if not user:
+        return
     ex = get_executor()
     if ex.mode not in ("local", "wsl"):
         await websocket.send_text("[dry-run] Panel log simulasi\n")

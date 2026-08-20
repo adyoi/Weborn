@@ -1,4 +1,6 @@
 """Security management: ClamAV, Fail2Ban, UFW."""
+import shlex
+
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
@@ -55,7 +57,7 @@ async def clamav_scan(request: Request, path: str = Form("/home"),
         return user
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        r = await ex.run("bash", "-c", f"sudo clamscan -r --infected --no-summary {path} 2>/dev/null")
+        r = await ex.run("bash", "-c", f"sudo clamscan -r --infected --no-summary {shlex.quote(path)} 2>/dev/null")
         from starlette.responses import JSONResponse
         return JSONResponse({
             "ok": r.ok,
@@ -94,7 +96,7 @@ async def fail2ban_page(request: Request, msg: str = "",
                     if "Jail list" in line:
                         jails = [j.strip() for j in line.split(":")[-1].split(",") if j.strip()]
                 for jail in jails:
-                    r3 = await ex.run("bash", "-c", f"sudo fail2ban-client status {jail} 2>/dev/null || echo ''")
+                    r3 = await ex.run("bash", "-c", f"sudo fail2ban-client status {shlex.quote(jail)} 2>/dev/null || echo ''")
                     for line in r3.stdout.splitlines():
                         if "Banned IP" in line:
                             ips = line.split(":")[-1].strip()
@@ -131,7 +133,7 @@ async def fail2ban_unban(ip: str = Form(...), jail: str = Form("sshd"),
                          user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
-    await get_executor().run("bash", "-c", f"sudo fail2ban-client set {jail} unbanip {ip}")
+    await get_executor().run("bash", "-c", f"sudo fail2ban-client set {shlex.quote(jail)} unbanip {shlex.quote(ip)}")
     from starlette.responses import JSONResponse
     return JSONResponse({"ok": True, "output": f"{ip} diunban"})
 
@@ -141,7 +143,7 @@ async def fail2ban_ban(ip: str = Form(...), jail: str = Form("sshd"),
                        user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
-    await get_executor().run("bash", "-c", f"sudo fail2ban-client set {jail} banip {ip}")
+    await get_executor().run("bash", "-c", f"sudo fail2ban-client set {shlex.quote(jail)} banip {shlex.quote(ip)}")
     from starlette.responses import JSONResponse
     return JSONResponse({"ok": True, "output": f"{ip} dibanned"})
 
@@ -173,7 +175,7 @@ async def firewall_allow(port: str = Form(...), proto: str = Form("tcp"),
                          user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
-    await get_executor().run("bash", "-c", f"echo 'y' | sudo ufw allow {port}/{proto}")
+    await get_executor().run("bash", "-c", f"echo 'y' | sudo ufw allow {shlex.quote(port)}/{shlex.quote(proto)}")
     from starlette.responses import JSONResponse
     return JSONResponse({"ok": True, "output": f"Port {port}/{proto} diizinkan"})
 
@@ -183,7 +185,7 @@ async def firewall_deny(port: str = Form(...), proto: str = Form("tcp"),
                         user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
-    await get_executor().run("bash", "-c", f"echo 'y' | sudo ufw deny {port}/{proto}")
+    await get_executor().run("bash", "-c", f"echo 'y' | sudo ufw deny {shlex.quote(port)}/{shlex.quote(proto)}")
     from starlette.responses import JSONResponse
     return JSONResponse({"ok": True, "output": f"Port {port}/{proto} ditolak"})
 

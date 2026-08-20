@@ -1,3 +1,5 @@
+import time
+from collections import defaultdict
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
@@ -6,6 +8,25 @@ from ..db import has_panel_users
 from ..ui import render
 
 router = APIRouter()
+
+# ── Rate limiter: max 5 failed attempts per IP per 5 minutes ──
+_LOGIN_ATTEMPTS: dict[str, list[float]] = defaultdict(list)
+_RATE_LIMIT_MAX = 5
+_RATE_LIMIT_WINDOW = 300  # 5 minutes
+
+
+def _is_rate_limited(ip: str) -> bool:
+    now = time.time()
+    _LOGIN_ATTEMPTS[ip] = [t for t in _LOGIN_ATTEMPTS[ip] if now - t < _RATE_LIMIT_WINDOW]
+    return len(_LOGIN_ATTEMPTS[ip]) >= _RATE_LIMIT_MAX
+
+
+def _record_failed(ip: str):
+    _LOGIN_ATTEMPTS[ip].append(time.time())
+
+
+def _clear_attempts(ip: str):
+    _LOGIN_ATTEMPTS.pop(ip, None)
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -25,8 +46,18 @@ async def login_action(
 ):
     if not has_panel_users():
         return RedirectResponse("/setup", status_code=303)
+
+    ip = request.client.host if request.client else "unknown"
+
+    # Rate limit check
+    if _is_rate_limited(ip):
+        return render(request, "login.html", {"error": "Terlalu banyak percobaan. Coba lagi dalam 5 menit."})
+
     if not auth.login(request, username, password):
+        _record_failed(ip)
         return render(request, "login.html", {"error": "Username atau password salah"})
+
+    _clear_attempts(ip)
     return RedirectResponse("/", status_code=303)
 
 

@@ -183,7 +183,8 @@
       showProgress(title);
       setStep('Menjalankan…');
       try {
-        const res = await fetch(url, { method: 'POST' });
+        const csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
+        const res = await fetch(url, { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } });
         let data;
         try { data = await res.json(); } catch (e) { data = { output: await res.text() }; }
         if (data.ok === false || data.error) {
@@ -208,7 +209,10 @@
       showProgress(title);
       setStep('Menyimpan…');
       try {
-        const res = await fetch(url, { method: 'POST', body: new FormData(form), redirect: 'follow' });
+        const formData = new FormData(form);
+        const csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
+        formData.set('_csrf_token', csrfToken);
+        const res = await fetch(url, { method: 'POST', body: formData, redirect: 'follow' });
         if (res.redirected || (res.status >= 300 && res.status < 400)) {
           setStep('Selesai ✓');
           showClose(true);
@@ -239,7 +243,8 @@
       let stepCount = 0;
       let outputBuf = '';
       try {
-        const opts = { method: 'POST', headers: { 'Accept': 'text/event-stream' } };
+        const csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
+        const opts = { method: 'POST', headers: { 'Accept': 'text/event-stream', 'X-CSRF-Token': csrfToken } };
         if (formData) opts.body = formData;
         const res = await fetch(url, opts);
         if (!res.ok || !res.body) throw new Error('HTTP ' + res.status);

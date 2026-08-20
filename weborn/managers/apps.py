@@ -179,10 +179,11 @@ class AppManager:
     # ----------------------------------------------------------------- helpers
     async def _ensure_dirs(self, name: str):
         """Create log + socket dirs."""
+        import shlex
         await self.ex.run("bash", "-c",
                           f"sudo mkdir -p {GUNICORN_SOCK_DIR} /var/log/gunicorn "
                           f"/var/log/nginx /run/php /var/log/php-fpm")
-        await self.ex.run("bash", "-c", f"sudo mkdir -p /var/log/{name}")
+        await self.ex.run("bash", "-c", f"sudo mkdir -p /var/log/{shlex.quote(name)}")
 
     # ---------------------------------------------------------------- port alloc
     async def alloc_port(self) -> int:
