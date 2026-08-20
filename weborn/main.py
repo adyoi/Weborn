@@ -36,6 +36,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Weborn Engine", version="1.0.0", lifespan=lifespan)
 
     is_secure = os.environ.get("WEBORN_SSL_CERT") is not None
+    app.add_middleware(CSRFMiddleware)
     app.add_middleware(
         SessionMiddleware,
         secret_key=get_secret_key(),
@@ -44,7 +45,6 @@ def create_app() -> FastAPI:
         max_age=60 * 60 * 24,  # 24 hours
         https_only=is_secure,
     )
-    app.add_middleware(CSRFMiddleware)
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
     for router in (setup.router, auth.router, panel_accounts.router,
