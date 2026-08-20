@@ -165,7 +165,8 @@
 | Fitur | Deskripsi |
 |-------|-----------|
 | **CSRF** | HMAC-based tokens pada semua form POST + AJAX header |
-| **WebSocket Auth** | Validasi session cookie sebelum menerima koneksi |
+| **JWT Auth** | Stateless HS256 tokens di HTTP-only cookies, 24h expiry |
+| **WebSocket Auth** | JWT validation sebelum menerima koneksi |
 | **Rate Limiting** | 5 percobaan login per IP per 5 menit |
 | **Session Hardening** | `httponly`, `max_age=24h`, `secure` saat SSL |
 | **Shell Injection** | `shlex.quote()` pada semua user input di bash commands |

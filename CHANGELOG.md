@@ -5,11 +5,12 @@ All notable changes to Weborn will be documented in this file.
 ## [1.0.0] - 2026-08-20
 
 ### Added
+- **JWT Authentication**: Stateless JWT tokens replace Starlette session cookies — simpler decode, no DB session table needed for auth
 - **Weborn Panel Card**: Status badge, PID, Trace Log button, detail page (`/apps/panel/monitor`)
 - **Panel Self-Monitoring**: Detects own process (Gunicorn/Uvicorn/Python), shows workers, CPU, MEM
 - **Orphan Detection**: Finds unmanaged gunicorn/uvicorn processes with recursive PID collection
 - **Kill Orphan APIs**: Single kill (`POST /api/monitor/kill-orphan`) and Kill All (`POST /api/monitor/kill-all-orphans`)
-- **WebSocket Auth**: All WebSocket endpoints (terminal, app logs, panel logs) now validate session cookie
+- **WebSocket Auth**: JWT-based auth on all WebSocket endpoints (terminal, app logs, panel logs)
 - **CSRF Protection**: CSRF token middleware + auto-inject in all POST forms via JavaScript
 - **Rate Limiting**: Login rate limit — 5 failed attempts per IP per 5 minutes
 - **Session Cookie Hardening**: `httponly`, `max_age=24h`, `secure` flag when SSL enabled
@@ -33,12 +34,17 @@ All notable changes to Weborn will be documented in this file.
 - **Removed mistune**: Changelog uses marked.js CDN instead of Python markdown library
 - **Removed pty from requirements.txt**: Linux-only stdlib module, not installable via pip
 
+### Removed
+- **Starlette SessionMiddleware**: Replaced with JWT cookie auth (PyJWT)
+- **itsdangerous**: No longer needed — JWT uses PyJWT instead
+
 ### Security
 - **C1**: Shell injection — all user input in `bash -c` f-strings now uses `shlex.quote()`
-- **C2/C3/C4**: WebSocket terminal, app logs, panel logs — all validate session before accepting
+- **C2/C3/C4**: WebSocket terminal, app logs, panel logs — all validate JWT before accepting
 - **H1**: CSRF middleware validates tokens on all POST form submissions
-- **H2**: Session cookie `httponly`, `max_age=24h`, `secure` when SSL
+- **H2**: JWT cookie `httponly`, `max_age=24h`, `secure` when SSL
 - **H5**: Login rate limiting — 5 failed attempts per IP per 5 minutes
+- **Auth**: Stateless JWT (HS256) — no server-side session storage needed
 
 ## [0.3.0] - 2026-08-18
 

@@ -122,6 +122,7 @@ Client (Browser)
 - OS user management with lock/unlock
 
 ### 🔐 Authentication
+- **JWT (HS256)** — Stateless tokens in HTTP-only cookies, 24h expiry
 - **Panel users** — SQLite-based with PBKDF2-SHA256 hashing
 - **PAM fallback** — Linux users login with OS credentials (auto-creates shadow panel user)
 - **Root login gate** — Root can login via PAM only after admin panel user exists
@@ -157,12 +158,12 @@ Each addon supports: **Install → Config → Update → Start/Stop/Restart → 
 
 ## Tech Stack
 
-- **Backend:** Python 3.10+, FastAPI, SQLite, Jinja2
+- **Backend:** Python 3.10+, FastAPI, SQLite, Jinja2, PyJWT
 - **Frontend:** Tailwind CSS, xterm.js, WebSocket, marked.js (markdown)
 - **Process Manager:** Gunicorn (WSGI) + Uvicorn (ASGI standalone)
 - **Web Server:** Nginx (reverse proxy)
 - **Mail:** Postfix + Dovecot + Rspamd + OpenDKIM + Roundcube
-- **Auth:** SQLite sessions + PAM (Linux Pluggable Authentication Modules) + CSRF tokens
+- **Auth:** JWT (HS256) + PAM (Linux Pluggable Authentication Modules) + CSRF tokens
 - **Security:** shlex.quote(), rate limiting, session hardening
 - **System:** systemd, psutil
 - **Executor Modes:** Local (Linux), WSL, Dry-run (Windows dev)

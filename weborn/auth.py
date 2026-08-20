@@ -1,4 +1,4 @@
-"""Autentikasi panel: sesi berbasis cookie + RBAC dasar + PAM fallback.
+"""Autentikasi panel: JWT cookie + RBAC dasar + PAM fallback.
 
 Alur login:
   1. Cari user di panel DB (SQLite).
@@ -7,14 +7,18 @@ Alur login:
   4. Jika PAM berhasil → buat user shadow di panel → login.
   5. Gate: root hanya boleh login bila sudah ada admin panel.
 """
+import os
 import platform
 
+import jwt
+from datetime import datetime, timedelta, timezone
 from fastapi import Request, WebSocket
 from fastapi.responses import JSONResponse, RedirectResponse
-from itsdangerous import BadSignature, TimestampSigner
 
 from . import db
 from .config import SESSION_COOKIE, USE_PAM
+
+JWT_EXPIRY_HOURS = 24
 
 # Linux-only modules (not available on Windows)
 _crypt = None
@@ -27,15 +31,48 @@ if platform.system() == "Linux":
         pass
 
 
+# ── JWT helpers ─────────────────────────────────────────────────────────────
+
+def _get_jwt_secret() -> str:
+    return db.get_secret_key()
+
+
+def encode_jwt(user_id: int, username: str, role: str) -> str:
+    payload = {
+        "user_id": user_id,
+        "username": username,
+        "role": role,
+        "iat": datetime.now(timezone.utc),
+        "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRY_HOURS),
+    }
+    return jwt.encode(payload, _get_jwt_secret(), algorithm="HS256")
+
+
+def decode_jwt(token: str) -> dict | None:
+    try:
+        return jwt.decode(token, _get_jwt_secret(), algorithms=["HS256"])
+    except jwt.InvalidTokenError:
+        return None
+
+
+def _set_jwt_cookie(response, token: str):
+    is_secure = os.environ.get("WEBORN_SSL_CERT") is not None
+    response.set_cookie(
+        SESSION_COOKIE, token,
+        httponly=True,
+        secure=is_secure,
+        samesite="lax",
+        max_age=JWT_EXPIRY_HOURS * 3600,
+    )
+
+
+def _clear_jwt_cookie(response):
+    response.delete_cookie(SESSION_COOKIE)
+
+
 # ── PAM via /etc/shadow ─────────────────────────────────────────────────────
-# Panel berjalan dengan sudo → bisa baca /etc/shadow langsung.
-# Tidak perlu ctypes atau pip package tambahan.
 
 def _pam_authenticate(username: str, password: str) -> bool:
-    """Autentikasi user Linux via /etc/shadow.
-
-    Returns True jika password cocok, False jika ditolak atau tidak tersedia.
-    """
     if not USE_PAM:
         return False
     if platform.system() != "Linux":
@@ -46,25 +83,19 @@ def _pam_authenticate(username: str, password: str) -> bool:
     try:
         shadow = _spwd.getspnam(username)
         stored_hash = shadow.sp_pwd
-        # Hash kosong atau '!' atau '*' = akun terkunci/no password
         if not stored_hash or stored_hash in ("!", "*", "!!"):
             return False
         return _crypt.crypt(password, stored_hash) == stored_hash
     except (KeyError, PermissionError):
-        # KeyError = user tidak ada, PermissionError = tidak punya akses shadow
         return False
 
 
 # ── Panel auth ──────────────────────────────────────────────────────────────
 
-def login(request: Request, username: str, password: str) -> bool:
+def login(request: Request, username: str, password: str):
     """Login dengan fallback: panel DB → PAM.
 
-    Alur:
-      1. Cari user di panel DB, verifikasi password.
-      2. Jika tidak ditemukan/salah → coba PAM.
-      3. Jika PAM berhasil → auto-create shadow user → login.
-      4. Gate: root hanya boleh login bila sudah ada admin panel.
+    Returns RedirectResponse on success, None on failure.
     """
     ip = request.client.host if request.client else ""
 
@@ -76,64 +107,77 @@ def login(request: Request, username: str, password: str) -> bool:
         row_dict = dict(row)
         if not row_dict.get("is_active", 1):
             db.log_login(0, username, ip, False)
-            return False
-        token = db.create_session(row["id"])
-        request.session[SESSION_COOKIE] = token
+            return None
+        token = encode_jwt(row["id"], row["username"], row["role"])
+        resp = RedirectResponse("/", status_code=303)
+        _set_jwt_cookie(resp, token)
         db.log_login(row["id"], username, ip, True)
-        return True
+        return resp
 
     # ── Step 2: Fallback ke PAM (/etc/shadow) ──
     if _pam_authenticate(username, password):
-        # Gate: root hanya boleh login bila sudah ada admin
         if username == "root" and not _has_admin():
             db.log_login(0, username, ip, False)
-            return False
+            return None
 
-        # Auto-create shadow user jika belum ada di panel
         role = "admin" if username == "root" else "user"
         user_id = db.create_shadow_user(username, role=role)
         if not user_id:
             db.log_login(0, username, ip, False)
-            return False
+            return None
 
-        # Check is_active
         with db.get_conn() as conn:
             row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
         if row and not dict(row).get("is_active", 1):
             db.log_login(0, username, ip, False)
-            return False
+            return None
 
-        token = db.create_session(user_id)
-        request.session[SESSION_COOKIE] = token
+        token = encode_jwt(row["id"], row["username"], row["role"])
+        resp = RedirectResponse("/", status_code=303)
+        _set_jwt_cookie(resp, token)
         db.log_login(user_id, username, ip, True)
-        return True
+        return resp
 
     # ── Step 3: Gagal ──
     db.log_login(0, username, ip, False)
-    return False
+    return None
 
 
 def _has_admin() -> bool:
-    """Cek apakah sudah ada user admin di panel DB."""
     with db.get_conn() as conn:
         row = conn.execute("SELECT 1 FROM users WHERE role = 'admin' LIMIT 1").fetchone()
     return row is not None
 
 
 def logout(request: Request):
-    token = request.session.get(SESSION_COOKIE)
+    token = request.cookies.get(SESSION_COOKIE)
     if token:
-        db.delete_session(token)
-        request.session.pop(SESSION_COOKIE, None)
+        payload = decode_jwt(token)
+        if payload:
+            db.delete_session(str(payload.get("user_id", "")))
 
 
 def get_current_user(request: Request):
-    token = request.session.get(SESSION_COOKIE)
-    return db.get_user_from_session(token)
+    token = request.cookies.get(SESSION_COOKIE)
+    if not token:
+        return None
+    payload = decode_jwt(token)
+    if not payload:
+        return None
+    user_id = payload.get("user_id")
+    if not user_id:
+        return None
+    with db.get_conn() as conn:
+        row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    if not row:
+        return None
+    user = dict(row)
+    if not user.get("is_active", 1):
+        return None
+    return user
 
 
 def require_user(request: Request):
-    """Dependency: redirect ke /login bila belum login."""
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
@@ -141,11 +185,6 @@ def require_user(request: Request):
 
 
 def require_admin(request: Request):
-    """Dependency: untuk operasi yang butuh otorisasi root/admin.
-
-    Mengembalikan 403 untuk non-admin; dipakai pada route yang menjalankan
-    perintah tingkat sistem (apt, systemctl, useradd, dll).
-    """
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
@@ -159,23 +198,7 @@ def require_admin(request: Request):
 
 # ── WebSocket auth ──────────────────────────────────────────────────────────
 
-def _decode_session_cookie(cookie_value: str, secret_key: str) -> dict | None:
-    """Decode Starlette session cookie (TimestampSigner + base64 + json)."""
-    import base64
-    import json as _json
-    from itsdangerous import TimestampSigner, BadSignature
-    signer = TimestampSigner(secret_key)
-    try:
-        data = signer.unsign(cookie_value.encode("utf-8"), max_age=60 * 60 * 24)
-        return _json.loads(base64.b64decode(data))
-    except (BadSignature, Exception):
-        pass
-    return None
-
-
 def get_ws_user(websocket: WebSocket):
-    """Validate WebSocket session from cookie. Returns user dict or None."""
-    from .db import get_secret_key
     cookie_header = websocket.headers.get("cookie", "")
     if not cookie_header:
         return None
@@ -185,21 +208,26 @@ def get_ws_user(websocket: WebSocket):
         if "=" in part:
             k, _, v = part.partition("=")
             cookies[k.strip()] = v.strip()
-    raw_cookie = cookies.get("session", "")
-    if not raw_cookie:
+    raw_token = cookies.get(SESSION_COOKIE, "")
+    if not raw_token:
         return None
-    secret = get_secret_key()
-    session_data = _decode_session_cookie(raw_cookie, secret)
-    if not session_data:
+    payload = decode_jwt(raw_token)
+    if not payload:
         return None
-    token = session_data.get(SESSION_COOKIE)
-    if not token:
+    user_id = payload.get("user_id")
+    if not user_id:
         return None
-    return db.get_user_from_session(token)
+    with db.get_conn() as conn:
+        row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    if not row:
+        return None
+    user = dict(row)
+    if not user.get("is_active", 1):
+        return None
+    return user
 
 
 async def ws_require_admin(websocket: WebSocket) -> dict | None:
-    """For WebSocket: accept then close if unauthenticated. Returns user or None."""
     await websocket.accept()
     user = get_ws_user(websocket)
     if not user:
@@ -209,7 +237,6 @@ async def ws_require_admin(websocket: WebSocket) -> dict | None:
 
 
 async def ws_require_user(websocket: WebSocket) -> dict | None:
-    """For WebSocket: accept then close if unauthenticated. Returns user or None."""
     await websocket.accept()
     user = get_ws_user(websocket)
     if not user:

@@ -4,15 +4,15 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from .. import auth
+from ..config import SESSION_COOKIE
 from ..db import has_panel_users
 from ..ui import render
 
 router = APIRouter()
 
-# ── Rate limiter: max 5 failed attempts per IP per 5 minutes ──
 _LOGIN_ATTEMPTS: dict[str, list[float]] = defaultdict(list)
 _RATE_LIMIT_MAX = 5
-_RATE_LIMIT_WINDOW = 300  # 5 minutes
+_RATE_LIMIT_WINDOW = 300
 
 
 def _is_rate_limited(ip: str) -> bool:
@@ -49,19 +49,21 @@ async def login_action(
 
     ip = request.client.host if request.client else "unknown"
 
-    # Rate limit check
     if _is_rate_limited(ip):
         return render(request, "login.html", {"error": "Terlalu banyak percobaan. Coba lagi dalam 5 menit."})
 
-    if not auth.login(request, username, password):
+    resp = auth.login(request, username, password)
+    if not resp:
         _record_failed(ip)
         return render(request, "login.html", {"error": "Username atau password salah"})
 
     _clear_attempts(ip)
-    return RedirectResponse("/", status_code=303)
+    return resp
 
 
 @router.post("/logout")
 async def logout_action(request: Request):
     auth.logout(request)
-    return RedirectResponse("/login", status_code=303)
+    resp = RedirectResponse("/login", status_code=303)
+    resp.delete_cookie(SESSION_COOKIE)
+    return resp
