@@ -41,41 +41,56 @@
 {# ── Weborn Panel (self-monitoring) ── #}
 <div class="card p-5 mb-4">
     <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-            <span class="font-bold text-sm">🖥 Weborn Panel</span>
+        <div class="flex items-center gap-3">
+            <a href="/apps/panel/monitor" class="font-bold text-sm hover:underline">🖥 Weborn Panel</a>
             <span class="text-t3 text-xs font-mono">port {{ panel_info.port }}</span>
+            <span class="text-t3 text-xs">({{ panel_info.mode }})</span>
         </div>
         <div class="flex items-center gap-2">
-            <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[13px] font-mono">{{ panel_info.mode }}</span>
+            {# ── Status badge ── #}
             {% if panel_info.master_pid %}
-            <span class="text-t3 text-[13px] font-mono">PID {{ panel_info.master_pid }}</span>
+            <span class="px-2 py-0.5 rounded bg-green-500/20 text-green-400 text-[13px] font-mono">● running</span>
+            {% else %}
+            <span class="px-2 py-0.5 rounded bg-gray-500/20 text-gray-400 text-[13px] font-mono">● stopped</span>
             {% endif %}
+
+            <span class="text-t3 text-[13px] font-mono">PID {{ panel_info.master_pid or '—' }}</span>
+
+            {# ── Trace log button ── #}
+            <button onclick="openTrace('panel', 'Weborn Panel')"
+                    class="btn sm accent">📜 Trace</button>
         </div>
     </div>
     {% if panel_info.workers %}
-    <div class="overflow-x-auto">
-        <table class="text-xs font-mono w-full">
-            <thead>
-                <tr class="text-t3 text-left">
-                    <th class="pb-1 pr-3">PID</th>
-                    <th class="pb-1 pr-3">CPU%</th>
-                    <th class="pb-1 pr-3">MEM%</th>
-                    <th class="pb-1 pr-3">Uptime</th>
-                    <th class="pb-1">Command</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for w in panel_info.workers %}
-                <tr class="border-t border-line/30">
-                    <td class="py-1 pr-3">{{ w.pid }}</td>
-                    <td class="py-1 pr-3">{{ w.cpu }}</td>
-                    <td class="py-1 pr-3">{{ w.mem }}</td>
-                    <td class="py-1 pr-3">{{ w.uptime }}</td>
-                    <td class="py-1 truncate max-w-[300px]">{{ w.cmd }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="mt-2">
+        <div class="text-t3 text-[13px] mb-1">
+            Master PID: <span class="font-mono">{{ panel_info.master_pid }}</span>
+            · Workers: <span class="font-mono">{{ panel_info.workers | length }}</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="text-xs font-mono w-full">
+                <thead>
+                    <tr class="text-t3 text-left">
+                        <th class="pb-1 pr-3">PID</th>
+                        <th class="pb-1 pr-3">CPU%</th>
+                        <th class="pb-1 pr-3">MEM%</th>
+                        <th class="pb-1 pr-3">Uptime</th>
+                        <th class="pb-1">Command</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for w in panel_info.workers %}
+                    <tr class="border-t border-line/30">
+                        <td class="py-1 pr-3">{{ w.pid }}</td>
+                        <td class="py-1 pr-3">{{ w.cpu }}</td>
+                        <td class="py-1 pr-3">{{ w.mem }}</td>
+                        <td class="py-1 pr-3">{{ w.uptime }}</td>
+                        <td class="py-1 truncate max-w-[300px]">{{ w.cmd }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
     {% else %}
     <div class="text-t3 text-[13px]">
@@ -271,7 +286,11 @@ function openTrace(appId, appName) {
     const modalBox = modal.querySelector('.w-modal-box');
 
     title.textContent = 'Trace Log: ' + appName;
-    sub.textContent = 'journalctl -u weborn-' + appName + '.service -f';
+    if (appId === 'panel') {
+        sub.textContent = 'journalctl -u weborn-panel.service -f';
+    } else {
+        sub.textContent = 'journalctl -u weborn-' + appName + '.service -f';
+    }
     status.textContent = 'Connecting…';
 
     /* Dispose previous terminal if any */
@@ -306,7 +325,10 @@ function openTrace(appId, appName) {
 
     /* Connect WebSocket for live logs */
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    traceWs = new WebSocket(proto + '//' + location.host + '/ws/apps/' + appId + '/logs');
+    const wsUrl = appId === 'panel'
+        ? proto + '//' + location.host + '/ws/panel/logs'
+        : proto + '//' + location.host + '/ws/apps/' + appId + '/logs';
+    traceWs = new WebSocket(wsUrl);
     traceWs.onmessage = function(e) {
         traceTerm.write(e.data);
         traceTerm.scrollToBottom();

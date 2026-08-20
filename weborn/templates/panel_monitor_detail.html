@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Weborn Panel — Monitor{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-3">
+        <a href="/apps/monitor" class="btn sm">← Kembali</a>
+        <h1 class="text-xl font-bold">🖥 Weborn Panel</h1>
+        <span class="text-t3 text-xs font-mono">{{ panel.mode }}</span>
+        <span class="text-t3 text-xs">port {{ panel.port }}</span>
+        {% if panel.master_pid %}
+        <span class="px-2 py-0.5 rounded bg-green-500/20 text-green-400 text-[13px] font-mono">● running</span>
+        {% else %}
+        <span class="px-2 py-0.5 rounded bg-gray-500/20 text-gray-400 text-[13px] font-mono">● stopped</span>
+        {% endif %}
+    </div>
+    <div class="flex gap-2">
+        <button onclick="location.reload()" class="btn sm">↻ Refresh</button>
+    </div>
+</div>
+
+{# ── Info Cards ── #}
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+    <div class="card p-3 text-center">
+        <div class="text-lg font-bold">{{ panel.workers | length }}</div>
+        <div class="text-t3 text-xs">Workers</div>
+    </div>
+    <div class="card p-3 text-center">
+        <div class="text-lg font-bold">{{ panel.master_pid or '—' }}</div>
+        <div class="text-t3 text-xs">Master PID</div>
+    </div>
+    <div class="card p-3 text-center">
+        <div class="text-lg font-bold">{{ '%.1f'|format(total_cpu) }}%</div>
+        <div class="text-t3 text-xs">Total CPU</div>
+    </div>
+    <div class="card p-3 text-center">
+        <div class="text-lg font-bold">{{ '%.1f'|format(total_mem) }}%</div>
+        <div class="text-t3 text-xs">Total MEM</div>
+    </div>
+</div>
+
+{# ── Panel Details ── #}
+<div class="card p-4 mb-4">
+    <h3 class="font-bold text-sm mb-2">Panel Info</h3>
+    <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[14px]">
+        <div class="text-t3">Name</div><div class="mono">Weborn Panel</div>
+        <div class="text-t3">Mode</div><div class="mono">{{ panel.mode }}</div>
+        <div class="text-t3">Port</div><div class="mono">{{ panel.port }}</div>
+        <div class="text-t3">Master PID</div><div class="mono">{{ panel.master_pid or '—' }}</div>
+        <div class="text-t3">All PIDs</div><div class="mono text-[13px]">{{ panel.pids | join(', ') if panel.pids else '—' }}</div>
+    </div>
+</div>
+
+{# ── Resource Usage ── #}
+{% if resource_info %}
+<div class="card p-4 mb-4">
+    <h3 class="font-bold text-sm mb-2">Resource Usage (Master Process)</h3>
+    <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[14px]">
+        {% for k, v in resource_info.items() %}
+        <div class="text-t3">{{ k }}</div><div class="mono">{{ v }}</div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{# ── Trace Log (live xterm.js + WebSocket) ── #}
+<div class="card p-4 mb-4">
+    <div class="flex items-center justify-between mb-2">
+        <h3 class="font-bold text-sm">Trace Log</h3>
+        <div class="flex gap-2">
+            <span class="text-t3 text-[11px] font-mono" id="trace-status">Connecting…</span>
+            <button class="btn sm" onclick="clearTrace()">🗑 Clear</button>
+        </div>
+    </div>
+    <div id="trace-terminal" style="height:300px; background:#1a1a2e; border-radius:8px; padding:8px;"></div>
+</div>
+
+{# ── Worker Table ── #}
+{% if panel.workers %}
+<div class="card p-4">
+    <h3 class="font-bold text-sm mb-2">Workers ({{ panel.workers | length }})</h3>
+    <div class="overflow-x-auto">
+        <table class="text-xs font-mono w-full">
+            <thead>
+                <tr class="text-t3 text-left">
+                    <th class="pb-1 pr-3">PID</th>
+                    <th class="pb-1 pr-3">CPU%</th>
+                    <th class="pb-1 pr-3">MEM%</th>
+                    <th class="pb-1 pr-3">Uptime</th>
+                    <th class="pb-1">Command</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for w in panel.workers %}
+                <tr class="border-t border-line/30">
+                    <td class="py-1 pr-3">{{ w.pid }}</td>
+                    <td class="py-1 pr-3">{{ w.cpu }}</td>
+                    <td class="py-1 pr-3">{{ w.mem }}</td>
+                    <td class="py-1 pr-3">{{ w.uptime }}</td>
+                    <td class="py-1 truncate max-w-[400px]">{{ w.cmd }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<script>
+(function() {
+    var term = new Terminal({
+        cursorBlink: false,
+        fontSize: 12,
+        fontFamily: 'Cascadia Code, Fira Code, monospace',
+        theme: {
+            background: '#1a1a2e',
+            foreground: '#c0c0c0',
+            cursor: '#00ff88',
+        },
+        disableStdin: true,
+        scrollback: 5000,
+    });
+    var fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(document.getElementById('trace-terminal'));
+    fitAddon.fit();
+
+    var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    var ws = new WebSocket(proto + '//' + location.host + '/ws/panel/logs');
+    var statusEl = document.getElementById('trace-status');
+
+    ws.onopen = function() {
+        statusEl.textContent = 'Connected — auto-scroll aktif';
+    };
+    ws.onmessage = function(e) {
+        term.write(e.data);
+        term.scrollToBottom();
+    };
+    ws.onclose = function() {
+        statusEl.textContent = 'Stream berhenti';
+        term.write('\r\n\033[1;33m[Log stream berhenti]\033[0m');
+    };
+    ws.onerror = function() {
+        statusEl.textContent = 'Error koneksi';
+    };
+
+    window.addEventListener('resize', function() { fitAddon.fit(); });
+    window.clearTrace = function() { term.clear(); };
+})();
+</script>
+{% endblock %}

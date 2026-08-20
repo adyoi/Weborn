@@ -3,7 +3,7 @@ import asyncio
 import json
 import re
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, WebSocket
 from fastapi.responses import HTMLResponse
 from starlette.responses import JSONResponse
 
@@ -363,3 +363,76 @@ async def kill_all_orphans(request: Request, user: dict = Depends(require_admin)
         killed += 1
 
     return JSONResponse({"ok": True, "message": f"Killed {killed} orphan processes"})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Panel Detail Monitor
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/apps/panel/monitor", response_class=HTMLResponse)
+async def panel_monitor_detail(request: Request, user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+
+    ex = get_executor()
+    panel_info = await _detect_panel_process(ex)
+
+    # Resource usage from /proc if running
+    resource_info = {}
+    pid = panel_info.get("master_pid", "")
+    if pid and pid.isdigit():
+        r = await ex.run("bash", "-c",
+                         f"cat /proc/{pid}/status 2>/dev/null | grep -E '^(VmRSS|VmSize|Threads|Name)' || echo none")
+        if r.ok and "none" not in r.stdout:
+            for line in r.stdout.strip().splitlines():
+                k, _, v = line.partition(":")
+                resource_info[k.strip()] = v.strip()
+
+    # Memory/CPU summary from all workers
+    total_cpu = 0.0
+    total_mem = 0.0
+    for w in panel_info.get("workers", []):
+        try:
+            total_cpu += float(w.get("cpu", "0"))
+        except ValueError:
+            pass
+        try:
+            total_mem += float(w.get("mem", "0"))
+        except ValueError:
+            pass
+
+    return render(request, "panel_monitor_detail.html", {
+        "user": user,
+        "panel": panel_info,
+        "resource_info": resource_info,
+        "total_cpu": total_cpu,
+        "total_mem": total_mem,
+        "active": "app-monitor",
+    })
+
+
+@router.websocket("/ws/panel/logs")
+async def panel_logs_ws(websocket: WebSocket):
+    await websocket.accept()
+    ex = get_executor()
+    if ex.mode not in ("local", "wsl"):
+        await websocket.send_text("[dry-run] Panel log simulasi\n")
+        await websocket.close()
+        return
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "journalctl", "-u", "weborn-panel.service", "-f", "--no-pager", "-n", "50",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        while True:
+            line = await proc.stdout.readline()
+            if not line:
+                break
+            await websocket.send_text(line.decode("utf-8", errors="replace"))
+    except Exception:
+        pass
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
+            pass
