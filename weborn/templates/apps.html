@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Aplikasi — Weborn{% endblock %}
+{% block title %}Application — Weborn{% endblock %}
 {% block content %}
 <div class="flex items-center justify-between mb-4">
     <div>
-        <h1 class="text-xl font-bold">📦 Aplikasi</h1>
+        <h1 class="text-xl font-bold">📦 Application</h1>
         <div class="text-t3 text-xs mt-0.5">Nginx → Gunicorn (WSGI/ASGI) / PHP-FPM / Node → App</div>
     </div>
     <div class="flex gap-2">
-        <a href="/apps/monitor" class="btn sm">🧠 Monitor</a>
+        <a href="/apps/monitor" class="btn sm">🧠 Apps Monitor</a>
     </div>
 </div>
 
@@ -15,38 +15,71 @@
 {% if request.query_params.get('msg') %}<div class="msg ok">{{ request.query_params.get('msg')|replace('%20', ' ') }}</div>{% endif %}
 
 <div class="flex gap-3 mb-4">
-    {# ── Card 1: Framework Apps ── #}
+    {# ── Card 1: Web Apps / Frontend (PHP + Node.js) ── #}
     <div class="card flex-1">
-        <h3 class="text-xs font-bold mb-2">➕ Buat Aplikasi Framework</h3>
+        <h3 class="text-xs font-bold mb-2">➕ Create Web Apps / Frontend</h3>
         <form method="post" action="/apps/create" class="flex flex-col gap-2">
             <div class="field"><label class="text-[13px]">Nama</label>
                 <input name="name" placeholder="myblog" required class="sm"></div>
             <div class="flex gap-2">
                 <div class="field flex-1"><label class="text-[13px]">Runtime</label>
-                    <select name="language" id="app-language" required class="sm">
+                    <select name="language" id="app-language" required class="sm" onchange="onFrontendLangChange()">
                         {% for key, r in runtimes.items() %}
+                        {% if key != 'python' %}
                         <option value="{{ key }}">{{ r.label }}</option>
+                        {% endif %}
                         {% endfor %}
                     </select></div>
                 <div class="field flex-1"><label class="text-[13px]">Framework</label>
                     <select name="framework" id="app-framework" class="sm">
                         <option value="">— dasar —</option>
                         {% for key, fs in frameworks.items() %}
+                        {% if key != 'python' %}
                         <optgroup label="{{ runtimes[key].label }}">
                             {% for f in fs %}<option value="{{ f.id }}" data-lang="{{ key }}">{{ f.label }}</option>{% endfor %}
                         </optgroup>
+                        {% endif %}
                         {% endfor %}
+                    </select></div>
+            </div>
+            <div class="field"><label class="text-[13px]">Domain</label>
+                <input name="domain" placeholder="example.com" class="sm"></div>
+            <div class="field"><label class="text-[13px]">Directory Path</label>
+                <input name="dir_path" placeholder="/var/www/myapp" class="sm mono"></div>
+            <div class="flex gap-2">
+                <div class="field flex-1"><label class="text-[13px]">Web Server</label>
+                    <select name="webserver" id="app-webserver" class="sm" onchange="onFrontendWebserverChange()">
+                        <option value="nginx">Nginx</option>
+                        <option value="apache">Apache</option>
+                    </select></div>
+                <div class="field flex-1"><label class="text-[13px]">Web Server Config</label>
+                    <input name="webserver_config" placeholder="nginx.conf / vhost.conf" class="sm"></div>
+            </div>
+            <div id="php-config-fields" class="flex gap-2">
+                <div class="field flex-1"><label class="text-[13px]">PHP-FPM Config</label>
+                    <select name="php_fpm_config" class="sm">
+                        <option value="www.conf">www.conf</option>
+                        <option value="php-fpm.conf">php-fpm.conf</option>
+                        <option value="php.ini">php.ini</option>
+                    </select></div>
+            </div>
+            <div id="node-config-fields" class="flex gap-2" style="display:none">
+                <div class="field flex-1"><label class="text-[13px]">Node Config</label>
+                    <select name="node_config" class="sm">
+                        <option value=".env">.env</option>
+                        <option value="config.json">config.json</option>
+                        <option value="package.json">package.json</option>
                     </select></div>
             </div>
             <div class="field"><label class="text-[13px]">Port</label>
                 <input name="port" type="number" min="8000" max="8999" placeholder="auto (8000-8999)" class="sm"></div>
-            <button type="submit" class="btn primary sm w-full">Buat Aplikasi</button>
+            <button type="submit" class="btn primary sm w-full">Create App</button>
         </form>
     </div>
 
-    {# ── Card 2: Native Apps ── #}
+    {# ── Card 2: Web API / Backend (Python) ── #}
     <div class="card flex-1">
-        <h3 class="text-xs font-bold mb-2">🚀 Buat Aplikasi Native</h3>
+        <h3 class="text-xs font-bold mb-2">🚀 Create Web API / Backend</h3>
         <form method="post" action="/apps/create-native" class="flex flex-col gap-2" id="native-form">
             <div class="field"><label class="text-[13px]">Nama</label>
                 <input name="name" id="native-name" placeholder="myapp" required class="sm"
@@ -101,7 +134,7 @@
                 <label class="text-[13px]">Command Preview</label>
                 <div id="native-cmd" class="mono text-[11px] p-2 rounded border" style="background:var(--bg-2);border-color:var(--panel-border);color:var(--accent);word-break:break-all;min-height:32px"></div>
             </div>
-            <button type="submit" class="btn primary sm w-full">Buat Aplikasi</button>
+            <button type="submit" class="btn primary sm w-full">Create App</button>
         </form>
     </div>
 </div>
@@ -110,11 +143,9 @@
     <a href="/apps" class="btn {{ 'primary' if not app_type_filter else '' }} sm">Semua</a>
     <a href="/apps?type=wsgi" class="btn {{ 'primary' if app_type_filter == 'wsgi' else '' }} sm">WSGI</a>
     <a href="/apps?type=asgi" class="btn {{ 'primary' if app_type_filter == 'asgi' else '' }} sm">ASGI</a>
-    <a href="/apps?type=flask" class="btn {{ 'primary' if app_type_filter == 'flask' else '' }} sm">Flask</a>
-    <a href="/apps?type=django" class="btn {{ 'primary' if app_type_filter == 'django' else '' }} sm">Django</a>
-    <a href="/apps?type=fastapi" class="btn {{ 'primary' if app_type_filter == 'fastapi' else '' }} sm">FastAPI</a>
     <a href="/apps?type=nodejs" class="btn {{ 'primary' if app_type_filter == 'nodejs' else '' }} sm">Node.js</a>
     <a href="/apps?type=laravel" class="btn {{ 'primary' if app_type_filter == 'laravel' else '' }} sm">Laravel</a>
+    <a href="/apps?type=php" class="btn {{ 'primary' if app_type_filter == 'php' else '' }} sm">PHP</a>
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -153,20 +184,29 @@
 </div>
 
 <script>
-(function(){
-  var lang = document.getElementById('app-language');
-  var fw = document.getElementById('app-framework');
-  function filterFrameworks(){
-    var cur = lang.value;
-    Array.prototype.forEach.call(fw.options, function(o){
-      var hide = o.dataset.lang && o.dataset.lang !== cur;
-      o.style.display = hide ? 'none' : '';
-      if (hide && o.selected) o.selected = false;
-    });
+function onFrontendLangChange(){
+  var lang = document.getElementById('app-language').value;
+  var phpFields = document.getElementById('php-config-fields');
+  var nodeFields = document.getElementById('node-config-fields');
+  if(lang === 'php'){
+    phpFields.style.display = 'flex';
+    nodeFields.style.display = 'none';
+  } else if(lang === 'nodejs'){
+    phpFields.style.display = 'none';
+    nodeFields.style.display = 'flex';
+  } else {
+    phpFields.style.display = 'none';
+    nodeFields.style.display = 'none';
   }
-  lang.addEventListener('change', filterFrameworks);
-  filterFrameworks();
-})();
+  var fw = document.getElementById('app-framework');
+  Array.prototype.forEach.call(fw.options, function(o){
+    var hide = o.dataset.lang && o.dataset.lang !== lang;
+    o.style.display = hide ? 'none' : '';
+    if (hide && o.selected) o.selected = false;
+  });
+}
+
+function onFrontendWebserverChange(){}
 
 function updateNativeDir(){
   var name = document.getElementById('native-name').value.trim();
@@ -263,5 +303,6 @@ function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&l
 
 updateNativeCommand();
 updateSampleInfo();
+onFrontendLangChange();
 </script>
 {% endblock %}

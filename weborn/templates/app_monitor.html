@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Process Monitor — Weborn{% endblock %}
+{% block title %}Apps Monitor — Weborn{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
@@ -7,7 +7,7 @@
 {% endblock %}
 {% block content %}
 <div class="flex items-center justify-between mb-5">
-    <h1 class="text-xl font-bold">🧠 Process Monitor</h1>
+    <h1 class="text-xl font-bold">🧠 Apps Monitor</h1>
     <div class="flex gap-2">
         <button onclick="location.reload()" class="btn text-xs">↻ Refresh</button>
         <button onclick="autoRefresh()" id="auto-btn" class="btn text-xs">⏱ Auto: OFF</button>
