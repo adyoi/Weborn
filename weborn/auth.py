@@ -11,7 +11,7 @@ import platform
 
 from fastapi import Request, WebSocket
 from fastapi.responses import JSONResponse, RedirectResponse
-from itsdangerous import BadSignature, URLSafeTimedSerializer
+from itsdangerous import BadSignature, TimestampSigner
 
 from . import db
 from .config import SESSION_COOKIE, USE_PAM
@@ -160,12 +160,14 @@ def require_admin(request: Request):
 # ── WebSocket auth ──────────────────────────────────────────────────────────
 
 def _decode_session_cookie(cookie_value: str, secret_key: str) -> dict | None:
-    """Decode Starlette session cookie and return session data dict."""
-    serializer = URLSafeTimedSerializer(secret_key, salt="starlette.sessions")
+    """Decode Starlette session cookie (TimestampSigner + base64 + json)."""
+    import base64
+    import json as _json
+    from itsdangerous import TimestampSigner, BadSignature
+    signer = TimestampSigner(secret_key)
     try:
-        data = serializer.loads(cookie_value)
-        if isinstance(data, dict):
-            return data
+        data = signer.unsign(cookie_value.encode("utf-8"), max_age=60 * 60 * 24)
+        return _json.loads(base64.b64decode(data))
     except (BadSignature, Exception):
         pass
     return None
@@ -177,14 +179,12 @@ def get_ws_user(websocket: WebSocket):
     cookie_header = websocket.headers.get("cookie", "")
     if not cookie_header:
         return None
-    # Parse cookies
     cookies = {}
     for part in cookie_header.split(";"):
         part = part.strip()
         if "=" in part:
             k, _, v = part.partition("=")
             cookies[k.strip()] = v.strip()
-    # Starlette default session cookie name is "session"
     raw_cookie = cookies.get("session", "")
     if not raw_cookie:
         return None

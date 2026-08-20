@@ -88,7 +88,7 @@ async def info_test_run(user: dict = Depends(require_admin)):
         ("Memory", "free -h | grep Mem"),
     ]
 
-    def run_checks(checks):
+    async def run_checks(checks):
         results = []
         for label, cmd in checks:
             if ex.mode in ("local", "wsl"):
@@ -154,9 +154,7 @@ async def info_changelog_page(request: Request, user: dict = Depends(require_use
     changelog = ""
     cl_path = BASE_DIR / "CHANGELOG.md"
     if cl_path.exists():
-        raw = cl_path.read_text(encoding="utf-8")
-        import mistune
-        changelog = mistune.html(raw)
+        changelog = cl_path.read_text(encoding="utf-8")
     return render(request, "info_changelog.html", {
         "user": user, "active": "info-changelog", "changelog": changelog,
     })

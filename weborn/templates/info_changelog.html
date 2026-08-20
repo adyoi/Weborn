@@ -1,14 +1,28 @@
 {% extends "base.html" %}
 {% block title %}Changelog — Weborn{% endblock %}
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/marked@14/marked.min.js"></script>
+{% endblock %}
 {% block content %}
 <div class="page-title text-[22px] font-bold mb-1">📋 Changelog</div>
 <div class="page-sub text-t3 text-[13px] mb-5">Riwayat perubahan versi</div>
 
 <div class="card">
     {% if changelog %}
-    <div class="prose prose-sm max-w-none text-[14px] leading-relaxed" style="font-family:inherit">{{ changelog | safe }}</div>
+    <div id="changelog-content" class="prose prose-sm max-w-none text-[14px] leading-relaxed" style="font-family:inherit"></div>
+    <textarea id="changelog-raw" class="hidden">{{ changelog }}</textarea>
     {% else %}
     <div class="text-center text-t3 py-7">Changelog tidak ditemukan.</div>
     {% endif %}
 </div>
+
+<script>
+(function() {
+    var raw = document.getElementById('changelog-raw');
+    var el = document.getElementById('changelog-content');
+    if (raw && el && window.marked) {
+        el.innerHTML = marked.parse(raw.value);
+    }
+})();
+</script>
 {% endblock %}
