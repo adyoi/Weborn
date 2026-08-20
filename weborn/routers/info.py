@@ -138,7 +138,9 @@ async def info_changelog_page(request: Request, user: dict = Depends(require_use
     changelog = ""
     cl_path = BASE_DIR / "CHANGELOG.md"
     if cl_path.exists():
-        changelog = cl_path.read_text(encoding="utf-8")
+        raw = cl_path.read_text(encoding="utf-8")
+        import mistune
+        changelog = mistune.html(raw)
     return render(request, "info_changelog.html", {
         "user": user, "active": "info-changelog", "changelog": changelog,
     })

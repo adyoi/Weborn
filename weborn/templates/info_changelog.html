@@ -6,7 +6,7 @@
 
 <div class="card">
     {% if changelog %}
-    <div class="prose-sm text-[12px] leading-relaxed whitespace-pre-wrap" style="font-family:inherit">{{ changelog }}</div>
+    <div class="prose prose-sm max-w-none text-[14px] leading-relaxed" style="font-family:inherit">{{ changelog | safe }}</div>
     {% else %}
     <div class="text-center text-t3 py-7">Changelog tidak ditemukan.</div>
     {% endif %}
