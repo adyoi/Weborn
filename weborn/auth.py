@@ -161,7 +161,7 @@ def require_admin(request: Request):
 
 def _decode_session_cookie(cookie_value: str, secret_key: str) -> dict | None:
     """Decode Starlette session cookie and return session data dict."""
-    serializer = URLSafeTimedSerializer(secret_key)
+    serializer = URLSafeTimedSerializer(secret_key, salt="starlette.sessions")
     try:
         data = serializer.loads(cookie_value)
         if isinstance(data, dict):
