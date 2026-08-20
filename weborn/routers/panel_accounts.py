@@ -4,7 +4,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from ..auth import require_admin, require_user
 from ..db import (create_panel_user, delete_panel_user, get_login_logs,
-                  list_panel_users, toggle_panel_user_active, update_panel_user)
+                  hash_password, list_panel_users, toggle_panel_user_active,
+                  update_panel_user)
 from ..ui import render
 
 router = APIRouter(tags=["Panel Users"])
@@ -53,7 +54,6 @@ async def panel_accounts_create(
 async def panel_accounts_password(
     user_id: int,
     password: str = Form(...),
-    role: str = Form("user"),
     user: dict = Depends(require_admin),
 ):
     if hasattr(user, "headers"):
@@ -61,7 +61,11 @@ async def panel_accounts_password(
     if len(password) < 6:
         return RedirectResponse("/panel-accounts?msg=Password%20minimal%206%20karakter",
                                 status_code=303)
-    update_panel_user(user_id, password, role)
+    from ..db import get_conn
+    with get_conn() as conn:
+        conn.execute("UPDATE panel_users SET password_hash = ? WHERE id = ?",
+                     (hash_password(password), user_id))
+        conn.commit()
     return RedirectResponse("/panel-accounts?msg=Password%20diperbarui", status_code=303)
 
 
@@ -72,6 +76,21 @@ async def panel_accounts_toggle(user_id: int, user: dict = Depends(require_admin
     toggle_panel_user_active(user_id)
     return RedirectResponse("/panel-accounts?msg=Akun%20diaktifkan/dinonaktifkan",
                             status_code=303)
+
+
+@router.post("/panel-accounts/{user_id}/role")
+async def panel_accounts_role(user_id: int, role: str = Form("user"),
+                               user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    if role not in ("admin", "user"):
+        return RedirectResponse("/panel-accounts?msg=Role%20tidak%20valid",
+                                status_code=303)
+    from ..db import get_conn
+    with get_conn() as conn:
+        conn.execute("UPDATE panel_users SET role = ? WHERE id = ?", (role, user_id))
+        conn.commit()
+    return RedirectResponse("/panel-accounts?msg=Role%20diperbarui", status_code=303)
 
 
 @router.post("/panel-accounts/{user_id}/delete")
