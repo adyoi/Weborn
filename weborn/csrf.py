@@ -7,12 +7,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-from ..config import SESSION_COOKIE
+from .config import SESSION_COOKIE
 
 
 def _get_csrf_secret() -> bytes:
     """Get or create CSRF secret (derived from session secret)."""
-    from ..db import get_secret_key
+    from .db import get_secret_key
     return hashlib.sha256(get_secret_key().encode() + b"csrf").digest()
 
 
