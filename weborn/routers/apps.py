@@ -298,4 +298,7 @@ async def apps_logs_ws(websocket: WebSocket, app_id: int):
     except Exception:
         pass
     finally:
-        await websocket.close()
+        try:
+            await websocket.close()
+        except Exception:
+            pass
