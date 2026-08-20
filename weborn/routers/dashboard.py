@@ -13,21 +13,33 @@ router = APIRouter(tags=["Dashboard"])
 
 def system_stats() -> dict:
     try:
-        import psutil
+        import psutil, time
         vmem = psutil.virtual_memory()
         dsk = psutil.disk_usage("/")
         boot = psutil.boot_time()
-        now = datetime.now().timestamp()
+        now = time.time()
         uptime_sec = int(now - boot)
         days = uptime_sec // 86400
         hours = (uptime_sec % 86400) // 3600
         mins = (uptime_sec % 3600) // 60
+        parts = []
         if days > 0:
-            uptime_str = f"{days} hari {hours} jam {mins} menit"
-        elif hours > 0:
-            uptime_str = f"{hours} jam {mins} menit"
+            parts.append(f"{days}d")
+        if hours > 0 or days > 0:
+            parts.append(f"{hours}h")
+        parts.append(f"{mins}m")
+        uptime_str = " ".join(parts)
+
+        boot_dt = datetime.fromtimestamp(boot)
+        panel_start = datetime.fromtimestamp(psutil.Process().create_time())
+        downtime_sec = int(panel_start.timestamp() - boot)
+        if downtime_sec > 60:
+            d_h = downtime_sec // 3600
+            d_m = (downtime_sec % 3600) // 60
+            downtime_str = f"{d_h}h {d_m}m" if d_h > 0 else f"{d_m}m"
         else:
-            uptime_str = f"{mins} menit"
+            downtime_str = None
+
         GB = 1024 ** 3
         return {
             "cpu": psutil.cpu_percent(interval=0.2),
@@ -39,11 +51,13 @@ def system_stats() -> dict:
             "disk_used": round(dsk.used / GB, 1),
             "disk_total": round(dsk.total / GB, 1),
             "uptime_str": uptime_str,
+            "boot_time": boot_dt.strftime("%Y-%m-%d %H:%M"),
+            "downtime_str": downtime_str,
         }
     except Exception:
         return {"cpu": 0, "cores": 0, "ram": 0, "ram_used": 0,
                 "ram_total": 0, "disk": 0, "disk_used": 0, "disk_total": 0,
-                "uptime_str": "—"}
+                "uptime_str": "—", "boot_time": "—", "downtime_str": None}
 
 
 @router.get("/", response_class=HTMLResponse)

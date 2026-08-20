@@ -67,6 +67,14 @@ CREATE TABLE IF NOT EXISTS login_logs (
     created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS login_attempts (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip          TEXT NOT NULL,
+    attempted_at REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip);
+CREATE INDEX IF NOT EXISTS idx_login_attempts_at ON login_attempts(attempted_at);
+
 CREATE TABLE IF NOT EXISTS dns_records (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     name       TEXT NOT NULL,

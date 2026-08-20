@@ -12,8 +12,9 @@ from .db import get_secret_key, has_panel_users, init_db
 from .executors import get_executor
 from .managers.accounts import AccountManager
 from .routers import (accounts, addons, apps, appmonitor, auth, backup, cron,
-                      dashboard, database, domains, email, info, misc, panel_accounts,
-                      proxy, servers, security, setup, system, webservers)
+                      dashboard, database, domains, email, files, info, misc,
+                      panel_accounts, proxy, security, setup, system, terminal,
+                      webservers)
 
 
 @asynccontextmanager
@@ -31,9 +32,10 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
     for router in (setup.router, auth.router, panel_accounts.router,
-                   dashboard.router, servers.router, domains.router,
+                   dashboard.router, domains.router,
                    proxy.router, addons.router, accounts.router, apps.router,
                    appmonitor.router, webservers.router, system.router,
+                   files.router, terminal.router,
                    cron.router, database.router, backup.router,
                    security.router, email.router, info.router, misc.router):
         app.include_router(router)

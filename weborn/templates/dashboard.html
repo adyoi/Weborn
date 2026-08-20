@@ -7,7 +7,7 @@
         <div class="text-t3 text-xs mt-0.5">Ringkasan server & layanan Weborn</div>
     </div>
     <span class="text-t3 text-[14px]">
-        {{ user.username }} • Uptime {{ stats.uptime_str }}
+        {{ user.username }} • Uptime {{ stats.uptime_str }}{% if stats.downtime_str %} • Downtime {{ stats.downtime_str }}{% endif %} • Boot {{ stats.boot_time }}
     </span>
 </div>
 

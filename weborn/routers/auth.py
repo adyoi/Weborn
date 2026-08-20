@@ -1,32 +1,40 @@
 import time
-from collections import defaultdict
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from .. import auth
 from ..config import SESSION_COOKIE
-from ..db import has_panel_users
+from ..db import get_conn, has_panel_users
 from ..ui import render
 
 router = APIRouter(tags=["Auth"])
 
-_LOGIN_ATTEMPTS: dict[str, list[float]] = defaultdict(list)
 _RATE_LIMIT_MAX = 5
 _RATE_LIMIT_WINDOW = 300
 
 
 def _is_rate_limited(ip: str) -> bool:
     now = time.time()
-    _LOGIN_ATTEMPTS[ip] = [t for t in _LOGIN_ATTEMPTS[ip] if now - t < _RATE_LIMIT_WINDOW]
-    return len(_LOGIN_ATTEMPTS[ip]) >= _RATE_LIMIT_MAX
+    with get_conn() as conn:
+        conn.execute("DELETE FROM login_attempts WHERE attempted_at < ?",
+                     (now - _RATE_LIMIT_WINDOW,))
+        count = conn.execute("SELECT COUNT(*) FROM login_attempts WHERE ip = ?",
+                             (ip,)).fetchone()[0]
+        conn.commit()
+    return count >= _RATE_LIMIT_MAX
 
 
 def _record_failed(ip: str):
-    _LOGIN_ATTEMPTS[ip].append(time.time())
+    with get_conn() as conn:
+        conn.execute("INSERT INTO login_attempts (ip, attempted_at) VALUES (?, ?)",
+                     (ip, time.time()))
+        conn.commit()
 
 
 def _clear_attempts(ip: str):
-    _LOGIN_ATTEMPTS.pop(ip, None)
+    with get_conn() as conn:
+        conn.execute("DELETE FROM login_attempts WHERE ip = ?", (ip,))
+        conn.commit()
 
 
 @router.get("/login", response_class=HTMLResponse)
