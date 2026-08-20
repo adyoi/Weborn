@@ -268,6 +268,7 @@ function openTrace(appId, appName) {
     const title = document.getElementById('trace-title');
     const sub = document.getElementById('trace-sub');
     const status = document.getElementById('trace-status');
+    const modalBox = modal.querySelector('.w-modal-box');
 
     title.textContent = 'Trace Log: ' + appName;
     sub.textContent = 'journalctl -u weborn-' + appName + '.service -f';
@@ -276,6 +277,8 @@ function openTrace(appId, appName) {
     /* Dispose previous terminal if any */
     closeTrace();
 
+    /* Prevent modal overflow-y from stealing width */
+    modalBox.style.overflowY = 'hidden';
     modal.classList.add('open');
 
     /* Create xterm.js terminal */
@@ -294,8 +297,17 @@ function openTrace(appId, appName) {
     traceFitAddon = new FitAddon.FitAddon();
     traceTerm.loadAddon(traceFitAddon);
     traceTerm.open(container);
-    /* Wait for modal CSS transition to complete before fitting */
-    setTimeout(function() { traceFitAddon.fit(); }, 350);
+
+    /* Fit AFTER modal transition completes (reliable width) */
+    function doFit() {
+        if (traceFitAddon) traceFitAddon.fit();
+    }
+    modalBox.addEventListener('transitionend', function handler() {
+        modalBox.removeEventListener('transitionend', handler);
+        doFit();
+    });
+    /* Fallback if transitionend doesn't fire */
+    setTimeout(doFit, 400);
 
     /* Connect WebSocket for live logs */
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -331,9 +343,13 @@ function closeTrace() {
         window.removeEventListener('resize', window._traceResizeHandler);
         window._traceResizeHandler = null;
     }
-    /* Hide modal */
+    /* Hide modal & restore overflow */
     const modal = document.getElementById('trace-modal');
-    if (modal) modal.classList.remove('open');
+    if (modal) {
+        const box = modal.querySelector('.w-modal-box');
+        if (box) box.style.overflowY = '';
+        modal.classList.remove('open');
+    }
 }
 
 function clearTrace() {

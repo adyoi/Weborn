@@ -98,5 +98,5 @@ html[data-theme="light"] {
 .w-modal-backdrop { cursor: pointer; }
 
 /* ── xterm.js row alignment fix ── */
-#trace-terminal { padding: 0 !important; }
+#trace-terminal { padding: 0 !important; width: 100%; box-sizing: border-box; }
 #trace-terminal .xterm { padding: 0 !important; }
