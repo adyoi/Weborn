@@ -296,12 +296,12 @@ function openTrace(appId, appName) {
     traceFitAddon = new FitAddon.FitAddon();
     traceTerm.loadAddon(traceFitAddon);
     traceTerm.open(container);
-    fitAddon.fit();
+    traceFitAddon.fit();
 
     /* Refit when container becomes visible */
     modalBox.addEventListener('transitionend', function handler() {
         modalBox.removeEventListener('transitionend', handler);
-        fitAddon.fit();
+        traceFitAddon.fit();
     });
 
     /* Connect WebSocket for live logs */
