@@ -67,30 +67,46 @@ async def info_test_run(user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
     ex = get_executor()
-    results = []
-    checks = [
+
+    python_checks = [
         ("Python", "python3 -V"),
+        ("Gunicorn", "pip3 show gunicorn 2>/dev/null | grep Version || echo not installed"),
+        ("Uvicorn", "pip3 show uvicorn 2>/dev/null | grep Version || echo not installed"),
+        ("FastAPI", "pip3 show fastapi 2>/dev/null | grep Version || echo not installed"),
+        ("Jinja2", "pip3 show jinja2 2>/dev/null | grep Version || echo not installed"),
+        ("Mistune", "pip3 show mistune 2>/dev/null | grep Version || echo not installed"),
+    ]
+
+    linux_checks = [
         ("Node.js", "node -v"),
         ("Nginx", "nginx -v"),
         ("MariaDB", "mariadb --version"),
         ("PostgreSQL", "psql --version"),
         ("PHP", "php -v | head -1"),
-        ("Gunicorn", "gunicorn --version"),
         ("Git", "git --version"),
         ("Disk Space", "df -h / | tail -1"),
         ("Memory", "free -h | grep Mem"),
     ]
-    for label, cmd in checks:
-        if ex.mode in ("local", "wsl"):
-            r = await ex.run("bash", "-c", cmd)
-            results.append({
-                "label": label,
-                "ok": r.ok,
-                "output": (r.stdout or r.stderr or "not found").strip(),
-            })
-        else:
-            results.append({"label": label, "ok": True, "output": "[dry-run] available"})
-    return JSONResponse({"ok": True, "results": results})
+
+    def run_checks(checks):
+        results = []
+        for label, cmd in checks:
+            if ex.mode in ("local", "wsl"):
+                r = await ex.run("bash", "-c", cmd)
+                results.append({
+                    "label": label,
+                    "ok": r.ok,
+                    "output": (r.stdout or r.stderr or "not found").strip(),
+                })
+            else:
+                results.append({"label": label, "ok": True, "output": "[dry-run] available"})
+        return results
+
+    return JSONResponse({
+        "ok": True,
+        "python": await run_checks(python_checks),
+        "linux": await run_checks(linux_checks),
+    })
 
 
 @router.get("/info/update", response_class=HTMLResponse)

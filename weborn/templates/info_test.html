@@ -8,34 +8,54 @@
     <button class="btn primary sm" onclick="runTest()" id="btn-test">▶ Jalankan Test</button>
 </div>
 
-<div class="card !p-0 overflow-hidden">
+{# ── Python Packages ── #}
+<div class="card !p-0 overflow-hidden mb-4">
+    <div class="px-4 py-2 border-b border-line/30 font-bold text-sm">🐍 Python Packages</div>
     <table>
-        <thead><tr><th>Component</th><th>Status</th><th>Output</th></tr></thead>
-        <tbody id="test-results">
+        <thead><tr><th>Package</th><th>Status</th><th>Version</th></tr></thead>
+        <tbody id="python-results">
+            <tr><td colspan="3" class="text-center text-t3 py-5">Klik tombol di atas untuk mulai test.</td></tr>
+        </tbody>
+    </table>
+</div>
+
+{# ── Linux Packages ── #}
+<div class="card !p-0 overflow-hidden">
+    <div class="px-4 py-2 border-b border-line/30 font-bold text-sm">🐧 Linux Packages</div>
+    <table>
+        <thead><tr><th>Package</th><th>Status</th><th>Output</th></tr></thead>
+        <tbody id="linux-results">
             <tr><td colspan="3" class="text-center text-t3 py-5">Klik tombol di atas untuk mulai test.</td></tr>
         </tbody>
     </table>
 </div>
 
 <script>
+function renderTable(tbodyId, items) {
+    var html = '';
+    (items || []).forEach(function(r) {
+        var cls = r.ok ? 'active' : 'failed';
+        var ico = r.ok ? '✅' : '❌';
+        html += '<tr><td class="text-[14px]">' + r.label + '</td>';
+        html += '<td><span class="st ' + cls + '">' + ico + '</span></td>';
+        html += '<td class="mono text-[13px] text-t3">' + r.output + '</td></tr>';
+    });
+    document.getElementById(tbodyId).innerHTML = html || '<tr><td colspan="3" class="text-center py-3">No results</td></tr>';
+}
+
 function runTest() {
     var btn = document.getElementById('btn-test');
-    var tbody = document.getElementById('test-results');
     btn.disabled = true; btn.textContent = '⏳ Testing...';
-    tbody.innerHTML = '<tr><td colspan="3" class="text-center py-3 text-[12px]">Menjalankan test...</td></tr>';
+    document.getElementById('python-results').innerHTML = '<tr><td colspan="3" class="text-center py-3 text-[14px]">Testing...</td></tr>';
+    document.getElementById('linux-results').innerHTML = '<tr><td colspan="3" class="text-center py-3 text-[14px]">Testing...</td></tr>';
+
     fetch('/info/test/run', {method:'POST'}).then(function(r){return r.json()}).then(function(d){
-        var html = '';
-        (d.results||[]).forEach(function(r){
-            var cls = r.ok ? 'active' : 'failed';
-            var ico = r.ok ? '✅' : '❌';
-            html += '<tr><td class="text-[12px]">'+r.label+'</td>';
-            html += '<td><span class="st '+cls+'">'+ico+'</span></td>';
-            html += '<td class="mono text-[11px] text-t3">'+r.output+'</td></tr>';
-        });
-        tbody.innerHTML = html || '<tr><td colspan="3" class="text-center py-3">No results</td></tr>';
+        renderTable('python-results', d.python);
+        renderTable('linux-results', d.linux);
         btn.disabled = false; btn.textContent = '▶ Jalankan Test';
     }).catch(function(){
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-t3 py-3">Error</td></tr>';
+        document.getElementById('python-results').innerHTML = '<tr><td colspan="3" class="text-center text-t3 py-3">Error</td></tr>';
+        document.getElementById('linux-results').innerHTML = '<tr><td colspan="3" class="text-center text-t3 py-3">Error</td></tr>';
         btn.disabled = false; btn.textContent = '▶ Jalankan Test';
     });
 }
