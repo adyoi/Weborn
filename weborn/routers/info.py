@@ -124,8 +124,17 @@ async def info_update_check(user: dict = Depends(require_admin)):
         return user
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        r = await ex.run("bash", "-c", f"cd {BASE_DIR} && git fetch origin 2>&1 && git log HEAD..origin/main --oneline")
-        lines = [l.strip() for l in r.stdout.strip().splitlines() if l.strip()]
+        r = await ex.run("bash", "-c", f"cd {BASE_DIR} && git fetch origin 2>&1")
+        if r.stdout.strip():
+            lines = [l.strip() for l in r.stdout.strip().splitlines() if l.strip()]
+            for l in lines:
+                if "error" in l.lower() or "fatal" in l.lower() or "unable" in l.lower():
+                    return JSONResponse({
+                        "ok": False, "error": l,
+                        "current": VERSION,
+                    })
+        r2 = await ex.run("bash", "-c", f"cd {BASE_DIR} && git log HEAD..origin/main --oneline 2>/dev/null")
+        lines = [l.strip() for l in r2.stdout.strip().splitlines() if l.strip()]
         return JSONResponse({
             "ok": True,
             "current": VERSION,

@@ -77,6 +77,8 @@ function f2bUnban(ip, jail) {
     var fd = new FormData();
     fd.append('ip', ip);
     fd.append('jail', jail);
+    var csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
+    fd.append('_csrf_token', csrfToken);
     fetch('/security/fail2ban/unban', { method: 'POST', body: fd })
         .then(function() { location.reload(); });
 }

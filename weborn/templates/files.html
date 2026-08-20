@@ -281,6 +281,8 @@ function saveEdit() {
     var form = new FormData();
     form.append('path', editPath);
     form.append('content', cmEditor.getValue());
+    var csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
+    form.append('_csrf_token', csrfToken);
     fetch('/files/save?path=' + encodeURIComponent(editPath), {
         method: 'POST', body: form
     }).then(function(){
