@@ -234,7 +234,7 @@
             </div>
             <button class="btn sm" onclick="closeTrace()">✕ Close</button>
         </div>
-        <div id="trace-terminal" style="height:400px; background:#1a1a2e; border-radius:8px; padding:4px; overflow:hidden;"></div>
+        <div id="trace-terminal" style="height:400px; background:#1a1a2e; border-radius:8px; display:block; overflow:hidden;"></div>
         <div class="flex items-center justify-between mt-2">
             <span class="text-t3 text-[11px]" id="trace-status">Connected — auto-scroll aktif</span>
             <button class="btn sm" onclick="clearTrace()">🗑 Clear</button>
@@ -294,7 +294,8 @@ function openTrace(appId, appName) {
     traceFitAddon = new FitAddon.FitAddon();
     traceTerm.loadAddon(traceFitAddon);
     traceTerm.open(container);
-    setTimeout(function() { traceFitAddon.fit(); }, 100);
+    /* Wait for modal CSS transition to complete before fitting */
+    setTimeout(function() { traceFitAddon.fit(); }, 350);
 
     /* Connect WebSocket for live logs */
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -315,7 +316,7 @@ function openTrace(appId, appName) {
     };
 
     /* Fit terminal on window resize */
-    window._traceResizeHandler = function() { if (traceFitAddon) setTimeout(function() { traceFitAddon.fit(); }, 50); };
+    window._traceResizeHandler = function() { if (traceFitAddon) requestAnimationFrame(function() { traceFitAddon.fit(); }); };
     window.addEventListener('resize', window._traceResizeHandler);
 }
 
