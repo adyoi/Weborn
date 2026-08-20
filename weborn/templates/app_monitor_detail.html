@@ -93,7 +93,7 @@
             <button class="btn sm" onclick="clearTrace()">🗑 Clear</button>
         </div>
     </div>
-    <div id="trace-terminal" style="height:300px; background:#1a1a2e; border-radius:8px; display:block; overflow:hidden;"></div>
+    <div id="trace-terminal" style="height:300px; background:#1a1a2e; border-radius:8px; padding:8px;"></div>
 </div>
 
 {# ── Worker Table ── #}
@@ -154,7 +154,7 @@
     var fitAddon = new FitAddon.FitAddon();
     term.loadAddon(fitAddon);
     term.open(document.getElementById('trace-terminal'));
-    requestAnimationFrame(function() { fitAddon.fit(); });
+    fitAddon.fit();
 
     var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     var ws = new WebSocket(proto + '//' + location.host + '/ws/apps/{{ app.id }}/logs');
@@ -175,7 +175,7 @@
         statusEl.textContent = 'Error koneksi';
     };
 
-    window.addEventListener('resize', function() { requestAnimationFrame(function() { fitAddon.fit(); }); });
+    window.addEventListener('resize', function() { fitAddon.fit(); });
 
     /* Expose clear for the Clear button */
     window.clearTrace = function() { term.clear(); };

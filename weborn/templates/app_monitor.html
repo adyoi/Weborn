@@ -234,7 +234,7 @@
             </div>
             <button class="btn sm" onclick="closeTrace()">✕ Close</button>
         </div>
-        <div id="trace-terminal" style="height:400px; background:#1a1a2e; border-radius:8px; display:block; overflow:hidden;"></div>
+        <div id="trace-terminal" style="height:400px; background:#1a1a2e; border-radius:8px; padding:8px;"></div>
         <div class="flex items-center justify-between mt-2">
             <span class="text-t3 text-[11px]" id="trace-status">Connected — auto-scroll aktif</span>
             <button class="btn sm" onclick="clearTrace()">🗑 Clear</button>
@@ -277,8 +277,6 @@ function openTrace(appId, appName) {
     /* Dispose previous terminal if any */
     closeTrace();
 
-    /* Prevent modal overflow-y from stealing width */
-    modalBox.style.overflowY = 'hidden';
     modal.classList.add('open');
 
     /* Create xterm.js terminal */
@@ -293,26 +291,18 @@ function openTrace(appId, appName) {
         },
         disableStdin: true,
         scrollback: 5000,
+        allowProposedApi: true,
     });
     traceFitAddon = new FitAddon.FitAddon();
     traceTerm.loadAddon(traceFitAddon);
     traceTerm.open(container);
+    fitAddon.fit();
 
-    /* Fit AFTER modal transition completes (reliable width) */
-    function doFit() {
-        /* Double rAF: wait for browser to finish paint after transition */
-        requestAnimationFrame(function() {
-            requestAnimationFrame(function() {
-                if (traceFitAddon) traceFitAddon.fit();
-            });
-        });
-    }
+    /* Refit when container becomes visible */
     modalBox.addEventListener('transitionend', function handler() {
         modalBox.removeEventListener('transitionend', handler);
-        doFit();
+        fitAddon.fit();
     });
-    /* Fallback if transitionend doesn't fire */
-    setTimeout(doFit, 500);
 
     /* Connect WebSocket for live logs */
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -333,7 +323,7 @@ function openTrace(appId, appName) {
     };
 
     /* Fit terminal on window resize */
-    window._traceResizeHandler = function() { if (traceFitAddon) requestAnimationFrame(function() { requestAnimationFrame(function() { traceFitAddon.fit(); }); }); };
+    window._traceResizeHandler = function() { if (traceFitAddon) traceFitAddon.fit(); };
     window.addEventListener('resize', window._traceResizeHandler);
 }
 
@@ -348,13 +338,9 @@ function closeTrace() {
         window.removeEventListener('resize', window._traceResizeHandler);
         window._traceResizeHandler = null;
     }
-    /* Hide modal & restore overflow */
+    /* Hide modal */
     const modal = document.getElementById('trace-modal');
-    if (modal) {
-        const box = modal.querySelector('.w-modal-box');
-        if (box) box.style.overflowY = '';
-        modal.classList.remove('open');
-    }
+    if (modal) modal.classList.remove('open');
 }
 
 function clearTrace() {
