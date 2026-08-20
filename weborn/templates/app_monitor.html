@@ -15,7 +15,7 @@
 </div>
 
 {# ── Summary Cards ── #}
-    <div class="grid grid-cols-5 gap-4 mb-6">
+    <div class="grid grid-cols-4 gap-4 mb-6">
     <div class="card p-4 text-center">
         <div class="text-2xl font-bold text-green-400">{{ apps | selectattr('gunicorn_status', 'eq', 'active') | list | length }}</div>
         <div class="text-t3 text-xs mt-1">Running</div>
@@ -300,14 +300,19 @@ function openTrace(appId, appName) {
 
     /* Fit AFTER modal transition completes (reliable width) */
     function doFit() {
-        if (traceFitAddon) traceFitAddon.fit();
+        /* Double rAF: wait for browser to finish paint after transition */
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                if (traceFitAddon) traceFitAddon.fit();
+            });
+        });
     }
     modalBox.addEventListener('transitionend', function handler() {
         modalBox.removeEventListener('transitionend', handler);
         doFit();
     });
     /* Fallback if transitionend doesn't fire */
-    setTimeout(doFit, 400);
+    setTimeout(doFit, 500);
 
     /* Connect WebSocket for live logs */
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -328,7 +333,7 @@ function openTrace(appId, appName) {
     };
 
     /* Fit terminal on window resize */
-    window._traceResizeHandler = function() { if (traceFitAddon) requestAnimationFrame(function() { traceFitAddon.fit(); }); };
+    window._traceResizeHandler = function() { if (traceFitAddon) requestAnimationFrame(function() { requestAnimationFrame(function() { traceFitAddon.fit(); }); }); };
     window.addEventListener('resize', window._traceResizeHandler);
 }
 
