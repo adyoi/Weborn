@@ -69,7 +69,15 @@ async def terminal_ws(websocket: WebSocket):
             os.dup2(slave_fd, 2)
             os.close(slave_fd)
             username = user.get("username", "root")
-            os.execvp("su", ["su", "-", username])
+            import subprocess
+            try:
+                result = subprocess.run(["id", username], capture_output=True, timeout=3)
+                if result.returncode == 0:
+                    os.execvp("su", ["su", "-", username])
+                else:
+                    os.execvp("/bin/bash", ["/bin/bash", "--login"])
+            except Exception:
+                os.execvp("/bin/bash", ["/bin/bash", "--login"])
         os.close(slave_fd)
         await websocket.send_text("\033[1;32m[Terminal Weborn]\033[0m Siap.\r\n")
         async def read_pty():
