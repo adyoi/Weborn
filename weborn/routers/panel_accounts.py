@@ -1,4 +1,7 @@
 """Manajemen akun panel Weborn (bukan akun OS Linux)."""
+import re as _re
+import shlex
+
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
@@ -6,6 +9,7 @@ from ..auth import require_admin, require_user
 from ..db import (create_panel_user, delete_panel_user, get_login_logs,
                   hash_password, list_panel_users, toggle_panel_user_active,
                   update_panel_user)
+from ..executors import get_executor
 from ..ui import render
 
 router = APIRouter(tags=["Panel Users"])
@@ -47,6 +51,18 @@ async def panel_accounts_create(
     if not ok:
         return RedirectResponse("/panel-accounts?msg=Username%20sudah%20digunakan",
                                 status_code=303)
+
+    ex = get_executor()
+    if ex.mode in ("local", "wsl"):
+        if _re.match(r"^[a-z_][a-z0-9_-]{2,31}$", username):
+            check = await ex.run("bash", "-c",
+                                 f"id {shlex.quote(username)} >/dev/null 2>&1 && echo exists || echo new")
+            if "new" in check.stdout:
+                await ex.run("useradd", "-m", "-s", "/bin/bash", "-G", "sudo", username)
+                await ex.run("bash", "-c",
+                             f"echo {shlex.quote(username + ':' + password)} | chpasswd")
+                await ex.run("usermod", "-aG", "ssh-user", username)
+
     return RedirectResponse("/panel-accounts?msg=Akun%20panel%20dibuat", status_code=303)
 
 
