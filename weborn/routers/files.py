@@ -253,17 +253,22 @@ async def files_delete(path: str = Form(...), user: dict = Depends(require_admin
     resolved = _resolve_fs_path(path)
     if resolved is None:
         return JSONResponse({"ok": False, "error": "path tidak valid"}, status_code=400)
-    if resolved.is_file():
-        resolved.unlink()
-        ok = True
-    elif resolved.is_dir():
-        try:
-            resolved.rmdir()
-            ok = True
-        except OSError:
-            ok = False
+    ex = get_executor()
+    if ex.mode in ("local", "wsl"):
+        r = await ex.run("bash", "-c", f"sudo rm -rf '{resolved}'")
+        ok = r.ok
     else:
-        ok = False
+        if resolved.is_file():
+            resolved.unlink()
+            ok = True
+        elif resolved.is_dir():
+            try:
+                resolved.rmdir()
+                ok = True
+            except OSError:
+                ok = False
+        else:
+            ok = False
     ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     return RedirectResponse(f"/files?path={resolved.parent}&deleted={ok}&name={resolved.name}&ts={ts}", status_code=303)
 
