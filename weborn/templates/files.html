@@ -138,6 +138,7 @@
     <div class="w-modal-box w-[380px]">
         <h3 class="w-modal-title">📄 Buat File</h3>
         <form method="post" action="/files/create" class="flex flex-col gap-2">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="path" value="{{ path }}">
             <input type="hidden" name="kind" value="file">
             <input name="name" placeholder="filename.txt" required class="sm w-full">
@@ -154,6 +155,7 @@
     <div class="w-modal-box w-[380px]">
         <h3 class="w-modal-title">📁 Buat Direktori</h3>
         <form method="post" action="/files/create" class="flex flex-col gap-2">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="path" value="{{ path }}">
             <input type="hidden" name="kind" value="dir">
             <input name="name" placeholder="nama-folder" required class="sm w-full">
