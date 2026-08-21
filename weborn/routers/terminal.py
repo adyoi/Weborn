@@ -68,7 +68,8 @@ async def terminal_ws(websocket: WebSocket):
             os.dup2(slave_fd, 1)
             os.dup2(slave_fd, 2)
             os.close(slave_fd)
-            os.execvp("/bin/bash", ["/bin/bash", "--login"])
+            username = user.get("username", "root")
+            os.execvp("su", ["su", "-", username])
         os.close(slave_fd)
         await websocket.send_text("\033[1;32m[Terminal Weborn]\033[0m Siap.\r\n")
         async def read_pty():
