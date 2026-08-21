@@ -95,7 +95,19 @@ async def panel_accounts_password(
     with get_conn() as conn:
         conn.execute("UPDATE users SET password_hash = ? WHERE id = ?",
                      (hash_password(password), user_id))
+        row = conn.execute("SELECT username FROM users WHERE id = ?", (user_id,)).fetchone()
         conn.commit()
+
+    username = row["username"] if row else ""
+    ex = get_executor()
+    if ex.mode in ("local", "wsl") and username:
+        if _re.match(r"^[a-z_][a-z0-9_-]{2,31}$", username):
+            check = await ex.run("bash", "-c",
+                                 f"id {shlex.quote(username)} >/dev/null 2>&1 && echo exists || echo new")
+            if "exists" in check.stdout:
+                await ex.run("bash", "-c",
+                             f"echo {shlex.quote(username + ':' + password)} | chpasswd")
+
     return RedirectResponse("/panel-accounts?msg=Password%20diperbarui", status_code=303)
 
 
