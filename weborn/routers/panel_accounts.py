@@ -60,11 +60,11 @@ async def panel_accounts_create(
             if "new" in check.stdout:
                 await ex.run("useradd", "-m", "-s", "/bin/bash", "-G", "sudo", username)
                 await ex.run("bash", "-c",
-                             f"echo {shlex.quote(username + ':' + password)} | chpasswd")
+                             f"echo {shlex.quote(username + ':' + password)} | sudo chpasswd")
                 await ex.run("usermod", "-aG", "ssh-user", username)
             else:
                 await ex.run("bash", "-c",
-                             f"echo {shlex.quote(username + ':' + password)} | chpasswd")
+                             f"echo {shlex.quote(username + ':' + password)} | sudo chpasswd")
 
     return RedirectResponse("/panel-accounts?msg=Akun%20panel%20dibuat", status_code=303)
 
@@ -106,7 +106,7 @@ async def panel_accounts_password(
                                  f"id {shlex.quote(username)} >/dev/null 2>&1 && echo exists || echo new")
             if "exists" in check.stdout:
                 await ex.run("bash", "-c",
-                             f"echo {shlex.quote(username + ':' + password)} | chpasswd")
+                             f"echo {shlex.quote(username + ':' + password)} | sudo chpasswd")
 
     return RedirectResponse("/panel-accounts?msg=Password%20diperbarui", status_code=303)
 

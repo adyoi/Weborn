@@ -51,10 +51,10 @@ async def setup_action(
         if "new" in check.stdout:
             await ex.run("useradd", "-m", "-s", "/bin/bash", "-G", "sudo", username)
             await ex.run("bash", "-c",
-                         f"echo {shlex.quote(username + ':' + password)} | chpasswd")
+                         f"echo {shlex.quote(username + ':' + password)} | sudo chpasswd")
             await ex.run("usermod", "-aG", "ssh-user", username)
         else:
             await ex.run("bash", "-c",
-                         f"echo {shlex.quote(username + ':' + password)} | chpasswd")
+                         f"echo {shlex.quote(username + ':' + password)} | sudo chpasswd")
 
     return RedirectResponse("/login?msg=Akun+admin+dan+user+Linux+dibuat", status_code=303)
