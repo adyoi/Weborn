@@ -49,12 +49,12 @@ async def setup_action(
         # Cek apakah user sudah ada di OS
         check = await ex.run("bash", "-c", f"id {shlex.quote(username)} >/dev/null 2>&1 && echo exists || echo new")
         if "new" in check.stdout:
-            # Buat user OS dengan home directory + bash shell
             await ex.run("useradd", "-m", "-s", "/bin/bash", "-G", "sudo", username)
-            # Set password OS
             await ex.run("bash", "-c",
                          f"echo {shlex.quote(username + ':' + password)} | chpasswd")
-            # Pastikan user bisa login via SSH
             await ex.run("usermod", "-aG", "ssh-user", username)
+        else:
+            await ex.run("bash", "-c",
+                         f"echo {shlex.quote(username + ':' + password)} | chpasswd")
 
     return RedirectResponse("/login?msg=Akun+admin+dan+user+Linux+dibuat", status_code=303)

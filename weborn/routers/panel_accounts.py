@@ -62,6 +62,9 @@ async def panel_accounts_create(
                 await ex.run("bash", "-c",
                              f"echo {shlex.quote(username + ':' + password)} | chpasswd")
                 await ex.run("usermod", "-aG", "ssh-user", username)
+            else:
+                await ex.run("bash", "-c",
+                             f"echo {shlex.quote(username + ':' + password)} | chpasswd")
 
     return RedirectResponse("/panel-accounts?msg=Akun%20panel%20dibuat", status_code=303)
 
