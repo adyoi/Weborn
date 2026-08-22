@@ -12,103 +12,104 @@
 <div class="flex min-h-screen">
     <aside class="sidebar bg-pane border-r border-line px-3.5 py-5 flex flex-col gap-3.5 sticky top-0 h-screen overflow-y-auto w-60 shrink-0">
         <div class="logo flex items-center gap-2.5 px-2 pb-3 border-b border-line">
-            <div class="hex">🐝</div>
+            <div class="hex">{{ icon('bolt', 'w-5 h-5') }}</div>
             <div><b class="text-lg tracking-wide">WEBORN</b><small class="text-t3 text-[13px] block">version {{ version }}</small></div>
-        </div>
+       </div>
 
         <nav>
             {# ── Beranda ── #}
             <div class="menu-group mt-1">
                 <h4 class="text-[12px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Beranda</h4>
-                <a href="/" class="menu-link {{ 'menu-active' if active == 'dashboard' else '' }}">📊 Dashboard</a>
-                <a href="/apps" class="menu-link {{ 'menu-active' if active == 'apps' else '' }}">⚡ Application</a>
-                <a href="/addons" class="menu-link {{ 'menu-active' if active == 'addons' else '' }}">🧩 Addon Store</a>
-                <a href="/apps/monitor" class="menu-link {{ 'menu-active' if active == 'app-monitor' else '' }}">🧠 Apps Monitor</a>
-            </div>
+                <a href="/" class="menu-link {{ 'menu-active' if active == 'dashboard' else '' }}">{{ icon('chart-bar', 'w-5 h-5 shrink-0') }} Dashboard</a>
+                <a href="/apps" class="menu-link {{ 'menu-active' if active == 'apps' else '' }}">{{ icon('rocket-launch', 'w-5 h-5 shrink-0') }} Application</a>
+                <a href="/addons" class="menu-link {{ 'menu-active' if active == 'addons' else '' }}">{{ icon('puzzle-piece', 'w-5 h-5 shrink-0') }} Addon Store</a>
+                <a href="/apps/monitor" class="menu-link {{ 'menu-active' if active == 'app-monitor' else '' }}">{{ icon('eye', 'w-5 h-5 shrink-0') }} Apps Monitor</a>
+           </div>
 
             {# ── Web Server ── #}
             <div class="menu-group mt-1">
                 <h4 class="text-[12px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Web Server</h4>
-                <a href="/web-server/cache" class="menu-link {{ 'menu-active' if active == 'ws-cache' else '' }}">⚡ Cache</a>
-                <a href="/web-server/nginx" class="menu-link {{ 'menu-active' if active == 'ws-nginx' else '' }}">🌐 Nginx</a>
-                <a href="/web-server/php" class="menu-link {{ 'menu-active' if active == 'ws-php' else '' }}">🐘 PHP-FPM</a>
-                <a href="/reverse-proxy" class="menu-link {{ 'menu-active' if active == 'proxy' else '' }}">🔄 Reverse Proxy</a>
-                <a href="/domains" class="menu-link {{ 'menu-active' if active == 'domains' else '' }}">🏷️ Domain & DNS</a>
-            </div>
+                <a href="/web-server/cache" class="menu-link {{ 'menu-active' if active == 'ws-cache' else '' }}">{{ icon('bolt', 'w-5 h-5 shrink-0') }} Cache</a>
+                <a href="/web-server/nginx" class="menu-link {{ 'menu-active' if active == 'ws-nginx' else '' }}">{{ icon('globe-alt', 'w-5 h-5 shrink-0') }} Nginx</a>
+                <a href="/web-server/apache" class="menu-link {{ 'menu-active' if active == 'ws-apache' else '' }}">{{ icon('server-stack', 'w-5 h-5 shrink-0') }} Apache</a>
+                <a href="/web-server/php" class="menu-link {{ 'menu-active' if active == 'ws-php' else '' }}">{{ icon('code-bracket', 'w-5 h-5 shrink-0') }} PHP-FPM</a>
+                <a href="/reverse-proxy" class="menu-link {{ 'menu-active' if active == 'proxy' else '' }}">{{ icon('arrows-right-left', 'w-5 h-5 shrink-0') }} Reverse Proxy</a>
+                <a href="/domains" class="menu-link {{ 'menu-active' if active == 'domains' else '' }}">{{ icon('tag', 'w-5 h-5 shrink-0') }} Domain & DNS</a>
+           </div>
 
             {# ── Database ── #}
             <div class="menu-group mt-1">
                 <h4 class="text-[12px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Database</h4>
-                <a href="/database/redis" class="menu-link {{ 'menu-active' if active == 'db-redis' else '' }}">🔴 Redis</a>
-                <a href="/database" class="menu-link {{ 'menu-active' if active == 'database' else '' }}">🗄️ MariaDB</a>
-                <a href="/database/mongodb" class="menu-link {{ 'menu-active' if active == 'db-mongo' else '' }}">🍃 MongoDB</a>
-                <a href="/database/pg" class="menu-link {{ 'menu-active' if active == 'db-pg' else '' }}">🐘 PostgreSQL</a>
-                <a href="/database/memcached" class="menu-link {{ 'menu-active' if active == 'db-memcached' else '' }}">⚡ Memcached</a>
-            </div>
+                <a href="/database/redis" class="menu-link {{ 'menu-active' if active == 'db-redis' else '' }}">{{ icon('circle-stack', 'w-5 h-5 shrink-0') }} Redis</a>
+                <a href="/database" class="menu-link {{ 'menu-active' if active == 'database' else '' }}">{{ icon('server-stack', 'w-5 h-5 shrink-0') }} MariaDB</a>
+                <a href="/database/mongodb" class="menu-link {{ 'menu-active' if active == 'db-mongo' else '' }}">{{ icon('cube', 'w-5 h-5 shrink-0') }} MongoDB</a>
+                <a href="/database/pg" class="menu-link {{ 'menu-active' if active == 'db-pg' else '' }}">{{ icon('circle-stack', 'w-5 h-5 shrink-0') }} PostgreSQL</a>
+                <a href="/database/memcached" class="menu-link {{ 'menu-active' if active == 'db-memcached' else '' }}">{{ icon('square-3-stack-3d', 'w-5 h-5 shrink-0') }} Memcached</a>
+           </div>
 
             {# ── Mail Server ── #}
             <div class="menu-group mt-1">
                 <h4 class="text-[12px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Mail Server</h4>
-                <a href="/email/accounts" class="menu-link {{ 'menu-active' if active == 'email-accounts' else '' }}">👤 Mailbox</a>
-                <a href="/email" class="menu-link {{ 'menu-active' if active == 'email' else '' }}">📧 Overview</a>
-                <a href="/email/webmail" class="menu-link {{ 'menu-active' if active == 'email-webmail' else '' }}">📮 Webmail</a>
-                <a href="/email/dns" class="menu-link {{ 'menu-active' if active == 'email-dns' else '' }}">📡 Mail DNS</a>
-                <a href="/email/security" class="menu-link {{ 'menu-active' if active == 'email-security' else '' }}">🛡️ Spam & DKIM</a>
-            </div>
+                <a href="/email/accounts" class="menu-link {{ 'menu-active' if active == 'email-accounts' else '' }}">{{ icon('user-group', 'w-5 h-5 shrink-0') }} Mailbox</a>
+                <a href="/email" class="menu-link {{ 'menu-active' if active == 'email' else '' }}">{{ icon('envelope', 'w-5 h-5 shrink-0') }} Overview</a>
+                <a href="/email/webmail" class="menu-link {{ 'menu-active' if active == 'email-webmail' else '' }}">{{ icon('inbox', 'w-5 h-5 shrink-0') }} Webmail</a>
+                <a href="/email/dns" class="menu-link {{ 'menu-active' if active == 'email-dns' else '' }}">{{ icon('signal', 'w-5 h-5 shrink-0') }} Mail DNS</a>
+                <a href="/email/security" class="menu-link {{ 'menu-active' if active == 'email-security' else '' }}">{{ icon('shield-check', 'w-5 h-5 shrink-0') }} Spam & DKIM</a>
+           </div>
 
             {# ── Monitoring ── #}
             <div class="menu-group mt-1">
                 <h4 class="text-[12px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Monitoring</h4>
-                <a href="/logs" class="menu-link {{ 'menu-active' if active == 'logs' else '' }}">📄 Logs</a>
-                <a href="/packages" class="menu-link {{ 'menu-active' if active == 'packages' else '' }}">📦 Paket</a>
-                <a href="/processes" class="menu-link {{ 'menu-active' if active == 'processes' else '' }}">🧠 Proses</a>
-                <a href="/network" class="menu-link {{ 'menu-active' if active == 'network' else '' }}">🌍 Network</a>
-                <a href="/cron" class="menu-link {{ 'menu-active' if active == 'cron' else '' }}">⏰ Cron Jobs</a>
-            </div>
+                <a href="/logs" class="menu-link {{ 'menu-active' if active == 'logs' else '' }}">{{ icon('document-text', 'w-5 h-5 shrink-0') }} Logs</a>
+                <a href="/packages" class="menu-link {{ 'menu-active' if active == 'packages' else '' }}">{{ icon('archive-box', 'w-5 h-5 shrink-0') }} Paket</a>
+                <a href="/processes" class="menu-link {{ 'menu-active' if active == 'processes' else '' }}">{{ icon('cpu-chip', 'w-5 h-5 shrink-0') }} Proses</a>
+                <a href="/network" class="menu-link {{ 'menu-active' if active == 'network' else '' }}">{{ icon('globe-alt', 'w-5 h-5 shrink-0') }} Network</a>
+                <a href="/cron" class="menu-link {{ 'menu-active' if active == 'cron' else '' }}">{{ icon('clock', 'w-5 h-5 shrink-0') }} Cron Jobs</a>
+           </div>
 
             {# ── Security ── #}
             <div class="menu-group mt-1">
                 <h4 class="text-[12px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Security</h4>
-                <a href="/security/clamav" class="menu-link {{ 'menu-active' if active == 'clamav' else '' }}">🦠 ClamAV</a>
-                <a href="/security/firewall" class="menu-link {{ 'menu-active' if active == 'security' else '' }}">🛡️ Firewall</a>
-                <a href="/security/fail2ban" class="menu-link {{ 'menu-active' if active == 'fail2ban' else '' }}">⛔ Fail2Ban</a>
-            </div>
+                <a href="/security/clamav" class="menu-link {{ 'menu-active' if active == 'clamav' else '' }}">{{ icon('bug-ant', 'w-5 h-5 shrink-0') }} ClamAV</a>
+                <a href="/security/firewall" class="menu-link {{ 'menu-active' if active == 'security' else '' }}">{{ icon('fire', 'w-5 h-5 shrink-0') }} Firewall</a>
+                <a href="/security/fail2ban" class="menu-link {{ 'menu-active' if active == 'fail2ban' else '' }}">{{ icon('no-symbol', 'w-5 h-5 shrink-0') }} Fail2Ban</a>
+           </div>
 
             {# ── Access ── #}
             <div class="menu-group mt-1">
                 <h4 class="text-[12px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Access</h4>
-                <a href="/backup" class="menu-link {{ 'menu-active' if active == 'backup' else '' }}">💾 Backup</a>
-                <a href="/services" class="menu-link {{ 'menu-active' if active == 'services' else '' }}">⚙️ Services</a>
-                <a href="/settings" class="menu-link {{ 'menu-active' if active == 'settings' else '' }}">⚙️ Settings</a>
-                <a href="/terminal" class="menu-link {{ 'menu-active' if active == 'terminal' else '' }}">💻 Terminal</a>
-                <a href="/accounts" class="menu-link {{ 'menu-active' if active == 'accounts' else '' }}">👤 OS Users</a>
-                <a href="/panel-accounts" class="menu-link {{ 'menu-active' if active == 'panel-accounts' else '' }}">🔑 Panel Users</a>
-                <a href="/files" class="menu-link {{ 'menu-active' if active == 'files' else '' }}">📁 File Explorer</a>
-            </div>
+                <a href="/backup" class="menu-link {{ 'menu-active' if active == 'backup' else '' }}">{{ icon('arrow-down-tray', 'w-5 h-5 shrink-0') }} Backup</a>
+                <a href="/services" class="menu-link {{ 'menu-active' if active == 'services' else '' }}">{{ icon('wrench', 'w-5 h-5 shrink-0') }} Services</a>
+                <a href="/settings" class="menu-link {{ 'menu-active' if active == 'settings' else '' }}">{{ icon('cog-6-tooth', 'w-5 h-5 shrink-0') }} Settings</a>
+                <a href="/terminal" class="menu-link {{ 'menu-active' if active == 'terminal' else '' }}">{{ icon('command-line', 'w-5 h-5 shrink-0') }} Terminal</a>
+                <a href="/accounts" class="menu-link {{ 'menu-active' if active == 'accounts' else '' }}">{{ icon('user-group', 'w-5 h-5 shrink-0') }} OS Users</a>
+                <a href="/panel-accounts" class="menu-link {{ 'menu-active' if active == 'panel-accounts' else '' }}">{{ icon('key', 'w-5 h-5 shrink-0') }} Panel Users</a>
+                <a href="/files" class="menu-link {{ 'menu-active' if active == 'files' else '' }}">{{ icon('folder', 'w-5 h-5 shrink-0') }} File Explorer</a>
+           </div>
 
             {# ── Info ── #}
             <div class="menu-group mt-1">
                 <h4 class="text-[12px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Info</h4>
-                <a href="/info/test" class="menu-link {{ 'menu-active' if active == 'info-test' else '' }}">🧪 Test</a>
-                <a href="/info/about" class="menu-link {{ 'menu-active' if active == 'info-about' else '' }}">ℹ️ About</a>
-                <a href="/info/status" class="menu-link {{ 'menu-active' if active == 'info-status' else '' }}">📊 Status</a>
-                <a href="/info/update" class="menu-link {{ 'menu-active' if active == 'info-update' else '' }}">🔄 Update</a>
-                <a href="/info/changelog" class="menu-link {{ 'menu-active' if active == 'info-changelog' else '' }}">📋 Changelog</a>
-            </div>
-        </nav>
+                <a href="/info/test" class="menu-link {{ 'menu-active' if active == 'info-test' else '' }}">{{ icon('beaker', 'w-5 h-5 shrink-0') }} Test</a>
+                <a href="/info/about" class="menu-link {{ 'menu-active' if active == 'info-about' else '' }}">{{ icon('information-circle', 'w-5 h-5 shrink-0') }} About</a>
+                <a href="/info/status" class="menu-link {{ 'menu-active' if active == 'info-status' else '' }}">{{ icon('chart-bar-square', 'w-5 h-5 shrink-0') }} Status</a>
+                <a href="/info/update" class="menu-link {{ 'menu-active' if active == 'info-update' else '' }}">{{ icon('arrow-path', 'w-5 h-5 shrink-0') }} Update</a>
+                <a href="/info/changelog" class="menu-link {{ 'menu-active' if active == 'info-changelog' else '' }}">{{ icon('clipboard-document-list', 'w-5 h-5 shrink-0') }} Changelog</a>
+           </div>
+       </nav>
 
         <div class="theme-row flex gap-2 mt-auto">
-            <button id="theme-toggle" class="btn flex-1 justify-center" onclick="weborn.cycleTheme()"
-                    data-tip="Tema: Sistem / Terang / Gelap">🌓</button>
+            <button id="theme-toggle" class="btn sm flex-1 justify-center" onclick="weborn.cycleTheme()"
+                    data-tip="Tema: Sistem / Terang / Gelap">{{ icon('sun', 'w-5 h-5') }}</button>
             <form method="post" action="/logout" class="flex-2">
-                <button class="btn danger justify-center w-full" type="submit">⏻ Logout</button>
-            </form>
-        </div>
-    </aside>
+                <button class="btn sm danger justify-center w-full" type="submit">{{ icon('power', 'w-5 h-5') }} Logout</button>
+           </form>
+       </div>
+   </aside>
 
     <main class="main flex-1 px-7 py-6 max-w-[1200px]">
         {% block content %}{% endblock %}
-    </main>
+   </main>
 </div>
 
 <div id="progress-overlay" class="overlay">
@@ -117,20 +118,20 @@
         <h3 id="progress-title" class="text-base my-3 mb-3.5">Memproses…</h3>
         <div class="progress-track">
             <div id="progress-fill" class="progress-fill"></div>
-        </div>
+       </div>
         <div id="progress-step" class="progress-step mt-2.5 text-t2 text-[12.5px]"></div>
         <pre id="progress-output" class="output hidden mt-3"></pre>
         <div class="text-right mt-3.5">
             <button id="progress-close" class="btn primary hidden" onclick="weborn.hideProgress()">Tutup</button>
-        </div>
-    </div>
+       </div>
+   </div>
 </div>
 
 <script src="/static/js/panel.js"></script>
 <script>
 /* Auto-inject CSRF token into all forms */
 (function() {
-    var token = '{{ csrf_token }}';
+    var token = '{{ csrf_token }} ';
     if (!token) return;
     document.querySelectorAll('form[method="post"]').forEach(function(form) {
         if (!form.querySelector('input[name="_csrf_token"]')) {

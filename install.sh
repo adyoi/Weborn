@@ -63,7 +63,6 @@ if [ ! -d "$APP_DIR/.venv" ]; then
 fi
 "$APP_DIR/.venv/bin/pip" install --upgrade pip -q
 "$APP_DIR/.venv/bin/pip" install -r "$SRC_DIR/requirements.txt" -q
-"$APP_DIR/.venv/bin/pip" install gunicorn -q
 
 # ---------- 3. salin kode (tanpa data/git) ----------
 echo "==> [3/5] Salin kode aplikasi..."
@@ -89,7 +88,7 @@ After=network.target
 Type=simple
 Environment=WEBORN_EXECUTOR_MODE=local
 WorkingDirectory=$APP_DIR
-ExecStart=$APP_DIR/.venv/bin/python $APP_DIR/run.py --host 0.0.0.0 --port $PORT
+ExecStart=$APP_DIR/.venv/bin/python $APP_DIR/weborn.py --host 0.0.0.0 --port $PORT
 Restart=always
 RestartSec=3
 

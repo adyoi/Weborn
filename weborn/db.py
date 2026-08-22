@@ -15,11 +15,13 @@ from .config import DB_PATH
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    username      TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    role          TEXT NOT NULL DEFAULT 'admin',
-    created_at    TEXT NOT NULL
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    username         TEXT NOT NULL UNIQUE,
+    password_hash    TEXT NOT NULL,
+    role             TEXT NOT NULL DEFAULT 'admin',
+    is_active        INTEGER NOT NULL DEFAULT 1,
+    session_timeout  INTEGER NOT NULL DEFAULT 300,
+    created_at       TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -112,12 +114,26 @@ CREATE TABLE IF NOT EXISTS crons (
 """
 
 
+class _Conn:
+    """Context manager that closes the connection on exit."""
+    def __init__(self, conn):
+        self.conn = conn
+    def __enter__(self):
+        return self.conn
+    def __exit__(self, *args):
+        try:
+            self.conn.close()
+        except Exception:
+            pass
+
+
 def get_conn():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=10)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
-    return conn
+    conn.execute("PRAGMA busy_timeout=5000")
+    return _Conn(conn)
 
 
 def hash_password(password: str, salt: str | None = None) -> str:
@@ -189,6 +205,8 @@ def init_db():
         ucols = {r[1] for r in conn.execute("PRAGMA table_info(users)").fetchall()}
         if "is_active" not in ucols:
             conn.execute("ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1")
+        if "session_timeout" not in ucols:
+            conn.execute("ALTER TABLE users ADD COLUMN session_timeout INTEGER NOT NULL DEFAULT 300")
         # migration: add app_type to apps
         acols = {r[1] for r in conn.execute("PRAGMA table_info(apps)").fetchall()}
         if "app_type" not in acols:
@@ -242,9 +260,10 @@ def create_panel_user(username: str, password: str, role: str = "user") -> bool:
 def list_panel_users() -> list[dict]:
     with get_conn() as conn:
         rows = [dict(r) for r in conn.execute(
-            "SELECT id, username, role, created_at, is_active FROM users ORDER BY id").fetchall()]
+            "SELECT id, username, role, created_at, is_active, session_timeout FROM users ORDER BY id").fetchall()]
     for r in rows:
         r.setdefault("is_active", 1)
+        r.setdefault("session_timeout", 300)
     return rows
 
 
@@ -261,6 +280,13 @@ def update_panel_user(user_id: int, password: str, role: str) -> bool:
 def delete_panel_user(user_id: int) -> bool:
     with get_conn() as conn:
         conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
+    return True
+
+
+def update_session_timeout(user_id: int, timeout: int) -> bool:
+    with get_conn() as conn:
+        conn.execute("UPDATE users SET session_timeout = ? WHERE id = ?", (timeout, user_id))
         conn.commit()
     return True
 

@@ -20,6 +20,23 @@ from .config import SESSION_COOKIE, USE_PAM
 
 JWT_EXPIRY_HOURS = 24
 
+# ── Idle lock tracking (in-memory per-process) ──
+import time as _time
+_last_activity: dict[int, float] = {}  # user_id → timestamp
+
+
+def touch_activity(user_id: int):
+    _last_activity[user_id] = _time.time()
+
+
+def is_idle_locked(user_id: int, timeout_sec: int) -> bool:
+    if timeout_sec <= 0:
+        return False
+    last = _last_activity.get(user_id)
+    if last is None:
+        return False
+    return (_time.time() - last) > timeout_sec
+
 # Linux-only modules (not available on Windows)
 _crypt = None
 _spwd = None
@@ -112,6 +129,7 @@ def login(request: Request, username: str, password: str):
         resp = RedirectResponse("/", status_code=303)
         _set_jwt_cookie(resp, token)
         db.log_login(row["id"], username, ip, True)
+        touch_activity(row["id"])
         return resp
 
     # ── Step 2: Fallback ke PAM (/etc/shadow) ──
@@ -136,6 +154,7 @@ def login(request: Request, username: str, password: str):
         resp = RedirectResponse("/", status_code=303)
         _set_jwt_cookie(resp, token)
         db.log_login(user_id, username, ip, True)
+        touch_activity(user_id)
         return resp
 
     # ── Step 3: Gagal ──
@@ -154,7 +173,7 @@ def logout(request: Request):
     if token:
         payload = decode_jwt(token)
         if payload:
-            db.delete_session(str(payload.get("user_id", "")))
+            db.delete_session(token)
 
 
 def get_current_user(request: Request):
@@ -174,6 +193,12 @@ def get_current_user(request: Request):
     user = dict(row)
     if not user.get("is_active", 1):
         return None
+    # Check idle lock
+    timeout = user.get("session_timeout", 300)
+    if is_idle_locked(user_id, timeout):
+        return None
+    # Update last activity
+    touch_activity(user_id)
     return user
 
 
@@ -232,6 +257,9 @@ async def ws_require_admin(websocket: WebSocket) -> dict | None:
     user = get_ws_user(websocket)
     if not user:
         await websocket.close(code=4001, reason="unauthenticated")
+        return None
+    if user.get("role") != "admin":
+        await websocket.close(code=4003, reason="forbidden: admin required")
         return None
     return user
 

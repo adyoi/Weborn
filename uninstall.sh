@@ -35,7 +35,7 @@ if [ "$PURGE" -eq 1 ]; then
     rm -rf "$APP_DIR"
 else
     echo "==> Hapus kode, data dipertahankan di $APP_DIR/data"
-    rm -rf "$APP_DIR/.venv" "$APP_DIR/weborn" "$APP_DIR/run.py" \
+    rm -rf "$APP_DIR/.venv" "$APP_DIR/weborn" "$APP_DIR/weborn.py" \
            "$APP_DIR/requirements.txt"
 fi
 

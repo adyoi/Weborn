@@ -3,7 +3,7 @@
 ## Setup Awal
 1. Install dependensi: `pip install -r requirements.txt`
 2. Build CSS: `npm install && npm run css:build`
-3. Jalankan panel: `python run.py --reload --local`
+3. Jalankan panel: `python weborn.py --reload --local`
 4. Buka browser ke `http://localhost:2025`
 5. Isi form setup wizard (buat akun admin pertama + Linux OS user)
 6. Login dengan akun yang baru dibuat
@@ -61,20 +61,25 @@
 
 ### 📧 Mail Server
 
-#### Overview (`/mail/overview`)
-- Status semua komponen mail, quick actions
+#### Overview (`/email`)
+- Status semua komponen mail (Postfix, Dovecot, Rspamd, OpenDKIM, Roundcube, SpamAssassin)
+- Setup Wizard: pilih domain → Install & Konfigurasi otomatis
+- Quick actions: Start/Stop/Restart per service
 
-#### Mailbox (`/mail/mailbox`)
+#### Mailbox (`/email/accounts`)
 - Create/delete mailboxes, change passwords
+- Auto-creates Linux user + Maildir structure
 
-#### Mail DNS (`/mail/dns`)
+#### Mail DNS (`/email/dns`)
 - Auto-generate SPF, DKIM, DMARC, MX records
 
-#### Webmail (`/mail/webmail`)
+#### Webmail (`/email/webmail`)
 - Install & manage Roundcube webmail
+- Status detection via `/var/lib/roundcube` directory check
 
-#### Spam & DKIM (`/mail/spam`)
-- Rspamd status, OpenDKIM key management
+#### Spam & DKIM (`/email/security`)
+- Install Rspamd, ClamAV, SpamAssassin, OpenDKIM stack
+- Start/Stop/Restart per service
 
 ### 📦 Weborn (App Management)
 
@@ -86,13 +91,20 @@
 - Buat app Python ASGI (FastAPI, Litestar, Sanic)
 - Gunicorn + UvicornWorker → unix socket, atau Uvicorn standalone
 
+#### App Edit (`/apps/{id}/edit`)
+- Edit konfigurasi app: name, domain, port, framework, document root
+- **Process Manager Config**: workers, timeout, worker class, max requests, graceful timeout, keep alive, access log
+- **Resource Limits**: memory limit (MemoryMax), CPU quota (CPUQuota), nice, OOM score
+- Quick actions: Start, Stop, Restart, Reload (SIGHUP)
+
 #### Process Monitor (`/apps/monitor`)
 - Worker status real-time (PID, CPU%, MEM%, uptime)
-- Start / Stop / Restart controls
+- Start / Stop / Restart / Reload controls
 - **Trace Log**: Live xterm.js log streaming via WebSocket
 - **Weborn Panel**: Self-monitoring (panel card → detail page)
 - **Orphan Detection**: Rogue processes + kill APIs
-- Auto-refresh (5 detik)
+- **Real-time WebSocket**: Auto-refresh via `/ws/apps/all-status` (3s interval)
+- **Per-app WebSocket**: `/ws/apps/{id}/process-status` (2s interval)
 
 ### 📊 Monitoring
 
@@ -126,6 +138,7 @@
 
 #### Panel Users (`/panel-users`)
 - Manage panel accounts (admin/user), change password, toggle active/inactive
+- Session timeout: set idle timeout per user (default 300 detik)
 
 #### Services (`/services`)
 - System services status, start/stop/restart
@@ -157,7 +170,7 @@
 - Riwayat perubahan versi (markdown → HTML via marked.js)
 
 #### Test (`/info/test`)
-- Test status Python packages (uvicorn, gunicorn, fastapi, jinja2, mistune)
+- Test status Python packages (uvicorn, gunicorn, fastapi, jinja2)
 - Test status Linux packages (Node.js, Nginx, MariaDB, PostgreSQL, PHP, Git, Disk, Memory)
 
 ## Keamanan
@@ -169,6 +182,7 @@
 | **WebSocket Auth** | JWT validation sebelum menerima koneksi |
 | **Rate Limiting** | 5 percobaan login per IP per 5 menit |
 | **Session Hardening** | `httponly`, `max_age=24h`, `secure` saat SSL |
+| **Session Idle Lock** | Timeout per-user, auto-lock sesi tidak aktif |
 | **Shell Injection** | `shlex.quote()` pada semua user input di bash commands |
 | **Password Hashing** | PBKDF2-SHA256 (SQLite) + PAM shadow users |
 | **Audit Trail** | Login logs dengan IP, timestamp, success/fail |
@@ -200,11 +214,11 @@ export WEBORN_WSL_DISTRO=Debian
 ### SSL
 ```bash
 # Self-signed
-python run.py --local --ssl-cert /path/to/cert.pem --ssl-key /path/to/key.pem
+python weborn.py --local --ssl-cert /path/to/cert.pem --ssl-key /path/to/key.pem
 
 # Let's Encrypt
 certbot certonly --standalone -d yourdomain.com
-python run.py --local --ssl-cert /etc/letsencrypt/live/yourdomain.com/fullchain.pem --ssl-key /etc/letsencrypt/live/yourdomain.com/privkey.pem
+python weborn.py --local --ssl-cert /etc/letsencrypt/live/yourdomain.com/fullchain.pem --ssl-key /etc/letsencrypt/live/yourdomain.com/privkey.pem
 ```
 
 ### PAM Authentication

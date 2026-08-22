@@ -8,12 +8,12 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start">
     <div class="card">
-        <h3 class="text-sm mb-3.5">➕ Tambah Domain / Subdomain</h3>
+        <h3 class="text-sm mb-3.5">{{ icon('plus', 'w-5 h-5') }} Tambah Domain / Subdomain</h3>
         <form method="post" action="/domains/add">
             <div class="field">
                 <label>Nama</label>
                 <input name="name" placeholder="example.com" required>
-            </div>
+           </div>
             <div class="field">
                 <label>Jenis</label>
                 <select name="kind" id="domain-kind" onchange="
@@ -21,42 +21,30 @@
                         this.value==='subdomain' ? 'block' : 'none'">
                     <option value="domain">Domain</option>
                     <option value="subdomain">Subdomain</option>
-                </select>
-            </div>
+               </select>
+           </div>
             <div class="field hidden" id="parent-field">
                 <label>Subdomain dari</label>
                 <select name="parent_id">
                     {% for d in domains if d.kind == 'domain' %}
                     <option value="{{ d.id }}">{{ d.name }}</option>
                     {% endfor %}
-                </select>
-            </div>
+               </select>
+           </div>
             <div class="field">
                 <label>Document Root</label>
                 <input name="document_root" value="/var/www/example.com">
-            </div>
-            <div class="field">
-                <label>Jenis Aplikasi</label>
-                <select name="app_type">
-                    {% for key, t in app_types.items() %}
-                    <option value="{{ key }}">{{ t.label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="field">
-                <label>App Port (django/fastapi)</label>
-                <input name="app_port" type="number" value="8000">
-            </div>
+           </div>
             <div class="field">
                 <label><input type="checkbox" name="ssl" value="1"> HTTPS/SSL</label>
-            </div>
+           </div>
             <button type="submit" class="btn primary w-full justify-center">Tambah</button>
-        </form>
-    </div>
+       </form>
+   </div>
 
     <div class="card !p-0 overflow-hidden">
         <table>
-            <thead><tr><th>Domain</th><th>App</th><th>Root</th><th>SSL</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Domain</th><th>Root</th><th>SSL</th><th>Status</th><th></th></tr></thead>
             <tbody>
             {% for d in domains %}
                 <tr>
@@ -65,36 +53,35 @@
                         <span class="text-t3 ml-4">└─</span>
                         {% endif %}
                         <b>{{ d.name }}</b>
-                    </td>
-                    <td>{{ app_types[d.app_type].label if d.app_type in app_types else d.app_type }}</td>
+                   </td>
                     <td class="mono text-[13px]">{{ d.document_root }}</td>
-                    <td>{{ '🔒' if d.ssl else '—' }}</td>
+                    <td>{{ icon('lock-closed', 'w-5 h-5') if d.ssl else '—' }}</td>
                     <td>
                         {% if d.enabled %}<span class="badge ok">ENABLED</span>
                         {% else %}<span class="badge err">DISABLED</span>{% endif %}
-                    </td>
+                   </td>
                     <td class="whitespace-nowrap">
-                        <a href="/domains/{{ d.id }}/edit" class="btn !py-1 !px-2.5" data-tip="Edit {{ d.name }}">✏️</a>
+                        <a href="/domains/{{ d.id }} /edit" class="btn !py-1 !px-2.5" data-tip="Edit {{ d.name }}">{{ icon('pencil', 'w-5 h-5') }} ️</a>
                         {% if not d.ssl %}
-                        <form method="post" action="/domains/{{ d.id }}/ssl" style="display:inline"
-                              onsubmit="return confirm('Terbitkan SSL Let\'s Encrypt untuk {{ d.name }}?')">
-                            <button class="btn !py-1 !px-2.5" data-tip="Pasang SSL">🔒</button>
-                        </form>
+                        <form method="post" action="/domains/{{ d.id }} /ssl" style="display:inline"
+                              onsubmit="return confirm('Terbitkan SSL Let\'s Encrypt untuk {{ d.name }} ?')">
+                            <button class="btn !py-1 !px-2.5" data-tip="Pasang SSL">{{ icon('lock-closed', 'w-5 h-5') }}</button>
+                       </form>
                         {% endif %}
-                        <form method="post" action="/domains/{{ d.id }}/toggle" style="display:inline">
-                            <button class="btn !py-1 !px-2.5">{{ '⏸' if d.enabled else '▶' }}</button>
-                        </form>
-                        <form method="post" action="/domains/{{ d.id }}/delete" style="display:inline"
-                              onsubmit="return confirm('Hapus {{ d.name }}?')">
-                            <button class="btn danger !py-1 !px-2.5">🗑</button>
-                        </form>
-                    </td>
-                </tr>
+                        <form method="post" action="/domains/{{ d.id }} /toggle" style="display:inline">
+                            <button class="btn !py-1 !px-2.5">{{ icon('pause', 'w-5 h-5') if d.enabled else icon('play', 'w-5 h-5') }}</button>
+                       </form>
+                        <form method="post" action="/domains/{{ d.id }} /delete" style="display:inline"
+                              onsubmit="return confirm('Hapus {{ d.name }} ?')">
+                            <button class="btn danger !py-1 !px-2.5">{{ icon('trash', 'w-5 h-5') }} ️</button>
+                       </form>
+                   </td>
+               </tr>
             {% else %}
-                <tr><td colspan="6" class="text-t3 text-center py-7">Belum ada domain.</td></tr>
+                <tr><td colspan="5" class="text-t3 text-center py-7">Belum ada domain.</td></tr>
             {% endfor %}
-            </tbody>
-        </table>
-    </div>
+           </tbody>
+       </table>
+   </div>
 </div>
 {% endblock %}

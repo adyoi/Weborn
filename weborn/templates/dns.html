@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}DNS - Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">🌐 DNS</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('globe-alt', 'w-5 h-5') }} DNS</div>
 <div class="page-sub text-t3 text-[13px] mb-5">Kelola record DNS panel + resolver sistem</div>
 
 {% if request.query_params.get('added') %}<div class="msg ok">Record ditambahkan.</div>{% endif %}
@@ -9,31 +9,31 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start">
     <div class="card">
-        <h3 class="text-sm mb-3.5">➕ Tambah Record</h3>
+        <h3 class="text-sm mb-3.5">{{ icon('plus', 'w-5 h-5') }} Tambah Record</h3>
         <form method="post" action="/dns/add">
             <div class="field">
                 <label>Nama (hostname / @)</label>
                 <input name="name" placeholder="mail.example.com" required>
-            </div>
+           </div>
             <div class="field">
                 <label>Tipe</label>
                 <select name="type">
                     {% for t in ['A','AAAA','CNAME','MX','TXT','NS','SRV'] %}
                     <option value="{{ t }}">{{ t }}</option>
                     {% endfor %}
-                </select>
-            </div>
+               </select>
+           </div>
             <div class="field">
                 <label>Nilai</label>
                 <input name="value" placeholder="192.168.100.107" required>
-            </div>
+           </div>
             <div class="field">
                 <label>TTL (detik)</label>
                 <input name="ttl" type="number" value="300">
-            </div>
+           </div>
             <button type="submit" class="btn primary w-full justify-center">Tambah</button>
-        </form>
-    </div>
+       </form>
+   </div>
 
     <div>
         <div class="card !p-0 overflow-hidden">
@@ -47,23 +47,23 @@
                         <td class="mono text-[13px]">{{ r.value }}</td>
                         <td>{{ r.ttl }}</td>
                         <td>
-                            <form method="post" action="/dns/{{ r.id }}/delete" style="display:inline"
+                            <form method="post" action="/dns/{{ r.id }} /delete" style="display:inline"
                                   onsubmit="return confirm('Hapus record?')">
-                                <button class="btn danger !py-1 !px-2" data-tip="Hapus record">🗑</button>
-                            </form>
-                        </td>
-                    </tr>
+                                <button class="btn danger !py-1 !px-2" data-tip="Hapus record">{{ icon('trash', 'w-5 h-5') }} ️</button>
+                           </form>
+                       </td>
+                   </tr>
                 {% else %}
                     <tr><td colspan="5" class="text-center text-t3 py-7">Belum ada record.</td></tr>
                 {% endfor %}
-                </tbody>
-            </table>
-        </div>
+               </tbody>
+           </table>
+       </div>
 
         <div class="card mt-4">
-            <h3 class="text-sm mb-2.5">📄 Resolver Sistem (/etc/resolv.conf)</h3>
+            <h3 class="text-sm mb-2.5">{{ icon('document-text', 'w-5 h-5') }} Resolver Sistem (/etc/resolv.conf)</h3>
             <pre class="output">{{ resolv }}</pre>
-        </div>
-    </div>
+       </div>
+   </div>
 </div>
 {% endblock %}

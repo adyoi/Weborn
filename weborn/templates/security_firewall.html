@@ -3,16 +3,16 @@
 {% block content %}
 <div class="flex items-center justify-between mb-4">
     <div>
-        <h1 class="text-xl font-bold">🛡️ UFW Firewall</h1>
-        <div class="text-t3 text-xs mt-0.5">Manage firewall rules — allow/deny port & protocol</div>
-    </div>
+        <div class="page-title text-[22px] font-bold mb-1">{{ icon('shield-check', 'w-5 h-5') }} UFW Firewall</div>
+        <div class="page-sub text-t3 text-[13px] mb-5">Manage firewall rules — allow/deny port & protocol</div>
+   </div>
     <div class="flex items-center gap-3">
         <span class="st {{ 'active' if service_active else 'inactive' }}">{{ 'active' if service_active else 'inactive' }}</span>
-        <button onclick="weborn.confirmAction('/security/firewall/toggle','{{ "Nonaktifkan" if service_active else "Aktifkan" }} Firewall',true,'{{ "Nonaktifkan firewall?" if service_active else "Aktifkan firewall?" }}')"
+        <button onclick="weborn.confirmAction('/security/firewall/toggle','{{ "Nonaktifkan" if service_active else "Aktifkan" }} Firewall',true,'{{ "Nonaktifkan firewall?" if service_active else "Aktifkan firewall?" }} ')"
                 class="btn {{ 'danger' if service_active else 'primary' }} sm">
-            {{ '⏹ Disable' if service_active else '▶ Enable' }}
-        </button>
-    </div>
+            {{ icon('stop', 'w-5 h-5') if service_active else icon('play', 'w-5 h-5') }} {{ 'Disable' if service_active else 'Enable' }} 
+       </button>
+   </div>
 </div>
 
 {% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
@@ -20,7 +20,7 @@
 <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 items-start">
     {# ── Add Rule Form ── #}
     <div class="card">
-        <h3 class="text-xs font-bold mb-3">➕ Tambah Rule</h3>
+        <h3 class="text-xs font-bold mb-3">{{ icon('plus', 'w-5 h-5') }} Tambah Rule</h3>
         <form id="ufw-add-form" class="space-y-2">
             <div><label class="text-[13px]">Port</label>
                 <input name="port" placeholder="22, 80, 443, 8000:8100" required class="sm"></div>
@@ -28,12 +28,12 @@
                 <select name="proto" class="sm">
                     <option value="tcp">TCP</option>
                     <option value="udp">UDP</option>
-                </select></div>
+               </select></div>
             <div class="flex gap-2">
-                <button type="button" onclick="ufwAction('allow')" class="btn primary sm flex-1">✅ Allow</button>
-                <button type="button" onclick="ufwAction('deny')" class="btn danger sm flex-1">🚫 Block</button>
-            </div>
-        </form>
+                <button type="button" onclick="ufwAction('allow')" class="btn primary sm flex-1">{{ icon('check', 'w-5 h-5') }} Allow</button>
+                <button type="button" onclick="ufwAction('deny')" class="btn danger sm flex-1">{{ icon('no-symbol', 'w-5 h-5') }} Block</button>
+           </div>
+       </form>
         <div class="border-t border-line/40 mt-3 pt-3">
             <h4 class="text-[13px] font-bold mb-2">Quick Actions</h4>
             <div class="flex flex-wrap gap-1">
@@ -41,28 +41,28 @@
                 <button onclick="quickAllow('80')" class="btn sm">HTTP</button>
                 <button onclick="quickAllow('443')" class="btn sm">HTTPS</button>
                 <button onclick="quickAllow('2025')" class="btn sm">Panel</button>
-            </div>
-        </div>
-    </div>
+           </div>
+       </div>
+   </div>
 
     {# ── Rules List ── #}
     <div class="card !p-0 overflow-hidden">
         <div class="px-4 py-2.5 border-b border-line/40 flex items-center justify-between">
-            <h3 class="text-xs font-bold">📋 Rules</h3>
+            <h3 class="text-xs font-bold">{{ icon('clipboard-document-list', 'w-5 h-5') }} Rules</h3>
             <span class="text-t3 text-[14px]">{{ rules|length }} rules</span>
-        </div>
+       </div>
         {% if rules %}
         <div class="max-h-[400px] overflow-y-auto">
             {% for rule in rules %}
             <div class="px-4 py-2 border-b border-line/20 flex items-center gap-3 hover:bg-white/[.02]">
                 <code class="mono text-[13px] flex-1">{{ rule }}</code>
-            </div>
+           </div>
             {% endfor %}
-        </div>
+       </div>
         {% else %}
         <div class="text-t3 text-center py-8 text-xs">Tidak ada rule</div>
         {% endif %}
-    </div>
+   </div>
 </div>
 
 <script>

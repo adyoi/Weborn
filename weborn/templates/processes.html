@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Proses - Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">⚙️ Manajemen Proses</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('cog-6-tooth', 'w-5 h-5') }} Manajemen Proses</div>
 <div class="page-sub text-t3 text-[13px] mb-5">{{ total }} proses terdeteksi (tampil 200 teratas berdasar CPU)</div>
 
 <div class="card !p-0 overflow-hidden">
@@ -19,12 +19,12 @@
                 <td>
                     {% if p.pid not in (1, 2) %}
                     <button class="btn danger !py-1 !px-2" data-tip="Kill PID {{ p.pid }}"
-                            onclick="if(confirm('Kill {{ p.name }} ({{ p.pid }})?'))weborn.simplePost('/processes/{{ p.pid }}/kill','Menghentikan {{ p.name }}',true)">✖</button>
+                            onclick="if(confirm('Kill {{ p.name }} ({{ p.pid }} )?'))weborn.simplePost('/processes/{{ p.pid }} /kill','Menghentikan {{ p.name }} ',true)">{{ icon('x-mark', 'w-5 h-5') }}</button>
                     {% endif %}
-                </td>
-            </tr>
+               </td>
+           </tr>
         {% endfor %}
-        </tbody>
-    </table>
+       </tbody>
+   </table>
 </div>
 {% endblock %}

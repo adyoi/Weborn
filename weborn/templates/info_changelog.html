@@ -4,7 +4,7 @@
 <script src="https://cdn.jsdelivr.net/npm/marked@14/marked.min.js"></script>
 {% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">📋 Changelog</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('clipboard-document-list', 'w-5 h-5') }} Changelog</div>
 <div class="page-sub text-t3 text-[13px] mb-5">Riwayat perubahan versi</div>
 
 <div class="card">
@@ -21,6 +21,7 @@
     var raw = document.getElementById('changelog-raw');
     var el = document.getElementById('changelog-content');
     if (raw && el && window.marked) {
+        marked.setOptions({ gfm: true, breaks: false });
         el.innerHTML = marked.parse(raw.value);
     }
 })();

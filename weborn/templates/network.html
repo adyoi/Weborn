@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Network - Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">🌍 Network &amp; Koneksi</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('globe-alt', 'w-5 h-5') }} Network &amp; Koneksi</div>
 <div class="page-sub text-t3 text-[13px] mb-5">Ringkasan jaringan server</div>
 
 <div class="grid grid-cols-1 sm:grid-cols-3 mb-4">
-    <div class="card stat-shine"><div class="label text-t3 text-[13px] uppercase tracking-wide">Interface</div><div class="value text-[28px] font-bold mt-1.5">{{ stats.interfaces }}<small class="text-xs text-t2 font-normal">aktif</small></div></div>
-    <div class="card stat-shine"><div class="label text-t3 text-[13px] uppercase tracking-wide">Port Listen</div><div class="value text-[28px] font-bold mt-1.5">{{ stats.listeners }}<small class="text-xs text-t2 font-normal">port</small></div></div>
-    <div class="card stat-shine"><div class="label text-t3 text-[13px] uppercase tracking-wide">Koneksi TCP</div><div class="value text-[28px] font-bold mt-1.5">{{ stats.conns }}<small class="text-xs text-t2 font-normal">est.</small></div></div>
+    <div class="card stat-shine"><div class="label text-t3 text-[13px] uppercase tracking-wide">Interface</div><div class="value text-[28px] font-bold mt-1.5">{{ stats.interfaces }} <small class="text-xs text-t2 font-normal">aktif</small></div></div>
+    <div class="card stat-shine"><div class="label text-t3 text-[13px] uppercase tracking-wide">Port Listen</div><div class="value text-[28px] font-bold mt-1.5">{{ stats.listeners }} <small class="text-xs text-t2 font-normal">port</small></div></div>
+    <div class="card stat-shine"><div class="label text-t3 text-[13px] uppercase tracking-wide">Koneksi TCP</div><div class="value text-[28px] font-bold mt-1.5">{{ stats.conns }} <small class="text-xs text-t2 font-normal">est.</small></div></div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 items-start">
     <div class="card">
-        <h3 class="text-sm mb-2.5">🔌 Interface</h3>
+        <h3 class="text-sm mb-2.5">{{ icon('bolt', 'w-5 h-5') }} Interface</h3>
         <table>
             <thead><tr><th>Nama</th><th>Alamat IP</th><th>Netmask</th></tr></thead>
             <tbody>
@@ -21,11 +21,11 @@
             {% else %}
                 <tr><td colspan="3" class="text-center text-t3">—</td></tr>
             {% endfor %}
-            </tbody>
-        </table>
-    </div>
+           </tbody>
+       </table>
+   </div>
     <div class="card">
-        <h3 class="text-sm mb-2.5">📡 Listening Ports (ss)</h3>
+        <h3 class="text-sm mb-2.5">{{ icon('signal', 'w-5 h-5') }} Listening Ports (ss)</h3>
         <table>
             <thead><tr><th>Proto</th><th>Listen</th><th>Proses</th></tr></thead>
             <tbody>
@@ -34,13 +34,13 @@
             {% else %}
                 <tr><td colspan="3" class="text-center text-t3">—</td></tr>
             {% endfor %}
-            </tbody>
-        </table>
-    </div>
+           </tbody>
+       </table>
+   </div>
 </div>
 
 <div class="card mt-4">
-    <h3 class="text-sm mb-2.5">🔗 Koneksi Aktif (psutil)</h3>
+    <h3 class="text-sm mb-2.5">{{ icon('link', 'w-5 h-5') }} Koneksi Aktif (psutil)</h3>
     <table>
         <thead><tr><th>Jenis</th><th>Lokal → Remote</th><th>PID</th></tr></thead>
         <tbody>
@@ -49,7 +49,7 @@
         {% else %}
             <tr><td colspan="3" class="text-center text-t3">—</td></tr>
         {% endfor %}
-        </tbody>
-    </table>
+       </tbody>
+   </table>
 </div>
 {% endblock %}

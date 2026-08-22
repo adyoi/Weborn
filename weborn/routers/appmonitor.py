@@ -108,7 +108,7 @@ async def _detect_panel_process(ex) -> dict:
                         "uptime": parts[3], "cmd": parts[4],
                     })
 
-    elif "python" in cmd and "run.py" in cmd:
+    elif "python" in cmd and "weborn.py" in cmd:
         info["mode"] = "python"
         info["master_pid"] = main_pid
         # Get resource info for single-process panel
@@ -408,6 +408,72 @@ async def kill_all_orphans(request: Request, user: dict = Depends(require_admin)
         killed += 1
 
     return JSONResponse({"ok": True, "message": f"Killed {killed} orphan processes"})
+
+
+@router.websocket("/ws/apps/{app_id}/process-status")
+async def apps_process_status_ws(websocket: WebSocket, app_id: int):
+    """WebSocket: push process status every 2 seconds."""
+    from ..auth import ws_require_admin
+    user = await ws_require_admin(websocket)
+    if not user:
+        return
+    app = get_app(app_id)
+    if not app:
+        await websocket.send_json({"ok": False, "error": "app not found"})
+        await websocket.close()
+        return
+    ex = get_executor()
+    manager = AppManager(ex)
+    try:
+        while True:
+            status = await manager.get_process_status(app["name"])
+            await websocket.send_json({"ok": True, "status": status})
+            await asyncio.sleep(2)
+    except Exception:
+        pass
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
+            pass
+
+
+@router.websocket("/ws/apps/all-status")
+async def apps_all_status_ws(websocket: WebSocket):
+    """WebSocket: push all apps status every 3 seconds."""
+    from ..auth import ws_require_admin
+    user = await ws_require_admin(websocket)
+    if not user:
+        return
+    ex = get_executor()
+    manager = AppManager(ex)
+    try:
+        while True:
+            apps = list_apps()
+            statuses = []
+            for a in apps:
+                stored = a.get("app_type", "")
+                a["app_type"] = stored if stored else _app_type_for(a["language"], a.get("framework", ""))
+                if a.get("command"):
+                    a["process_manager"] = _detect_pm(a["command"])
+                else:
+                    a["process_manager"] = APP_TYPES.get(a["app_type"], {}).get("process_manager", "direct")
+                if a["process_manager"] in ("gunicorn", "uvicorn") and ex.mode in ("local", "wsl"):
+                    status = await manager.get_process_status(a["name"])
+                    statuses.append({"id": a["id"], "name": a["name"], **status})
+                else:
+                    statuses.append({"id": a["id"], "name": a["name"],
+                                     "status": a.get("status", "unknown"),
+                                     "workers": []})
+            await websocket.send_json({"ok": True, "apps": statuses})
+            await asyncio.sleep(3)
+    except Exception:
+        pass
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
+            pass
 
 
 @router.websocket("/ws/panel/logs")

@@ -1,5 +1,6 @@
 """Manajemen domain, subdomain & path-based routing."""
 import json
+import re
 import socket
 from datetime import datetime
 
@@ -7,13 +8,14 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from ..auth import require_admin, require_user
-from ..config import APP_TYPES
 from ..db import get_conn
 from ..executors import get_executor
 from ..managers.nginx import NginxManager
 from ..ui import render
 
 router = APIRouter(tags=["Domains"])
+
+_DOMAIN_RE = re.compile(r'^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*$')
 
 
 def _get_server_ip() -> str:
@@ -73,7 +75,6 @@ async def domains_page(request: Request, msg: str = "",
     return render(request, "domains.html", {
         "user": user,
         "domains": domains,
-        "app_types": APP_TYPES,
         "parent_map": parent_map,
         "msg": msg,
         "active": "domains",
@@ -85,21 +86,13 @@ async def domains_add(request: Request, name: str = Form(...),
                       kind: str = Form("domain"),
                       parent_id: str = Form(""),
                       document_root: str = Form("/var/www"),
-                      app_type: str = Form("static"),
-                      app_port: str = Form("8000"),
                       ssl: int = Form(0),
                       user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
-    if app_type not in APP_TYPES:
-        return RedirectResponse("/domains?msg=Tipe%20aplikasi%20tidak%20dikenal", status_code=303)
-    try:
-        port_int = int((app_port or "8000").strip())
-    except ValueError:
-        return RedirectResponse("/domains?msg=Port%20harus%20angka", status_code=303)
-    proxy_target = None
-    if app_type in ("django", "fastapi", "nodejs", "laravel"):
-        proxy_target = f"http://127.0.0.1:{port_int}"
+    name = name.strip().lower()
+    if not _DOMAIN_RE.match(name):
+        return RedirectResponse("/domains?msg=Nama%20domain%20tidak%20valid", status_code=303)
     parent = int(parent_id) if parent_id and parent_id.isdigit() else None
     kind = "subdomain" if parent else "domain"
     try:
@@ -108,7 +101,7 @@ async def domains_add(request: Request, name: str = Form(...),
                 """INSERT INTO domains(name, kind, parent, document_root, app_type,
                    app_port, ssl, locations, created_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (name, kind, parent, document_root, app_type, port_int, ssl,
+                (name, kind, parent, document_root, "static", 0, ssl,
                  "[]", datetime.now().isoformat()),
             )
             conn.commit()
@@ -126,7 +119,7 @@ async def domains_add(request: Request, name: str = Form(...),
                 (f"www.{name}", "CNAME", name, 300, now))
             conn.commit()
     nginx = NginxManager(get_executor())
-    nginx.apply_domain(name, document_root, proxy_target, bool(ssl))
+    nginx.apply_domain(name, document_root, None, bool(ssl))
     await nginx._deploy(name)
     return RedirectResponse(
         "/domains?msg=Domain%20ditambahkan" + ("%20+%20DNS" if kind == "domain" else ""),
@@ -145,7 +138,6 @@ async def domains_edit_page(request: Request, domain_id: int,
     return render(request, "domain_edit.html", {
         "user": user,
         "domain": dict(row),
-        "app_types": APP_TYPES,
         "locations": _get_locations(domain_id),
         "active": "domains",
     })
@@ -154,34 +146,21 @@ async def domains_edit_page(request: Request, domain_id: int,
 @router.post("/domains/{domain_id}/edit")
 async def domains_edit(request: Request, domain_id: int,
                        document_root: str = Form("/var/www"),
-                       app_type: str = Form("static"),
-                       app_port: str = Form("8000"),
                        user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
-    if app_type not in APP_TYPES:
-        return RedirectResponse(f"/domains/{domain_id}/edit?msg=Tipe%20tidak%20dikenal",
-                                status_code=303)
-    try:
-        port_int = int((app_port or "8000").strip())
-    except ValueError:
-        return RedirectResponse(f"/domains/{domain_id}/edit?msg=Port%20harus%20angka",
-                                status_code=303)
-    proxy_target = None
-    if app_type in ("django", "fastapi", "nodejs", "laravel"):
-        proxy_target = f"http://127.0.0.1:{port_int}"
     with get_conn() as conn:
         row = conn.execute("SELECT * FROM domains WHERE id = ?", (domain_id,)).fetchone()
         if not row:
             return RedirectResponse("/domains?msg=Domain%20tidak%20ditemukan", status_code=303)
         conn.execute(
-            "UPDATE domains SET document_root=?, app_type=?, app_port=?, proxy_target=? WHERE id=?",
-            (document_root, app_type, port_int, proxy_target, domain_id))
+            "UPDATE domains SET document_root=? WHERE id=?",
+            (document_root, domain_id))
         conn.commit()
         name = row["name"]
     nginx = NginxManager(get_executor())
     locations = _get_locations(domain_id)
-    nginx.apply_domain(name, document_root, proxy_target, bool(row["ssl"]), locations=locations)
+    nginx.apply_domain(name, document_root, None, bool(row["ssl"]), locations=locations)
     await nginx._deploy(name)
     return RedirectResponse("/domains?msg=Domain%20diperbarui", status_code=303)
 
@@ -235,9 +214,7 @@ async def domains_ssl(domain_id: int, user: dict = Depends(require_admin)):
         conn.execute("UPDATE domains SET ssl = 1 WHERE id = ?", (domain_id,))
         conn.commit()
     nginx = NginxManager(ex)
-    proxy = d["proxy_target"] or (
-        f"http://127.0.0.1:{d['app_port']}" if d["app_type"] in
-        ("django", "fastapi", "nodejs", "laravel") else None)
+    proxy = d.get("proxy_target") or None
     locations = _get_locations(domain_id)
     nginx.apply_domain(d["name"], d["document_root"], proxy, ssl=True, locations=locations)
     await nginx._deploy(d["name"])
@@ -264,7 +241,7 @@ async def location_add(domain_id: int,
     _save_locations(domain_id, locations)
     d = dict(row)
     nginx = NginxManager(get_executor())
-    proxy = d["proxy_target"]
+    proxy = d.get("proxy_target") or None
     nginx.apply_domain(d["name"], d["document_root"], proxy, bool(d["ssl"]),
                        locations=locations)
     await nginx._deploy(d["name"])
@@ -287,7 +264,7 @@ async def location_delete(domain_id: int, index: int = Form(...),
     _save_locations(domain_id, locations)
     d = dict(row)
     nginx = NginxManager(get_executor())
-    proxy = d["proxy_target"]
+    proxy = d.get("proxy_target") or None
     nginx.apply_domain(d["name"], d["document_root"], proxy, bool(d["ssl"]),
                        locations=locations)
     await nginx._deploy(d["name"])

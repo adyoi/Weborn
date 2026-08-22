@@ -1,60 +1,48 @@
 {% extends "base.html" %}
 {% block title %}Edit Domain - Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">✏️ Edit Domain</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('pencil', 'w-5 h-5') }} Edit Domain</div>
 <div class="page-sub text-t3 text-[13px] mb-5">Perbarui pengaturan untuk <b>{{ domain.name }}</b></div>
 
 {% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
     <div class="card">
-        <h3 class="text-sm mb-3.5">⚙️ Pengaturan Domain</h3>
-        <form method="post" action="/domains/{{ domain.id }}/edit">
+        <h3 class="text-sm mb-3.5">{{ icon('cog-6-tooth', 'w-5 h-5') }} Pengaturan Domain</h3>
+        <form method="post" action="/domains/{{ domain.id }} /edit">
             <div class="field">
                 <label>Nama Domain</label>
                 <input value="{{ domain.name }}" disabled>
-            </div>
+           </div>
             <div class="field">
                 <label>Document Root</label>
                 <input name="document_root" value="{{ domain.document_root }}">
-            </div>
-            <div class="field">
-                <label>Jenis Aplikasi</label>
-                <select name="app_type">
-                    {% for key, t in app_types.items() %}
-                    <option value="{{ key }}" {{ 'selected' if key == domain.app_type }}>{{ t.label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="field">
-                <label>App Port (django/fastapi)</label>
-                <input name="app_port" type="number" value="{{ domain.app_port or 8000 }}">
-            </div>
+           </div>
             <div class="flex gap-2 mt-3">
-                <button type="submit" class="btn primary">💾 Simpan</button>
+                <button type="submit" class="btn primary">{{ icon('arrow-down-tray', 'w-5 h-5') }} Simpan</button>
                 <a href="/domains" class="btn">← Batal</a>
-            </div>
-        </form>
-    </div>
+           </div>
+       </form>
+   </div>
 
     <div class="card">
-        <h3 class="text-sm mb-3.5">ℹ️ Info</h3>
+        <h3 class="text-sm mb-3.5">{{ icon('information-circle', 'w-5 h-5') }} Info</h3>
         <table class="text-[13px]">
             <tr><td class="text-t3 pr-3 py-1">Domain</td><td><b>{{ domain.name }}</b></td></tr>
             <tr><td class="text-t3 pr-3 py-1">Jenis</td><td>{{ domain.kind }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">SSL</td><td>{{ '🔒 Aktif' if domain.ssl else '❌ Belum' }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Status</td><td>{{ '✅ Enabled' if domain.enabled else '⛔ Disabled' }}</td></tr>
+            <tr><td class="text-t3 pr-3 py-1">SSL</td><td>{{ icon('lock-closed', 'w-5 h-5') if domain.ssl else icon('x-mark', 'w-5 h-5') }} {{ 'Aktif' if domain.ssl else 'Belum' }}</td></tr>
+            <tr><td class="text-t3 pr-3 py-1">Status</td><td>{{ icon('check', 'w-5 h-5') if domain.enabled else icon('no-symbol', 'w-5 h-5') }} {{ 'Enabled' if domain.enabled else 'Disabled' }}</td></tr>
             <tr><td class="text-t3 pr-3 py-1">Dibuat</td><td>{{ domain.created_at[:10] }}</td></tr>
-        </table>
-    </div>
+       </table>
+   </div>
 </div>
 
 {# ─── Path Locations ─── #}
 <div class="card mt-4">
-    <h3 class="text-sm mb-3 font-bold">🗺️ Path-based Routing</h3>
+    <h3 class="text-sm mb-3 font-bold">{{ icon('globe-alt', 'w-5 h-5') }} Path-based Routing</h3>
     <p class="text-[14px] text-t3 mb-3">
         Arahkan path ke layanan berbeda (misal <code>/api</code> → Django, <code>/ws</code> → Node.js WebSocket).
-    </p>
+   </p>
 
     {% if locations %}
     <table class="mb-3">
@@ -66,38 +54,38 @@
             <td><span class="badge">{{ loc.type }}</span></td>
             <td class="mono text-[13px]">{{ loc.target }}</td>
             <td class="text-right">
-                <form method="post" action="/domains/{{ domain.id }}/locations/delete" style="display:inline">
+                <form method="post" action="/domains/{{ domain.id }} /locations/delete" style="display:inline">
                     <input type="hidden" name="index" value="{{ loop.index0 }}">
-                    <button class="btn danger !py-0.5 !px-2 text-[13px]" onclick="return confirm('Hapus location ini?')">🗑</button>
-                </form>
-            </td>
-        </tr>
+                    <button class="btn danger !py-0.5 !px-2 text-[13px]" onclick="return confirm('Hapus location ini?')">{{ icon('trash', 'w-5 h-5') }} ️</button>
+               </form>
+           </td>
+       </tr>
         {% endfor %}
-        </tbody>
-    </table>
+       </tbody>
+   </table>
     {% else %}
     <div class="text-t3 text-[14px] mb-3">Belum ada location — default semua traffic ke root.</div>
     {% endif %}
 
-    <form method="post" action="/domains/{{ domain.id }}/locations/add"
+    <form method="post" action="/domains/{{ domain.id }} /locations/add"
           class="flex flex-wrap gap-2 items-end">
         <div class="flex-1 min-w-[100px]">
             <label class="text-[13px] text-t3">Path</label>
             <input name="path" value="/api" class="text-[13px]">
-        </div>
+       </div>
         <div class="min-w-[110px]">
             <label class="text-[13px] text-t3">Tipe</label>
             <select name="location_type" class="text-[13px]">
                 <option value="proxy">Reverse Proxy</option>
                 <option value="static">Static Files</option>
                 <option value="return">Redirect/Return</option>
-            </select>
-        </div>
+           </select>
+       </div>
         <div class="flex-1 min-w-[140px]">
             <label class="text-[13px] text-t3">Target</label>
             <input name="target" placeholder="http://127.0.0.1:8000" class="text-[13px]">
-        </div>
+       </div>
         <button type="submit" class="btn primary">+ Tambah</button>
-    </form>
+   </form>
 </div>
 {% endblock %}

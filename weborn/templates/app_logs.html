@@ -6,16 +6,16 @@
 <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
 {% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">📄 Log: {{ app.name }}</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('document-text', 'w-5 h-5') }} Log: {{ app.name }}</div>
 <div class="page-sub text-t3 text-[13px] mb-5">Real-time log dari <code class="mono">{{ app.unit }}</code></div>
 
 <div class="card">
     <div class="flex items-center gap-2 mb-3">
         <span class="badge info">{{ app.language|upper }}</span>
-        {% if app.status == 'running' %}<span class="badge ok">🟢 RUNNING</span>
-        {% else %}<span class="badge warn">⚪ {{ app.status|upper }}</span>{% endif %}
+        {% if app.status == 'running' %}<span class="badge ok">{{ icon('check', 'w-5 h-5') }} RUNNING</span>
+        {% else %}<span class="badge warn">{{ icon('stop', 'w-5 h-5') }} {{ app.status|upper }}</span>{% endif %}
         <span class="text-t3 text-[13px] ml-auto">Auto-scroll aktif</span>
-    </div>
+   </div>
     <div id="logterm" style="height:450px; background:#1a1a2e; border-radius:8px; padding:8px;"></div>
 </div>
 
@@ -41,7 +41,7 @@
     fitAddon.fit();
 
     var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    var ws = new WebSocket(proto + '//' + location.host + '/ws/apps/{{ app.id }}/logs');
+    var ws = new WebSocket(proto + '//' + location.host + '/ws/apps/{{ app.id }} /logs');
     ws.onmessage = function(e) { term.write(e.data); term.scrollToBottom(); };
     ws.onclose = function() { term.write('\r\n\033[1;33m[Log stream berhenti]\033[0m'); };
     ws.onerror = function() { term.write('\r\n\033[1;31m[Error koneksi]\033[0m'); };

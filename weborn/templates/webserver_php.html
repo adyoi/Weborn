@@ -3,29 +3,29 @@
 {% block content %}
 <div class="flex items-center justify-between mb-4">
     <div>
-        <h1 class="text-xl font-bold">🐘 PHP-FPM</h1>
-        <div class="text-t3 text-xs mt-0.5">FastCGI Process Manager untuk PHP applications</div>
-    </div>
+        <div class="page-title text-[22px] font-bold mb-1">{{ icon('code-bracket', 'w-5 h-5') }} PHP-FPM</div>
+        <div class="page-sub text-t3 text-[13px] mb-5">FastCGI Process Manager untuk PHP applications</div>
+   </div>
     <div class="flex items-center gap-3">
         <span class="st {{ 'active' if fpm_status == 'active' else 'inactive' }}">{{ fpm_status }}</span>
-        <button onclick="weborn.simplePost('/web-server/php-fpm/restart','Restart PHP-FPM',false)" class="btn primary sm">🔄 Restart</button>
-        <button onclick="weborn.simplePost('/web-server/php-fpm/reload','Reload PHP-FPM',false)" class="btn sm">↻ Reload</button>
-    </div>
+        <button onclick="weborn.simplePost('/web-server/php-fpm/restart','Restart PHP-FPM',false)" class="btn primary sm">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
+        <button onclick="weborn.simplePost('/web-server/php-fpm/reload','Reload PHP-FPM',false)" class="btn sm">{{ icon('square-3-stack-3d', 'w-5 h-5') }} Reload</button>
+   </div>
 </div>
 
 <div class="grid grid-cols-3 gap-3 mb-4">
     <div class="card">
         <div class="text-t3 text-[14px] mb-1">PHP Version</div>
         <div class="font-mono text-[14px]">{{ php_version or 'not installed' }}</div>
-    </div>
+   </div>
     <div class="card">
         <div class="text-t3 text-[14px] mb-1">FPM Status</div>
         <div class="font-mono text-[14px]">{{ fpm_status }}</div>
-    </div>
+   </div>
     <div class="card">
         <div class="text-t3 text-[14px] mb-1">Active Pools</div>
         <div class="font-mono text-[14px]">{{ pools | length }}</div>
-    </div>
+   </div>
 </div>
 
 <div class="card mb-4">
@@ -36,9 +36,9 @@
         <div class="flex items-center justify-between p-2 bg-black/10 rounded text-[13px]">
             <code class="mono">{{ pool }}</code>
             <span class="text-t3 text-[14px]">socket</span>
-        </div>
+       </div>
         {% endfor %}
-    </div>
+   </div>
     {% else %}
     <div class="text-t3 text-[13px]">Belum ada pool config</div>
     {% endif %}
@@ -53,6 +53,6 @@
         <div>4. Nginx mengembalikan response ke client</div>
         <div class="text-t3 mt-1">Config: /etc/php/*/fpm/pool.d/</div>
         <div class="text-t3">Socket: /run/php/php{version}-fpm.sock</div>
-    </div>
+   </div>
 </div>
 {% endblock %}

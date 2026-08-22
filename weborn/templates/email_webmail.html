@@ -3,9 +3,9 @@
 {% block content %}
 <div class="flex items-center justify-between mb-4">
     <div>
-        <h1 class="text-xl font-bold">📮 Webmail (Roundcube)</h1>
-        <div class="text-t3 text-xs mt-0.5">Web-based email client untuk akses email via browser</div>
-    </div>
+        <div class="page-title text-[22px] font-bold mb-1">{{ icon('inbox', 'w-5 h-5') }} Webmail (Roundcube)</div>
+        <div class="page-sub text-t3 text-[13px] mb-5">Web-based email client untuk akses email via browser</div>
+   </div>
     <span class="st {{ 'active' if running else ('inactive' if installed else 'failed') }}">{{ 'active' if running else ('stopped' if installed else 'not installed') }}</span>
 </div>
 
@@ -13,36 +13,36 @@
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div class="card">
-        <h3 class="text-xs font-bold mb-2">ℹ️ Status</h3>
+        <h3 class="text-xs font-bold mb-2">{{ icon('information-circle', 'w-5 h-5') }} Status</h3>
         <div class="space-y-1.5 text-[14px] mb-3">
             {% if webmail_url %}
             <div class="flex justify-between"><span class="text-t3">URL:</span><a href="{{ webmail_url }}" class="text-accent text-[13px]" target="_blank">{{ webmail_url }}</a></div>
             {% endif %}
-        </div>
+       </div>
 
         {% if not installed %}
         <button onclick="weborn.confirmAction('/email/webmail/install','Install Roundcube',false,'Install Roundcube Webmail?')"
-                class="btn primary sm w-full justify-center">📥 Install Roundcube</button>
+                class="btn primary sm w-full justify-center">{{ icon('arrow-down-tray', 'w-5 h-5') }} Install Roundcube</button>
         {% else %}
         <div class="flex gap-1.5">
             {% if not running %}
-            <button onclick="weborn.simplePost('/email/service/roundcube/start','Start Roundcube',false)" class="btn primary sm">▶ Start</button>
+            <button onclick="weborn.simplePost('/email/service/roundcube/start','Start Roundcube',false)" class="btn primary sm">{{ icon('play', 'w-5 h-5') }} Start</button>
             {% else %}
-            <button onclick="weborn.simplePost('/email/service/roundcube/stop','Stop Roundcube',false)" class="btn danger sm">⏹ Stop</button>
+            <button onclick="weborn.simplePost('/email/service/roundcube/stop','Stop Roundcube',false)" class="btn danger sm">{{ icon('stop', 'w-5 h-5') }} Stop</button>
             {% endif %}
-            <button onclick="weborn.simplePost('/email/service/roundcube/restart','Restart Roundcube',false)" class="btn sm">🔄</button>
-        </div>
+            <button onclick="weborn.simplePost('/email/service/roundcube/restart','Restart Roundcube',false)" class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }}</button>
+       </div>
         {% endif %}
-    </div>
+   </div>
 
     <div class="card">
-        <h3 class="text-xs font-bold mb-2">📖 Cara Akses</h3>
+        <h3 class="text-xs font-bold mb-2">{{ icon('document-text', 'w-5 h-5') }} Cara Akses</h3>
         <div class="text-[13px] text-t3 space-y-1.5">
             <p>Akses webmail di:</p>
             <code class="block text-[13px] bg-black/10 rounded p-2">https://IP_SERVER/roundcube</code>
             <p>atau: <code class="text-[13px]">https://mail.domain.com</code></p>
             <p class="text-[14px]">Kredensial = akun email dari <a href="/email/accounts" class="text-accent">Mailbox</a></p>
-        </div>
-    </div>
+       </div>
+   </div>
 </div>
 {% endblock %}

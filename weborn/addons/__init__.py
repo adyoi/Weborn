@@ -163,8 +163,6 @@ class AddonManager:
                 if addon.systemd_unit:
                     cmds.append((f"Mengaktifkan systemd unit {addon.systemd_unit}",
                                  ["systemctl", "enable", addon.systemd_unit]))
-                    cmds.append((f"Menjalankan {addon.systemd_unit}",
-                                 ["systemctl", "start", addon.systemd_unit]))
             elif addon.type == "runtime":
                 if addon.packages:
                     cmds.append(("Menginstall runtime: " + ", ".join(addon.packages),
@@ -201,12 +199,25 @@ class AddonManager:
         if addon.type == "builtin":
             yield {"ok": True, "step": "Addon bawaan, selalu tersedia"}
             return
+        installed_packages = False
         for label, cmd in self._commands_for("install", addon):
             result = await self.executor.run(*cmd)
+            if cmd[0:2] == ["apt-get", "install"]:
+                installed_packages = True
             yield {"ok": result.ok, "step": label, "output": result.output}
             if not result.ok:
+                if installed_packages and addon.type == "system":
+                    yield {"ok": True, "step": "Rollback: menghapus paket yang gagal install...",
+                           "output": "(partial install)"}
+                    await self.executor.run("apt-get", "remove", "-y", *addon.packages)
                 yield {"ok": False, "error": result.output}
                 return
+        conf_path = addon.config.get("path")
+        if conf_path and installed_packages and self.executor.mode in ("local", "wsl"):
+            r = await self.executor.run("bash", "-c", f"test -f {conf_path} && echo yes || echo no")
+            if "no" in (r.stdout or ""):
+                yield {"ok": True, "step": f"Restoring config {conf_path}"}
+                await self.executor.run("apt-get", "install", "--reinstall", "-y", *addon.packages)
         yield {"ok": True, "step": "Instalasi selesai ✓"}
 
     async def update_steps(self, addon: Addon):
@@ -222,12 +233,33 @@ class AddonManager:
         yield {"ok": True, "step": "Update selesai ✓"}
 
     async def uninstall_steps(self, addon: Addon):
+        if addon.type == "builtin":
+            yield {"ok": True, "step": "Addon bawaan tidak bisa di-uninstall"}
+            return
+        if addon.type in ("system", "app") and addon.systemd_unit:
+            result = await self.executor.systemctl("stop", addon.unit)
+            yield {"ok": True, "step": f"Stop {addon.unit}", "output": result.output}
+            result = await self.executor.systemctl("disable", addon.unit)
+            yield {"ok": True, "step": f"Disable {addon.unit}", "output": result.output}
         for label, cmd in self._commands_for("uninstall", addon):
             result = await self.executor.run(*cmd)
             yield {"ok": result.ok, "step": label, "output": result.output}
             if not result.ok:
                 yield {"ok": False, "error": result.output}
                 return
+        conf_path = addon.config.get("path")
+        if conf_path and addon.type not in ("system",) and self.executor.mode in ("local", "wsl"):
+            result = await self.executor.run("bash", "-c",
+                                             f"test -f {conf_path} && sudo rm -f {conf_path} && echo removed || echo skip")
+            yield {"ok": True, "step": f"Hapus config {conf_path}", "output": result.output}
+        if addon.systemd_unit and self.executor.mode in ("local", "wsl"):
+            unit_file = f"/etc/systemd/system/{addon.unit}.service"
+            result = await self.executor.run("bash", "-c",
+                                             f"test -f {unit_file} && sudo rm -f {unit_file} && sudo systemctl daemon-reload && echo removed || echo skip")
+            yield {"ok": True, "step": f"Hapus unit file {addon.unit}", "output": result.output}
+        if addon.type in ("system", "app") and addon.packages and self.executor.mode in ("local", "wsl"):
+            result = await self.executor.run("apt-get", "autoremove", "-y")
+            yield {"ok": result.ok, "step": "Autoremove unused packages", "output": result.output}
         yield {"ok": True, "step": "Penghapusan selesai ✓"}
 
     async def install(self, addon: Addon) -> dict:

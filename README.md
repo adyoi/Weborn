@@ -39,6 +39,9 @@ Client (Browser)
 
 ## What's New (v1.0.0)
 
+- **Process Manager Config** — Edit workers, timeout, worker class, resource limits per app (MemoryMax, CPUQuota, Nice, OOMScoreAdjust)
+- **Graceful Reload** — SIGHUP reload without restart + real-time WebSocket monitoring
+- **Session Idle Lock** — Configurable per-user timeout with idle detection
 - **Security Hardening** — CSRF protection, WebSocket auth, rate limiting, shlex.quote() shell injection fixes
 - **Weborn Panel Self-Monitoring** — Monitor panel's own process, workers, CPU, MEM with Trace Log
 - **Process Monitor** — Orphan detection + kill APIs for rogue gunicorn/uvicorn processes
@@ -67,7 +70,9 @@ Client (Browser)
 
 ### 🧠 Process Monitor
 - Real-time Gunicorn/Uvicorn worker status (PID, CPU%, MEM%, uptime)
-- Start / Stop / Restart controls per app
+- Start / Stop / Restart / Reload controls per app
+- **Process Manager Config** — Edit workers, timeout, worker class, max requests, graceful timeout, keep alive, access log
+- **Resource Limits** — MemoryMax, CPUQuota, Nice, OOMScoreAdjust (systemd integration)
 - **Trace Log** — Live xterm.js log streaming via WebSocket (`journalctl -u`)
 - **Weborn Panel** — Self-monitoring with worker table, resource usage, Trace Log
 - **Orphan Detection** — Finds rogue gunicorn/uvicorn processes with kill APIs
@@ -102,6 +107,7 @@ Client (Browser)
 - **WebSocket Auth** — Session validation on all WebSocket endpoints (terminal, logs)
 - **Rate Limiting** — Login rate limit (5 attempts per 5 minutes per IP)
 - **Session Hardening** — `httponly`, `max_age=24h`, `secure` flag when SSL
+- **Session Idle Lock** — Configurable per-user timeout, auto-locks inactive sessions
 - **Shell Injection Prevention** — `shlex.quote()` on all user input in bash commands
 - **UFW** — Firewall rule management (Allow/Block ports)
 - **Fail2Ban** — Intrusion prevention (Ban/Unban IPs)
@@ -127,6 +133,7 @@ Client (Browser)
 - **PAM fallback** — Linux users login with OS credentials (auto-creates shadow panel user)
 - **Root login gate** — Root can login via PAM only after admin panel user exists
 - Session management with 24-hour expiry + CSRF tokens
+- Session idle lock with configurable per-user timeout
 - Login rate limiting (5 attempts per 5 minutes per IP)
 - Login audit trail (IP, timestamp, success/fail)
 
@@ -198,13 +205,13 @@ npm run css:build
 
 # 5 Run the dashboard
 # Development / dry-run (works on Windows)
-python run.py --reload --host 127.0.0.1 --port 2025
+python weborn.py --reload --host 127.0.0.1 --port 2025
 
 # Full system execution on Linux/WSL (requires sudo)
-sudo python run.py --local --host 0.0.0.0 --port 2025
+sudo python weborn.py --local --host 0.0.0.0 --port 2025
 
 # With SSL (self-signed or Let's Encrypt)
-sudo python run.py --local --host 0.0.0.0 --port 2025 \
+sudo python weborn.py --local --host 0.0.0.0 --port 2025 \
   --ssl-cert /path/to/cert.pem --ssl-key /path/to/key.pem
 ```
 
@@ -277,12 +284,12 @@ export WEBORN_WSL_DISTRO=Debian
 
 ```bash
 # Self-signed (for development/testing)
-python run.py --local --ssl-cert /path/to/cert.pem --ssl-key /path/to/key.pem
+python weborn.py --local --ssl-cert /path/to/cert.pem --ssl-key /path/to/key.pem
 
 # Let's Encrypt (production)
 certbot certonly --standalone -d yourdomain.com
 # Then point to the generated files
-python run.py --local --ssl-cert /etc/letsencrypt/live/yourdomain.com/fullchain.pem --ssl-key /etc/letsencrypt/live/yourdomain.com/privkey.pem
+python weborn.py --local --ssl-cert /etc/letsencrypt/live/yourdomain.com/fullchain.pem --ssl-key /etc/letsencrypt/live/yourdomain.com/privkey.pem
 ```
 
 When SSL is active, session cookies automatically get the `secure` flag.
@@ -295,6 +302,7 @@ When SSL is active, session cookies automatically get the `secure` flag.
 | **WebSocket Auth** | Session cookie validation before accepting connections |
 | **Rate Limiting** | 5 login attempts per IP per 5 minutes |
 | **Session Hardening** | `httponly`, `max_age=24h`, `secure` when SSL |
+| **Session Idle Lock** | Per-user timeout, auto-locks inactive sessions |
 | **Shell Injection** | `shlex.quote()` on all user input in bash commands |
 | **Password Hashing** | PBKDF2-SHA256 (SQLite) + PAM shadow users |
 | **Audit Trail** | Login logs with IP, timestamp, success/fail |

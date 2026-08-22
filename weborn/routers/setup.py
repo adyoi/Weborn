@@ -1,4 +1,5 @@
 """Setup wizard: buat akun admin pertama + user Linux OS."""
+import re
 import shlex
 
 from fastapi import APIRouter, Form, Request
@@ -9,6 +10,17 @@ from ..executors import get_executor
 from ..ui import render
 
 router = APIRouter(tags=["Setup"])
+
+_PASSWORD_RE = re.compile(
+    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]).{8,}$')
+
+
+def _validate_password(password: str) -> str | None:
+    if len(password) < 8:
+        return "Password minimal 8 karakter"
+    if not _PASSWORD_RE.match(password):
+        return "Password harus kombinasi huruf besar, huruf kecil, angka, dan simbol (!@#$%^&* dll)"
+    return None
 
 
 @router.get("/setup", response_class=HTMLResponse)
@@ -27,10 +39,15 @@ async def setup_action(
 ):
     if has_panel_users():
         return RedirectResponse("/", status_code=303)
+    from ..ratelimit import limiter
+    ip = request.client.host if request.client else "unknown"
+    if limiter.is_limited(f"setup:{ip}", max_tokens=5, window_sec=300):
+        return render(request, "setup.html", {"error": "Terlalu banyak percobaan, coba lagi dalam 5 menit"})
     if len(username) < 3:
         return render(request, "setup.html", {"error": "Username minimal 3 karakter"})
-    if len(password) < 6:
-        return render(request, "setup.html", {"error": "Password minimal 6 karakter"})
+    pw_err = _validate_password(password)
+    if pw_err:
+        return render(request, "setup.html", {"error": pw_err})
     if password != password_confirm:
         return render(request, "setup.html", {"error": "Konfirmasi password tidak cocok"})
 
@@ -46,15 +63,18 @@ async def setup_action(
         if not _re.match(r"^[a-z_][a-z0-9_-]{2,31}$", username):
             return RedirectResponse("/login", status_code=303)
 
-        # Cek apakah user sudah ada di OS
-        check = await ex.run("bash", "-c", f"id {shlex.quote(username)} >/dev/null 2>&1 && echo exists || echo new")
-        if "new" in check.stdout:
-            await ex.run("useradd", "-m", "-s", "/bin/bash", "-G", "sudo", username)
-            await ex.run("bash", "-c",
-                         f"echo {shlex.quote(username + ':' + password)} | sudo chpasswd")
-            await ex.run("usermod", "-aG", "ssh-user", username)
-        else:
-            await ex.run("bash", "-c",
-                         f"echo {shlex.quote(username + ':' + password)} | sudo chpasswd")
+        try:
+            # Cek apakah user sudah ada di OS
+            check = await ex.run("bash", "-c", f"id {shlex.quote(username)} >/dev/null 2>&1 && echo exists || echo new")
+            if "new" in check.stdout:
+                await ex.run("useradd", "-m", "-s", "/bin/bash", "-G", "sudo", username)
+                await ex.run("bash", "-c",
+                             f"echo {shlex.quote(username + ':' + password)} | sudo chpasswd")
+                await ex.run("usermod", "-aG", "ssh-user", username)
+            else:
+                await ex.run("bash", "-c",
+                             f"echo {shlex.quote(username + ':' + password)} | sudo chpasswd")
+        except Exception:
+            pass  # Panel user sudah dibuat, OS user sync gagal — login tetap bisa
 
     return RedirectResponse("/login?msg=Akun+admin+dan+user+Linux+dibuat", status_code=303)

@@ -3,19 +3,19 @@
 {% block content %}
 <div class="flex items-center justify-between mb-4">
     <div>
-        <h1 class="text-xl font-bold">⛔ Fail2Ban</h1>
-        <div class="text-t3 text-xs mt-0.5">Intrusion prevention — blok IP setelah percobaan login gagal</div>
-    </div>
+        <div class="page-title text-[22px] font-bold mb-1">{{ icon('no-symbol', 'w-5 h-5') }} Fail2Ban</div>
+        <div class="page-sub text-t3 text-[13px] mb-5">Intrusion prevention — blok IP setelah percobaan login gagal</div>
+   </div>
     <div class="flex items-center gap-3">
         <span class="st {{ 'active' if service_active else 'inactive' }}">{{ 'active' if service_active else 'inactive' }}</span>
         {% if installed %}
         {% if not service_active %}
-        <button onclick="weborn.confirmAction('/security/fail2ban/start','Start Fail2Ban',true)" class="btn primary sm">▶ Start</button>
+        <button onclick="weborn.confirmAction('/security/fail2ban/start','Start Fail2Ban',true)" class="btn primary sm">{{ icon('play', 'w-5 h-5') }} Start</button>
         {% else %}
-        <button onclick="weborn.confirmAction('/security/fail2ban/stop','Stop Fail2Ban',true,'Stop Fail2Ban?')" class="btn danger sm">⏹ Stop</button>
+        <button onclick="weborn.confirmAction('/security/fail2ban/stop','Stop Fail2Ban',true,'Stop Fail2Ban?')" class="btn danger sm">{{ icon('stop', 'w-5 h-5') }} Stop</button>
         {% endif %}
         {% endif %}
-    </div>
+   </div>
 </div>
 
 {% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
@@ -26,44 +26,44 @@
 <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 items-start">
     {# ── Info + Ban Form ── #}
     <div class="card">
-        <h3 class="text-xs font-bold mb-3">ℹ️ Status</h3>
+        <h3 class="text-xs font-bold mb-3">{{ icon('information-circle', 'w-5 h-5') }} Status</h3>
         <div class="space-y-1.5 text-[14px] mb-3">
             <div class="flex justify-between"><span class="text-t3">Jails aktif:</span><b>{{ jails|length }}</b></div>
             <div class="text-[13px] text-t3">Jails: {{ jails|join(', ') or '—' }}</div>
-        </div>
+       </div>
 
         <div class="border-t border-line/40 pt-3">
-            <h4 class="text-[13px] font-bold mb-2">🚫 Manual Ban</h4>
+            <h4 class="text-[13px] font-bold mb-2">{{ icon('no-symbol', 'w-5 h-5') }} Manual Ban</h4>
             <form id="f2b-ban-form" class="space-y-2">
                 <div><label class="text-[13px]">IP Address</label>
                     <input name="ip" placeholder="192.168.1.100" required class="sm" id="f2b-ip"></div>
                 <div><label class="text-[13px]">Jail</label>
                     <input name="jail" value="sshd" class="sm" id="f2b-jail"></div>
-                <button type="button" onclick="f2bBan()" class="btn danger sm w-full justify-center">🚫 Ban IP</button>
-            </form>
-        </div>
-    </div>
+                <button type="button" onclick="f2bBan()" class="btn danger sm w-full justify-center">{{ icon('no-symbol', 'w-5 h-5') }} Ban IP</button>
+           </form>
+       </div>
+   </div>
 
     {# ── Banned IPs List ── #}
     <div class="card !p-0 overflow-hidden">
         <div class="px-4 py-2.5 border-b border-line/40 flex items-center justify-between">
-            <h3 class="text-xs font-bold">🚫 Banned IPs</h3>
+            <h3 class="text-xs font-bold">{{ icon('no-symbol', 'w-5 h-5') }} Banned IPs</h3>
             <span class="text-t3 text-[14px]">{{ banned|length }} banned</span>
-        </div>
+       </div>
         {% if banned %}
         <div class="max-h-[350px] overflow-y-auto">
             {% for b in banned %}
             <div class="px-4 py-2 border-b border-line/20 flex items-center gap-3 hover:bg-white/[.02]">
                 <code class="mono text-[13px] flex-1">{{ b.ip }}</code>
                 <span class="text-t3 text-[14px]">{{ b.jail }}</span>
-                <button onclick="f2bUnban('{{ b.ip }}','{{ b.jail }}')" class="btn sm">🔓 Unban</button>
-            </div>
+                <button onclick="f2bUnban('{{ b.ip }} ','{{ b.jail }} ')" class="btn sm">{{ icon('lock-open', 'w-5 h-5') }} Unban</button>
+           </div>
             {% endfor %}
-        </div>
+       </div>
         {% else %}
         <div class="text-t3 text-center py-8 text-xs">Tidak ada IP yang dibanned</div>
         {% endif %}
-    </div>
+   </div>
 </div>
 
 <script>

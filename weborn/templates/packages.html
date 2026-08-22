@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Paket Terinstall - Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">📦 Paket Terinstall</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('archive-box', 'w-5 h-5') }} Paket Terinstall</div>
 <div class="page-sub text-t3 text-[13px] mb-5">{{ total }} paket (dpkg). Cari nama/versi:</div>
 
 <div class="flex gap-2 mb-4 items-center flex-wrap">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
     <form method="get" action="/packages" class="flex gap-2 flex-1 min-w-[280px] max-w-[420px]">
         <input name="q" value="{{ q }}" placeholder="cari paket…" class="flex-1">
-        <button type="submit" class="btn primary">🔍 Cari</button>
+        <button type="submit" class="btn primary">{{ icon('magnifying-glass', 'w-5 h-5') }} Cari</button>
         {% if q %}<a class="btn" href="/packages">Reset</a>{% endif %}
-    </form>
+   </form>
     <div class="flex gap-2">
-        <button class="btn" onclick="runApt('update')" id="btn-update">🔄 Update Index</button>
-        <button class="btn" onclick="runApt('upgrade')" id="btn-upgrade">⬆️ Upgrade Semua</button>
-    </div>
+        <button class="btn" onclick="runApt('update')" id="btn-update">{{ icon('arrow-path', 'w-5 h-5') }} Update Package</button>
+        <button class="btn" onclick="runApt('upgrade')" id="btn-upgrade">{{ icon('arrow-up', 'w-5 h-5') }} Upgrade Package</button>
+   </div>
 </div>
 
 <div class="card !p-0 overflow-hidden">
@@ -26,12 +26,12 @@
                 <td class="mono">{{ p.name }}</td>
                 <td class="mono text-[13px]">{{ p.version }}</td>
                 <td class="text-[13px] text-t3">{{ p.section }}</td>
-            </tr>
+           </tr>
         {% else %}
             <tr><td colspan="3" class="text-center text-t3 py-7">Tidak ditemukan.</td></tr>
         {% endfor %}
-        </tbody>
-    </table>
+       </tbody>
+   </table>
 </div>
 
 <div id="apt-output" class="hidden mt-4">
@@ -39,9 +39,9 @@
         <div class="flex items-center justify-between mb-2">
             <span class="text-[13px] font-bold" id="apt-title">Output</span>
             <span class="text-[12px] text-t3" id="apt-status"></span>
-        </div>
+       </div>
         <pre id="apt-log" class="bg-black text-green-400 p-3 rounded text-[12px] max-h-[400px] overflow-auto font-mono whitespace-pre-wrap"></pre>
-    </div>
+   </div>
 </div>
 
 <script>

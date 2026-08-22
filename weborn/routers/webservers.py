@@ -1,13 +1,11 @@
-"""Router Web Server: Nginx, PHP-FPM, Cache management."""
+"""Router Web Server: Nginx, Apache, PHP-FPM, Cache management."""
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from starlette.responses import JSONResponse
 
 from ..auth import require_admin, require_user
-from ..config import APP_TYPES
-from ..db import list_apps
 from ..executors import get_executor
-from ..managers.apps import _app_type_for
+from ..managers.apache import ApacheManager
 from ..managers.nginx import NginxManager
 from ..ui import render
 
@@ -30,6 +28,8 @@ async def web_server(request: Request, user: dict = Depends(require_user)):
         "active": "web-server",
     })
 
+
+# ── Nginx ────────────────────────────────────────────────────────────────────
 
 @router.post("/web-server/nginx/install")
 async def nginx_install(user: dict = Depends(require_admin)):
@@ -59,8 +59,6 @@ async def nginx_action(action: str, user: dict = Depends(require_admin)):
     return JSONResponse({"ok": result.ok, "output": result.output})
 
 
-# ── Nginx detail ────────────────────────────────────────────────────────────
-
 @router.get("/web-server/nginx", response_class=HTMLResponse)
 async def nginx_page(request: Request, user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
@@ -79,17 +77,116 @@ async def nginx_page(request: Request, user: dict = Depends(require_admin)):
                           "ls /etc/nginx/sites-enabled/ 2>/dev/null || ls /etc/nginx/conf.d/ 2>/dev/null || echo ''")
         sites = [s.strip() for s in r3.stdout.strip().splitlines() if s.strip()]
 
-    apps = list_apps()
-    for a in apps:
-        a["app_type"] = _app_type_for(a["language"], a.get("framework", ""))
-
     return render(request, "webserver_nginx.html", {
         "user": user,
         "nginx_status": nginx_status,
         "nginx_version": nginx_version,
         "sites": sites,
-        "apps": apps,
         "active": "ws-nginx",
+    })
+
+
+@router.get("/web-server/nginx/site/{site_name}")
+async def nginx_site_read(site_name: str, user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    import re as _re
+    if not _re.match(r'^[A-Za-z0-9._-]+$', site_name):
+        return JSONResponse({"ok": False, "error": "nama site tidak valid"}, status_code=400)
+    ex = get_executor()
+    if ex.mode not in ("local", "wsl"):
+        return JSONResponse({"ok": True, "content": "[dry-run] site config"})
+    import shlex as _shlex
+    qname = _shlex.quote(site_name)
+    r = await ex.run("bash", "-c",
+                     f"cat /etc/nginx/sites-enabled/{qname} 2>/dev/null || "
+                     f"cat /etc/nginx/conf.d/{qname} 2>/dev/null || echo ''")
+    return JSONResponse({"ok": True, "content": r.stdout, "name": site_name})
+
+
+@router.post("/web-server/nginx/site/{site_name}/delete")
+async def nginx_site_delete(site_name: str, user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    import shlex as _shlex
+    ex = get_executor()
+    if ex.mode not in ("local", "wsl"):
+        return JSONResponse({"ok": True, "output": f"[dry-run] hapus site {site_name}"})
+    qname = _shlex.quote(site_name)
+    r = await ex.run("bash", "-c",
+                     f"sudo rm -f /etc/nginx/sites-enabled/{qname} "
+                     f"/etc/nginx/sites-available/{qname} "
+                     f"/etc/nginx/conf.d/{qname} && "
+                     f"sudo nginx -t 2>&1 && sudo nginx -s reload")
+    return JSONResponse({"ok": r.ok, "output": r.stdout + r.stderr})
+
+
+# ── Apache ───────────────────────────────────────────────────────────────────
+
+@router.post("/web-server/apache/install")
+async def apache_install(user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    result = await ApacheManager(get_executor()).install()
+    return JSONResponse({"ok": result.get("ok"), "output": result.get("output")})
+
+
+@router.post("/web-server/apache/test")
+async def apache_test(user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    result = await ApacheManager(get_executor()).test()
+    return JSONResponse({"ok": result.ok, "output": result.output})
+
+
+@router.post("/web-server/apache/{action}")
+async def apache_action(action: str, user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    if action not in ("start", "stop", "reload", "restart"):
+        return JSONResponse({"ok": False, "error": "aksi tidak dikenal"})
+    apache = ApacheManager(get_executor())
+    if action == "start":
+        result = await apache.start()
+    elif action == "stop":
+        result = await apache.stop()
+    elif action == "restart":
+        result = await apache.restart()
+    else:
+        result = await apache.reload()
+    return JSONResponse({"ok": result.ok, "output": result.output})
+
+
+@router.get("/web-server/apache", response_class=HTMLResponse)
+async def apache_page(request: Request, user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    ex = get_executor()
+    apache_status = "unknown"
+    apache_version = ""
+    sites = []
+    modules = []
+
+    if ex.mode in ("local", "wsl"):
+        r = await ex.run("bash", "-c", "systemctl is-active apache2 2>/dev/null || echo stopped")
+        apache_status = r.stdout.strip()
+        r2 = await ex.run("bash", "-c", "apache2 -v 2>&1 | head -1")
+        apache_version = r2.stdout.strip() or r2.stderr.strip()
+        r3 = await ex.run("bash", "-c",
+                          "ls /etc/apache2/sites-enabled/ 2>/dev/null || echo ''")
+        sites = [s.strip() for s in r3.stdout.strip().splitlines() if s.strip()]
+        r4 = await ex.run("bash", "-c",
+                          "apache2ctl -M 2>/dev/null | awk '{print $1}' | head -30 || echo ''")
+        modules = [m.strip() for m in r4.stdout.strip().splitlines()
+                   if m.strip() and m.strip() != '']
+
+    return render(request, "webserver_apache.html", {
+        "user": user,
+        "apache_status": apache_status,
+        "apache_version": apache_version,
+        "sites": sites,
+        "modules": modules,
+        "active": "ws-apache",
     })
 
 
@@ -108,8 +205,16 @@ async def php_page(request: Request, user: dict = Depends(require_admin)):
     if ex.mode in ("local", "wsl"):
         r = await ex.run("bash", "-c", "php -v 2>/dev/null | head -1")
         php_version = r.stdout.strip()
-        r2 = await ex.run("bash", "-c",
-                          "systemctl is-active php*-fpm 2>/dev/null || echo stopped")
+        # Detect actual PHP-FPM unit (e.g. php8.2-fpm)
+        r_ver = await ex.run("bash", "-c",
+                             "ls /etc/php/ 2>/dev/null | sort -V | tail -1 || echo ''")
+        fpm_ver = r_ver.stdout.strip()
+        fpm_unit = f"php{fpm_ver}-fpm" if fpm_ver else ""
+        if fpm_unit:
+            r2 = await ex.run("bash", "-c",
+                              f"systemctl is-active {fpm_unit} 2>/dev/null || echo stopped")
+        else:
+            r2 = await ex.run("bash", "-c", "echo stopped")
         fpm_status = r2.stdout.strip()
         r3 = await ex.run("bash", "-c",
                           "ls /etc/php/*/fpm/pool.d/ 2>/dev/null || echo ''")
@@ -153,7 +258,7 @@ async def cache_page(request: Request, user: dict = Depends(require_admin)):
     })
 
 
-# ── Service control actions ──────────────────────────────────────────────────
+# ── Service control actions (catch-all) ──────────────────────────────────────
 
 @router.post("/web-server/{service}/{action}")
 async def webserver_control(service: str, action: str,
@@ -168,10 +273,14 @@ async def webserver_control(service: str, action: str,
         return {"ok": True, "output": f"[dry-run] systemctl {action} {service}"}
 
     if service == "nginx":
-        # nginx uses reload for config changes
         cmd = f"sudo systemctl {action} nginx"
+    elif service == "apache":
+        cmd = f"sudo systemctl {action} apache2"
     elif service == "php-fpm":
-        cmd = f"sudo systemctl {action} php*-fpm 2>/dev/null || sudo systemctl {action} php8.2-fpm"
+        r_ver = await ex.run("bash", "-c",
+                             "ls /etc/php/ 2>/dev/null | sort -V | tail -1 || echo 8.2")
+        fpm_ver = r_ver.stdout.strip() or "8.2"
+        cmd = f"sudo systemctl {action} php{fpm_ver}-fpm"
     elif service == "redis":
         cmd = f"sudo systemctl {action} redis-server"
     elif service == "memcached":

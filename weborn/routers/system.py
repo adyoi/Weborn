@@ -1,7 +1,6 @@
 """Modul sistem Weborn: services, proses, network, logs, packages, settings, DNS."""
 import asyncio
 import json as _json
-import os
 import time as _time
 from datetime import datetime
 
@@ -24,17 +23,10 @@ router = APIRouter(tags=["System"])
 SYSTEMD_ACTIONS = ("start", "stop", "restart", "reload", "enable", "disable")
 
 CONFIG_FILES = {
+    # ── System
     "SSH": {
         "path": "/etc/ssh/sshd_config",
         "desc": "Konfigurasi server SSH (port, izin root, PasswordAuthentication)",
-    },
-    "Nginx": {
-        "path": "/etc/nginx/nginx.conf",
-        "desc": "Konfigurasi utama server web nginx",
-    },
-    "Apache": {
-        "path": "/etc/apache2/apache2.conf",
-        "desc": "Konfigurasi utama Apache",
     },
     "Hosts": {
         "path": "/etc/hosts",
@@ -56,14 +48,65 @@ CONFIG_FILES = {
         "path": "/etc/fstab",
         "desc": "Mount sistem file",
     },
-    "PHP": {
-        "path": "/etc/php/8.2/apache2/php.ini",
-        "desc": "Konfigurasi PHP (fallback bila ada)",
+    # ── Web Server
+    "Nginx": {
+        "path": "/etc/nginx/nginx.conf",
+        "desc": "Konfigurasi utama Nginx",
     },
+    "Apache": {
+        "path": "/etc/apache2/apache2.conf",
+        "desc": "Konfigurasi utama Apache",
+    },
+    # ── PHP
+    "PHP": {
+        "path": "/etc/php/8.2/fpm/php.ini",
+        "desc": "Konfigurasi PHP-FPM (upload_max, memory_limit, dll)",
+    },
+    "PHP Pool": {
+        "path": "/etc/php/8.2/fpm/pool.d/www.conf",
+        "desc": "PHP-FPM pool (user, socket, pm.max_children)",
+    },
+    # ── Database
     "MySQL": {
         "path": "/etc/mysql/my.cnf",
         "desc": "Konfigurasi MySQL/MariaDB",
     },
+    "PostgreSQL": {
+        "path": "/etc/postgresql/16/main/postgresql.conf",
+        "desc": "Konfigurasi PostgreSQL",
+    },
+    # ── Mail
+    "Postfix": {
+        "path": "/etc/postfix/main.cf",
+        "desc": "Konfigurasi SMTP Postfix",
+    },
+    "Dovecot": {
+        "path": "/etc/dovecot/dovecot.conf",
+        "desc": "Konfigurasi IMAP/POP3 Dovecot",
+    },
+    # ── Security
+    "UFW": {
+        "path": "/etc/ufw/ufw.conf",
+        "desc": "Konfigurasi firewall UFW",
+    },
+    "Fail2Ban": {
+        "path": "/etc/fail2ban/jail.local",
+        "desc": "Konfigurasi Fail2Ban (brute-force protection)",
+    },
+    # ── Process
+    "Supervisor": {
+        "path": "/etc/supervisor/supervisord.conf",
+        "desc": "Process manager Supervisor",
+    },
+    "Crontab": {
+        "path": "/etc/crontab",
+        "desc": "System-wide cron jobs",
+    },
+    "Logrotate": {
+        "path": "/etc/logrotate.conf",
+        "desc": "Rotasi log otomatis",
+    },
+    # ── Panel
     "Panel Env": {
         "path": "/opt/weborn/.env",
         "desc": "Variabel lingkungan panel Weborn",
@@ -210,10 +253,12 @@ def _parse_bruteforce(text: str, limit: int = 10):
 LOG_SOURCES = {
     "system": ("journalctl", "Log sistem (journalctl -xe)"),
     "auth": ("auth", "Login & autentikasi (/var/log/auth.log)"),
+    "audit": ("audit", "Audit Weborn (command execution)"),
     "nginx": ("nginx", "Error log nginx"),
     "mysql": ("mysql", "Error log MySQL/MariaDB"),
     "apache": ("apache", "Error log Apache"),
-    "panel": ("panel", "Log & audit Weborn"),
+    "panel": ("panel", "Log aplikasi Weborn"),
+    "syslog": ("syslog", "Syslog (/var/log/syslog)"),
 }
 
 
@@ -222,12 +267,21 @@ async def logs_page(request: Request, source: str = "system", lines: int = 120,
                     user: dict = Depends(require_user)):
     if hasattr(user, "headers"):
         return user
+    # Clamp lines to prevent DoS
+    lines = max(10, min(lines, 5000))
+    # Validate source
+    if source not in LOG_SOURCES:
+        source = "system"
     ex = get_executor()
     output, ok = "", True
     if ex.mode in ("local", "wsl"):
+        src_key, _ = LOG_SOURCES[source]
         if source == "panel":
             r = await ex.run("bash", "-c",
                              f"tail -n {lines} {BASE_DIR}/data/logs/panel.log 2>/dev/null || true")
+        elif source == "audit":
+            r = await ex.run("bash", "-c",
+                             f"tail -n {lines} {BASE_DIR}/data/logs/audit.log 2>/dev/null || true")
         elif source == "system":
             r = await ex.run("journalctl", "-xe", "-n", str(lines), "--no-pager")
         elif source == "auth":
@@ -238,12 +292,33 @@ async def logs_page(request: Request, source: str = "system", lines: int = 120,
             r = await ex.run("bash", "-c", f"tail -n {lines} /var/log/mysql/error.log 2>/dev/null || true")
         elif source == "apache":
             r = await ex.run("bash", "-c", f"tail -n {lines} /var/log/apache2/error.log 2>/dev/null || true")
+        elif source == "syslog":
+            r = await ex.run("bash", "-c", f"tail -n {lines} /var/log/syslog 2>/dev/null || true")
+        else:
+            r = await ex.run("bash", "-c", f"echo 'sumber log tidak dikenal: {source}'")
         output, ok = r.output, r.ok
     else:
         output = f"[dry-run] log {source} ({lines} baris)"
     return render(request, "logs.html", {"user": user, "source": source, "lines": lines,
                                          "output": output, "ok": ok, "sources": LOG_SOURCES,
                                          "active": "logs"})
+
+
+@router.post("/logs/{source}/clear")
+async def logs_clear(source: str, user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    if source not in ("panel", "audit"):
+        return {"ok": False, "error": "hanya panel & audit yang bisa di-clear"}
+    ex = get_executor()
+    if ex.mode in ("local", "wsl"):
+        if source == "panel":
+            path = f"{BASE_DIR}/data/logs/panel.log"
+        else:
+            path = f"{BASE_DIR}/data/logs/audit.log"
+        r = await ex.run("bash", "-c", f"truncate -s 0 {path} 2>/dev/null || true")
+        return {"ok": True}
+    return {"ok": True, "output": "[dry-run] clear log"}
 
 
 # ---------------------------------------------------------------- packages & OS
@@ -297,9 +372,14 @@ async def _apt_stream(cmd: str):
 
 
 @router.post("/packages/update")
-async def packages_update(user: dict = Depends(require_admin)):
+async def packages_update(request: Request, user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    from ..ratelimit import limiter
+    ip = request.client.host if request.client else "unknown"
+    if limiter.is_limited(f"apt:{ip}", max_tokens=3, window_sec=120):
+        from starlette.responses import JSONResponse as _JR
+        return _JR({"ok": False, "error": "terlalu banyak request, coba lagi nanti"}, status_code=429)
     from starlette.responses import StreamingResponse
     return StreamingResponse(
         _apt_stream("sudo apt update 2>&1"),
@@ -308,9 +388,14 @@ async def packages_update(user: dict = Depends(require_admin)):
 
 
 @router.post("/packages/upgrade")
-async def packages_upgrade(user: dict = Depends(require_admin)):
+async def packages_upgrade(request: Request, user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    from ..ratelimit import limiter
+    ip = request.client.host if request.client else "unknown"
+    if limiter.is_limited(f"apt-upgrade:{ip}", max_tokens=1, window_sec=300):
+        from starlette.responses import JSONResponse as _JR
+        return _JR({"ok": False, "error": "upgrade sedang diproses atau terlalu sering, coba lagi nanti"}, status_code=429)
     from starlette.responses import StreamingResponse
     return StreamingResponse(
         _apt_stream("sudo DEBIAN_FRONTEND=noninteractive apt upgrade -y 2>&1"),
@@ -413,6 +498,7 @@ async def dns_add(name: str = Form(...), type: str = Form("A"), value: str = For
         conn.execute(
             "INSERT INTO dns_records(name, type, value, ttl, created_at) VALUES (?,?,?,?,?)",
             (name.strip(), type.upper(), value.strip(), ttl, datetime.now().isoformat()))
+        conn.commit()
     return RedirectResponse("/dns?added=1", status_code=303)
 
 
@@ -422,4 +508,5 @@ async def dns_delete(rid: int, user: dict = Depends(require_admin)):
         return user
     with get_conn() as conn:
         conn.execute("DELETE FROM dns_records WHERE id = ?", (rid,))
+        conn.commit()
     return RedirectResponse("/dns?deleted=1", status_code=303)

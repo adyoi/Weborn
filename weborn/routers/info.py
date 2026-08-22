@@ -1,7 +1,4 @@
 """Info pages: test connectivity, update, changelog, about, status."""
-import subprocess
-from pathlib import Path
-
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
@@ -69,43 +66,51 @@ async def info_test_run(user: dict = Depends(require_admin)):
     ex = get_executor()
 
     python_checks = [
-        ("Python", "python3 -V"),
-        ("Gunicorn", "pip3 show gunicorn 2>/dev/null | grep Version || echo not installed"),
-        ("Uvicorn", "pip3 show uvicorn 2>/dev/null | grep Version || echo not installed"),
-        ("FastAPI", "pip3 show fastapi 2>/dev/null | grep Version || echo not installed"),
-        ("Jinja2", "pip3 show jinja2 2>/dev/null | grep Version || echo not installed"),
-        ("Mistune", "pip3 show mistune 2>/dev/null | grep Version || echo not installed"),
+        ("Python", "python3 -V", "sys"),
+        ("FastAPI", "pip3 show fastapi 2>/dev/null | grep Version || echo not installed", "fastapi"),
+        ("Uvicorn", "pip3 show uvicorn 2>/dev/null | grep Version || echo not installed", "uvicorn"),
+        ("Gunicorn", "pip3 show gunicorn 2>/dev/null | grep Version || echo not installed", "gunicorn"),
+        ("Jinja2", "pip3 show jinja2 2>/dev/null | grep Version || echo not installed", "jinja2"),
+        ("python-multipart", "pip3 show python-multipart 2>/dev/null | grep Version || echo not installed", "multipart"),
+        ("PyJWT", "pip3 show PyJWT 2>/dev/null | grep Version || echo not installed", "jwt"),
+        ("psutil", "pip3 show psutil 2>/dev/null | grep Version || echo not installed", "psutil"),
+        ("websockets", "pip3 show websockets 2>/dev/null | grep Version || echo not installed", "websockets"),
     ]
 
     linux_checks = [
-        ("Node.js", "node -v"),
-        ("Nginx", "nginx -v"),
-        ("MariaDB", "mariadb --version"),
-        ("PostgreSQL", "psql --version"),
-        ("PHP", "php -v | head -1"),
-        ("Git", "git --version"),
-        ("Disk Space", "df -h / | tail -1"),
-        ("Memory", "free -h | grep Mem"),
+        ("Node.js", "node -v", ""),
+        ("Nginx", "nginx -v", ""),
+        ("MariaDB", "mariadb --version", ""),
+        ("PostgreSQL", "psql --version", ""),
+        ("PHP", "php -v | head -1", ""),
+        ("Git", "git --version", ""),
+        ("Disk Space", "df -h / | tail -1", ""),
+        ("Memory", "free -h | grep Mem", ""),
     ]
 
-    async def run_checks(checks):
-        results = []
-        for label, cmd in checks:
-            if ex.mode in ("local", "wsl"):
-                r = await ex.run("bash", "-c", cmd)
-                results.append({
-                    "label": label,
-                    "ok": r.ok,
-                    "output": (r.stdout or r.stderr or "not found").strip(),
-                })
-            else:
-                results.append({"label": label, "ok": True, "output": "[dry-run] available"})
-        return results
+    async def run_one(item):
+        label, cmd = item[0], item[1]
+        module = item[2] if len(item) > 2 else ""
+        if ex.mode in ("local", "wsl"):
+            r = await ex.run("bash", "-c", cmd)
+            return {
+                "label": label,
+                "ok": r.ok,
+                "output": (r.stdout or r.stderr or "not found").strip(),
+                "module": module,
+            }
+        return {"label": label, "ok": True, "output": "[dry-run] available", "module": module}
+
+    import asyncio
+    py_results, linux_results = await asyncio.gather(
+        asyncio.gather(*(run_one(c) for c in python_checks)),
+        asyncio.gather(*(run_one(c) for c in linux_checks)),
+    )
 
     return JSONResponse({
         "ok": True,
-        "python": await run_checks(python_checks),
-        "linux": await run_checks(linux_checks),
+        "python": list(py_results),
+        "linux": list(linux_results),
     })
 
 

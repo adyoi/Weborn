@@ -1,5 +1,7 @@
 """Manajemen akun OS: dibuat setara privilege server sehingga langsung bisa
 dipakai untuk SSH, FTP, Telnet, dll."""
+import re
+
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
@@ -13,6 +15,7 @@ SERVICE_NAMES = {
     "ssh": "SSH", "sftp": "SFTP", "rdp": "RDP",
     "vnc": "VNC", "nfs": "NFS", "ftp": "FTP", "telnet": "Telnet",
 }
+_USERNAME_RE = re.compile(r'^[a-z_][a-z0-9_-]{2,31}$')
 
 
 @router.get("/accounts", response_class=HTMLResponse)
@@ -39,6 +42,8 @@ async def accounts_create(request: Request, username: str = Form(...),
                           user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    if len(password) < 8:
+        return RedirectResponse("/accounts?msg=Password%20minimal%208%20karakter", status_code=303)
     form = await request.form()
     services = form.getlist("services")
     result = await AccountManager(get_executor()).create(
@@ -51,6 +56,8 @@ async def accounts_create(request: Request, username: str = Form(...),
 async def accounts_delete(username: str, user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    if not _USERNAME_RE.match(username):
+        return RedirectResponse("/accounts?msg=Username%20tidak%20valid", status_code=303)
     result = await AccountManager(get_executor()).delete(username)
     return RedirectResponse(f"/accounts?msg={_msg(result, 'Akun dihapus')}", status_code=303)
 
@@ -60,6 +67,8 @@ async def accounts_password(username: str, password: str = Form(...),
                             user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    if not _USERNAME_RE.match(username):
+        return RedirectResponse("/accounts?msg=Username%20tidak%20valid", status_code=303)
     result = await AccountManager(get_executor()).set_password(username, password)
     return RedirectResponse(f"/accounts?msg={_msg(result, 'Password diganti')}", status_code=303)
 
@@ -68,6 +77,8 @@ async def accounts_password(username: str, password: str = Form(...),
 async def accounts_lock(username: str, user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    if not _USERNAME_RE.match(username):
+        return RedirectResponse("/accounts?msg=Username%20tidak%20valid", status_code=303)
     result = await AccountManager(get_executor()).set_locked(username, True)
     return RedirectResponse(f"/accounts?msg={_msg(result, 'Akun dikunci')}", status_code=303)
 
@@ -76,6 +87,8 @@ async def accounts_lock(username: str, user: dict = Depends(require_admin)):
 async def accounts_unlock(username: str, user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    if not _USERNAME_RE.match(username):
+        return RedirectResponse("/accounts?msg=Username%20tidak%20valid", status_code=303)
     result = await AccountManager(get_executor()).set_locked(username, False)
     return RedirectResponse(f"/accounts?msg={_msg(result, 'Akun dibuka')}", status_code=303)
 
@@ -85,6 +98,8 @@ async def accounts_privilege(username: str, level: str = Form(...),
                              user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    if not _USERNAME_RE.match(username):
+        return RedirectResponse("/accounts?msg=Username%20tidak%20valid", status_code=303)
     result = await AccountManager(get_executor()).set_privilege(username, level)
     return RedirectResponse(f"/accounts?msg={_msg(result, 'Privilege diubah')}", status_code=303)
 
@@ -94,6 +109,8 @@ async def accounts_services(request: Request, username: str,
                             user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    if not _USERNAME_RE.match(username):
+        return RedirectResponse("/accounts?msg=Username%20tidak%20valid", status_code=303)
     form = await request.form()
     services = form.getlist("services")
     result = await AccountManager(get_executor()).set_services(username, services)

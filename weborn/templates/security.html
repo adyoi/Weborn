@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Keamanan &amp; SIEM - Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">🛡️ Keamanan &amp; SIEM</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('shield-check', 'w-5 h-5') }} Keamanan &amp; SIEM</div>
 <div class="page-sub text-t3 text-[13px] mb-5">Deteksi bruteforce &amp; DDoS, riwayat login SSH/FTP/Telnet, dan status firewall</div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 items-start">
     <div class="card">
-        <h3 class="text-sm mb-2.5">⛔ Bruteforce (auth.log)</h3>
+        <h3 class="text-sm mb-2.5">{{ icon('no-symbol', 'w-5 h-5') }} Bruteforce (auth.log)</h3>
         {% if bruteforce %}
         <table>
             <thead><tr><th>IP</th><th>Percobaan</th><th>Trace</th></tr></thead>
@@ -16,17 +16,17 @@
                     <td class="mono">{{ b.ip }}</td>
                     <td><span class="badge {{ 'err' if b.attempts > 20 else 'warn' }}">{{ b.attempts }}</span></td>
                     <td class="mono text-[14px] text-t3">{{ b.last }}</td>
-                </tr>
+               </tr>
             {% endfor %}
-            </tbody>
-        </table>
+           </tbody>
+       </table>
         {% else %}
-        <p class="text-ok text-[13px]">✅ Tidak ada percobaan gagal terdeteksi.</p>
+        <p class="text-ok text-[13px]">{{ icon('check', 'w-5 h-5') }} Tidak ada percobaan gagal terdeteksi.</p>
         {% endif %}
-    </div>
+   </div>
 
     <div class="card">
-        <h3 class="text-sm mb-2.5">🌊 DDoS / Koneksi Padat (ss)</h3>
+        <h3 class="text-sm mb-2.5">{{ icon('bolt', 'w-5 h-5') }} DDoS / Koneksi Padat (ss)</h3>
         {% if ddos %}
         <table>
             <thead><tr><th>IP</th><th>Koneksi</th></tr></thead>
@@ -35,23 +35,23 @@
                 <tr>
                     <td class="mono">{{ d.ip }}</td>
                     <td><span class="badge {{ 'err' if d.connections > 500 else 'warn' }}">{{ d.connections }}</span></td>
-                </tr>
+               </tr>
             {% endfor %}
-            </tbody>
-        </table>
+           </tbody>
+       </table>
         {% else %}
-        <p class="text-ok text-[13px]">✅ Koneksi normal.</p>
+        <p class="text-ok text-[13px]">{{ icon('check', 'w-5 h-5') }} Koneksi normal.</p>
         {% endif %}
-    </div>
+   </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 items-start mt-4">
     <div class="card">
-        <h3 class="text-sm mb-2.5">🔐 Riwayat Login (last)</h3>
+        <h3 class="text-sm mb-2.5">{{ icon('lock-closed', 'w-5 h-5') }} Riwayat Login (last)</h3>
         <pre class="output">{{ logins|join('\n') if logins else '—' }}</pre>
-    </div>
+   </div>
     <div class="card">
-        <h3 class="text-sm mb-2.5">🧱 Firewall (ufw)</h3>
+        <h3 class="text-sm mb-2.5">{{ icon('cube', 'w-5 h-5') }} Firewall (ufw)</h3>
         {% if request.query_params.get('msg') %}<div class="msg ok">{{ request.query_params.get('msg') }}</div>{% endif %}
         <pre class="output">{{ fw|join('\n') if fw else 'ufw tidak aktif / tidak ada output (dry-run)' }}</pre>
         <div class="flex gap-2 mt-2.5">
@@ -61,19 +61,19 @@
                     <option value="tcp">TCP</option>
                     <option value="udp">UDP</option>
                     <option value="tcp,udp">TCP+UDP</option>
-                </select>
+               </select>
                 <button type="submit" class="btn primary !py-1.5 !px-2.5">Allow</button>
-            </form>
+           </form>
             <form method="post" action="/security/firewall/deny" class="flex gap-1.5">
                 <input name="port" type="number" min="1" max="65535" placeholder="Port" required>
                 <select name="protocol">
                     <option value="tcp">TCP</option>
                     <option value="udp">UDP</option>
-                </select>
+               </select>
                 <button type="submit" class="btn danger !py-1.5 !px-2.5">Deny</button>
-            </form>
-        </div>
+           </form>
+       </div>
         <small class="text-t3 block mt-2">Perlu paket ufw terpasang (apt install ufw) & aktif agar aturan berlaku.</small>
-    </div>
+   </div>
 </div>
 {% endblock %}

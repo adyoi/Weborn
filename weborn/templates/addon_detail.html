@@ -7,46 +7,46 @@
 <div class="card mb-4">
     <div class="flex gap-2 flex-wrap items-center">
         <span class="badge {{ 'ok' if status.active else 'warn' }}">{{ 'ACTIVE' if status.active else status.state|upper }}</span>
-        <span class="badge info">{% if status.installed %}{% if status.version and status.version != '—' %}v{{ status.version }}{% else %}terpasang{% endif %}{% else %}<span class="lamp err"></span>Belum terpasang{% endif %}</span>
+        <span class="badge info">{% if status.installed %}{% if status.version and status.version != '—' %}{{ status.version }} {% else %}terpasang{% endif %}{% else %}<span class="lamp err"></span>Belum terpasang{% endif %}</span>
         <span class="badge info">{{ addon.type }}</span>
         <span class="badge info">unit: {{ addon.unit }}</span>
         {% if addon.ports %}<span class="badge info">ports: {{ addon.ports|join(', ') }}</span>{% endif %}
         {% if status.installed and addon.type != 'builtin' %}
-            <button class="btn" data-tip="Jalankan layanan {{ addon.name }}" onclick="weborn.simplePost('/addons/{{ addon.id }}/start','Menjalankan {{ addon.name }}',true)">▶ Start</button>
-            <button class="btn" data-tip="Restart layanan {{ addon.name }}" onclick="weborn.simplePost('/addons/{{ addon.id }}/restart','Merestart {{ addon.name }}',true)">🔄 Restart</button>
-            <button class="btn" data-tip="Hentikan layanan {{ addon.name }}" onclick="weborn.simplePost('/addons/{{ addon.id }}/stop','Menghentikan {{ addon.name }}',true)">⏹ Stop</button>
-            <button class="btn" data-tip="Perbarui {{ addon.name }} ke versi terbaru" onclick="weborn.streamPost('/addons/{{ addon.id }}/update/stream','Mengupdate {{ addon.name }}',true)">⬆ Update</button>
+            <button class="btn" data-tip="Jalankan layanan {{ addon.name }}" onclick="weborn.simplePost('/addons/{{ addon.id }} /start','Menjalankan {{ addon.name }} ',true)">{{ icon('play', 'w-5 h-5') }} Start</button>
+            <button class="btn" data-tip="Restart layanan {{ addon.name }}" onclick="weborn.simplePost('/addons/{{ addon.id }} /restart','Merestart {{ addon.name }} ',true)">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
+            <button class="btn" data-tip="Hentikan layanan {{ addon.name }}" onclick="weborn.simplePost('/addons/{{ addon.id }} /stop','Menghentikan {{ addon.name }} ',true)">{{ icon('stop', 'w-5 h-5') }} Stop</button>
+            <button class="btn" data-tip="Perbarui {{ addon.name }} ke versi terbaru" onclick="weborn.streamPost('/addons/{{ addon.id }} /update/stream','Mengupdate {{ addon.name }} ',true)">{{ icon('arrow-up', 'w-4 h-4') }} Update</button>
             <button class="btn danger" data-tip="Hapus {{ addon.name }} dari server"
-                    onclick="if(confirm('Uninstall {{ addon.name }}?'))weborn.streamPost('/addons/{{ addon.id }}/uninstall/stream','Menghapus {{ addon.name }}',true)">🗑 Uninstall</button>
+                    onclick="if(confirm('Uninstall {{ addon.name }} ?'))weborn.streamPost('/addons/{{ addon.id }} /uninstall/stream','Menghapus {{ addon.name }} ',true)">{{ icon('trash', 'w-5 h-5') }} Uninstall</button>
         {% elif not status.installed %}
             <button class="btn primary" data-tip="Install {{ addon.name }} ke server"
-                    onclick="weborn.streamPost('/addons/{{ addon.id }}/install/stream','Menginstall {{ addon.name }}',true)">📥 Install</button>
+                    onclick="weborn.streamPost('/addons/{{ addon.id }} /install/stream','Menginstall {{ addon.name }} ',true)">{{ icon('arrow-down-tray', 'w-5 h-5') }} Install</button>
         {% endif %}
-    </div>
+   </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 items-start">
     <div class="card">
-        <h3 class="text-sm mb-3.5">⚙️ Konfigurasi</h3>
+        <h3 class="text-sm mb-3.5">{{ icon('cog-6-tooth', 'w-5 h-5') }} Konfigurasi</h3>
         {% if addon.fields %}
-        <form method="post" action="/addons/{{ addon.id }}/config"
-              onsubmit="event.preventDefault(); weborn.formPost(this.action, this, 'Menyimpan konfigurasi {{ addon.name }}', true)">
+        <form method="post" action="/addons/{{ addon.id }} /config"
+              onsubmit="event.preventDefault(); weborn.formPost(this.action, this, 'Menyimpan konfigurasi {{ addon.name }} ', true)">
             {% for f in addon.fields %}
             <div class="field">
                 <label>{{ f.label }}</label>
                 <input name="{{ f.name }}" value="{{ values.get(f.name, f.default) }}">
-            </div>
+           </div>
             {% endfor %}
-            <button type="submit" class="btn primary" data-tip="Simpan nilai lalu terapkan config {{ addon.name }}">💾 Simpan &amp; Terapkan</button>
-        </form>
+            <button type="submit" class="btn primary" data-tip="Simpan nilai lalu terapkan config {{ addon.name }}">{{ icon('arrow-down-tray', 'w-5 h-5') }} Simpan &amp; Terapkan</button>
+       </form>
         {% else %}
         <p class="text-t2 text-[13px]">Addon ini tidak memiliki field konfigurasi.</p>
         {% endif %}
-    </div>
+   </div>
 
     <div class="card">
-        <h3 class="text-sm mb-2.5">📄 Konfigurasi yang digenerate</h3>
+        <h3 class="text-sm mb-2.5">{{ icon('document-text', 'w-5 h-5') }} Konfigurasi yang digenerate</h3>
         <pre class="output min-h-[120px]">{{ preview }}</pre>
-    </div>
+   </div>
 </div>
 {% endblock %}

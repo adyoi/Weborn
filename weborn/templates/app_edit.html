@@ -1,53 +1,253 @@
 {% extends "base.html" %}
 {% block title %}Edit Aplikasi - Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">✏️ Edit Aplikasi</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('pencil', 'w-6 h-6') }} Edit Aplikasi</div>
 <div class="page-sub text-t3 text-[13px] mb-5">Perbarui pengaturan untuk <b>{{ app.name }}</b></div>
 
-<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start">
-    <div class="card">
-        <h3 class="text-sm mb-3.5">⚙️ Pengaturan Aplikasi</h3>
-        <form method="post" action="/apps/{{ app.id }}/edit">
-            <div class="field">
-                <label>Nama</label>
-                <input value="{{ app.name }}" disabled>
-            </div>
-            <div class="field">
-                <label>Bahasa</label>
-                <input value="{{ runtimes.get(app.language, {}).get('label', app.language) }}" disabled>
-            </div>
-            <div class="field">
-                <label>Framework</label>
-                <input value="{{ app.framework or '—' }}" disabled>
-            </div>
-            <div class="field">
-                <label>Port</label>
-                <input value="{{ app.port }}" disabled>
-            </div>
-            <div class="field">
-                <label>Perintah Start</label>
-                <input name="command" value="{{ app.command }}">
-            </div>
-            <div class="flex gap-2 mt-3">
-                <button type="submit" class="btn primary">💾 Simpan</button>
-                <a href="/apps" class="btn">← Batal</a>
-            </div>
-        </form>
-    </div>
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start gap-4">
+    {# ── Left: App Settings ── #}
+    <div class="space-y-4">
+        <div class="card">
+            <h3 class="text-sm mb-3.5">{{ icon('cog-6-tooth', 'w-5 h-5') }} Pengaturan Aplikasi</h3>
+            <form method="post" action="/apps/{{ app.id }} /edit">
+                <div class="field">
+                    <label>Nama</label>
+                    <input value="{{ app.name }}" disabled>
+               </div>
+                <div class="field">
+                    <label>Bahasa</label>
+                    <input value="{{ runtimes.get(app.language, {}).get('label', app.language) }}" disabled>
+               </div>
+                <div class="field">
+                    <label>Framework</label>
+                    <input value="{{ app.framework or '—' }}" disabled>
+               </div>
+                <div class="field">
+                    <label>Port</label>
+                    <input value="{{ app.port }}" disabled>
+               </div>
+                <div class="field">
+                    <label>Perintah Start</label>
+                    <input name="command" value="{{ app.command }}">
+               </div>
+                <div class="flex gap-2 mt-3">
+                    <button type="submit" class="btn primary">{{ icon('arrow-down-tray', 'w-5 h-5') }} Simpan</button>
+                    <a href="/apps" class="btn">← Batal</a>
+               </div>
+           </form>
+       </div>
 
-    <div class="card">
-        <h3 class="text-sm mb-3.5">ℹ️ Info Aplikasi</h3>
-        <table class="text-[13px]">
-            <tr><td class="text-t3 pr-3 py-1">User OS</td><td class="mono">{{ app.user }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Direktori</td><td class="mono text-[13px]">{{ app.home_dir }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Unit Systemd</td><td class="mono text-[13px]">{{ app.unit }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Status</td>
-                <td>{% if app.status == 'running' %}<span class="badge ok">🟢 RUNNING</span>
-                    {% elif app.status == 'error' %}<span class="badge err">🔴 ERROR</span>
-                    {% else %}<span class="badge warn">⚪ STOPPED</span>{% endif %}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Env File</td><td class="mono text-[13px]">{{ app.env_file }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Dibuat</td><td>{{ app.created_at[:10] }}</td></tr>
-        </table>
-    </div>
+        {# ── Quick Actions ── #}
+        <div class="card">
+            <h3 class="text-sm mb-3.5">{{ icon('rocket-launch', 'w-5 h-5') }} Aksi Cepat</h3>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="appAction('start')" class="btn primary sm">{{ icon('play', 'w-5 h-5') }} Start</button>
+                <button onclick="appAction('stop')" class="btn danger sm">{{ icon('stop', 'w-5 h-5') }} Stop</button>
+                <button onclick="appAction('restart')" class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
+                <button onclick="appAction('reload')" class="btn sm" title="Graceful reload (SIGHUP)">{{ icon('arrow-path', 'w-5 h-5') }} Reload</button>
+           </div>
+            <div id="action-result" class="text-[13px] mt-2 hidden"></div>
+       </div>
+   </div>
+
+    {# ── Right: Info + Process Config ── #}
+    <div class="space-y-4">
+        <div class="card">
+            <h3 class="text-sm mb-3.5">{{ icon('information-circle', 'w-5 h-5') }} Info Aplikasi</h3>
+            <table class="text-[13px]">
+                <tr><td class="text-t3 pr-3 py-1">User OS</td><td class="mono">{{ app.user }}</td></tr>
+                <tr><td class="text-t3 pr-3 py-1">Direktori</td><td class="mono text-[13px]">{{ app.home_dir }}</td></tr>
+                <tr><td class="text-t3 pr-3 py-1">Unit Systemd</td><td class="mono text-[13px]">{{ app.unit }}</td></tr>
+                <tr><td class="text-t3 pr-3 py-1">Status</td>
+                    <td>{% if app.status == 'running' %}<span class="badge ok">{{ icon('check', 'w-5 h-5') }} RUNNING</span>
+                        {% elif app.status == 'error' %}<span class="badge err">{{ icon('x-mark', 'w-5 h-5') }} ERROR</span>
+                        {% else %}<span class="badge warn">{{ icon('stop', 'w-5 h-5') }} STOPPED</span>{% endif %}</td></tr>
+                <tr><td class="text-t3 pr-3 py-1">Process Manager</td><td><span class="badge info">{{ process_manager }}</span></td></tr>
+                <tr><td class="text-t3 pr-3 py-1">Env File</td><td class="mono text-[13px]">{{ app.env_file }}</td></tr>
+                <tr><td class="text-t3 pr-3 py-1">Dibuat</td><td>{{ app.created_at[:10] }}</td></tr>
+           </table>
+       </div>
+
+        {# ── Process Config (gunicorn/uvicorn only) ── #}
+        {% if process_manager in ('gunicorn', 'uvicorn') %}
+        <div class="card">
+            <h3 class="text-sm mb-3.5">{{ icon('wrench', 'w-5 h-5') }} Process Manager Config</h3>
+            <div class="text-t3 text-[12px] mb-3">Konfigurasi {{ process_manager }} — restart otomatis setelah save</div>
+            <div id="pcfg-status" class="hidden text-[13px] mb-2"></div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="field">
+                    <label class="text-[13px]">Workers</label>
+                    <input id="pcfg-workers" type="number" min="1" max="32" value="{{ process_config.workers }}">
+               </div>
+                <div class="field">
+                    <label class="text-[13px]">Timeout (detik)</label>
+                    <input id="pcfg-timeout" type="number" min="10" max="600" value="{{ process_config.timeout }}">
+               </div>
+                <div class="field">
+                    <label class="text-[13px]">Worker Class</label>
+                    <select id="pcfg-worker-class" class="sm">
+                        <option value="" {{ 'selected' if not process_config.worker_class }} >Default (sync)</option>
+                        <option value="uvicorn.workers.UvicornWorker" {{ 'selected' if process_config.worker_class == 'uvicorn.workers.UvicornWorker' }} >UvicornWorker (ASGI)</option>
+                        <option value="gevent" {{ 'selected' if process_config.worker_class == 'gevent' }} >Gevent</option>
+                        <option value="gthread" {{ 'selected' if process_config.worker_class == 'gthread' }} >GThread</option>
+                        <option value="uvicorn.workers.UvicornHTTPWorker" {{ 'selected' if process_config.worker_class == 'uvicorn.workers.UvicornHTTPWorker' }} >UvicornHTTPWorker</option>
+                   </select>
+               </div>
+                <div class="field">
+                    <label class="text-[13px]">Max Requests</label>
+                    <input id="pcfg-max-requests" type="number" min="0" max="100000" value="{{ process_config.max_requests }}">
+                    <div class="text-t3 text-[11px]">0 = unlimited (worker restart)</div>
+               </div>
+                <div class="field">
+                    <label class="text-[13px]">Graceful Timeout</label>
+                    <input id="pcfg-graceful-timeout" type="number" min="5" max="120" value="{{ process_config.graceful_timeout }}">
+               </div>
+                <div class="field">
+                    <label class="text-[13px]">Keep Alive</label>
+                    <input id="pcfg-keepalive" type="number" min="0" max="60" value="{{ process_config.keepalive }}">
+               </div>
+           </div>
+            <div class="field mt-2">
+                <label class="flex items-center gap-2 text-[13px] cursor-pointer">
+                    <input id="pcfg-access-log" type="checkbox" {{ 'checked' if process_config.access_log }} >
+                    Access Log (stdout)
+               </label>
+           </div>
+            <div class="flex gap-2 mt-3">
+                <button onclick="saveProcessConfig()" class="btn primary sm">{{ icon('arrow-down-tray', 'w-5 h-5') }} Simpan & Restart</button>
+                <button onclick="appAction('reload')" class="btn sm" title="Reload tanpa restart">{{ icon('arrow-path', 'w-5 h-5') }} Reload Only</button>
+           </div>
+            <div class="text-t3 text-[11px] mt-2">"Simpan & Restart" = apply config + restart service. "Reload Only" = kirim SIGHUP tanpa restart.</div>
+       </div>
+
+        {# ── Resource Limits ── #}
+        <div class="card">
+            <h3 class="text-sm mb-3.5">{{ icon('bolt', 'w-5 h-5') }} Resource Limits (systemd)</h3>
+            <div class="text-t3 text-[12px] mb-3">Batas resource systemd — apply + restart otomatis</div>
+            <div id="limits-status" class="hidden text-[13px] mb-2"></div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="field">
+                    <label class="text-[13px]">Memory Limit</label>
+                    <input id="limits-memory" type="text" placeholder="contoh: 512M, 1G, 2G">
+                    <div class="text-t3 text-[11px]">Kosongkan = unlimited</div>
+               </div>
+                <div class="field">
+                    <label class="text-[13px]">CPU Quota</label>
+                    <input id="limits-cpu" type="text" placeholder="contoh: 100%, 200%, 50%">
+                    <div class="text-t3 text-[11px]">Kosongkan = unlimited</div>
+               </div>
+                <div class="field">
+                    <label class="text-[13px]">Nice (priority)</label>
+                    <input id="limits-nice" type="number" min="-20" max="19" placeholder="-20 s/d 19">
+                    <div class="text-t3 text-[11px]">Kosongkan = default (0)</div>
+               </div>
+                <div class="field">
+                    <label class="text-[13px]">OOM Score Adjust</label>
+                    <input id="limits-oom" type="number" min="-1000" max="1000" placeholder="-1000 s/d 1000">
+                    <div class="text-t3 text-[11px]">Kosongkan = default (0)</div>
+               </div>
+           </div>
+            <div class="flex gap-2 mt-3">
+                <button onclick="saveLimits()" class="btn primary sm">{{ icon('arrow-down-tray', 'w-5 h-5') }} Apply Limits</button>
+           </div>
+       </div>
+        {% else %}
+        <div class="card">
+            <h3 class="text-sm mb-3.5">{{ icon('wrench', 'w-5 h-5') }} Process Manager</h3>
+            <div class="text-t3 text-[13px]">
+                {% if process_manager == 'php-fpm' %}
+                    PHP-FPM: dikontrol oleh Nginx → PHP-FPM socket.
+                {% elif process_manager == 'direct' %}
+                    Direct process: tidak menggunakan Gunicorn/Uvicorn.
+                {% else %}
+                    Process manager: {{ process_manager }} 
+                {% endif %}
+           </div>
+       </div>
+        {% endif %}
+   </div>
 </div>
+
+<script>
+async function appAction(action) {
+    const el = document.getElementById('action-result');
+    el.className = 'text-[13px] mt-2';
+    el.innerHTML = `<span class="text-t3">⏳ ${action}...</span>`;
+    try {
+        const r = await weborn.streamPost(`/apps/{{ app.id }} /${action}`, `${action} app`, false);
+        el.innerHTML = `<span class="${r.ok ? 'text-green-400' : 'text-red-400'}">${r.ok ? '✓ OK' : '✗ ' + (r.error || 'gagal')}</span>`;
+    } catch(e) {
+        el.innerHTML = `<span class="text-red-400">✗ ${e.message}</span>`;
+    }
+}
+
+async function saveProcessConfig() {
+    const el = document.getElementById('pcfg-status');
+    el.className = 'text-[13px] mb-2';
+    el.innerHTML = '<span class="text-t3">⏳ Menyimpan config & restart...</span>';
+    el.classList.remove('hidden');
+    const config = {
+        workers: parseInt(document.getElementById('pcfg-workers').value) || 4,
+        timeout: parseInt(document.getElementById('pcfg-timeout').value) || 120,
+        worker_class: document.getElementById('pcfg-worker-class').value,
+        max_requests: parseInt(document.getElementById('pcfg-max-requests').value) || 0,
+        graceful_timeout: parseInt(document.getElementById('pcfg-graceful-timeout').value) || 30,
+        keepalive: parseInt(document.getElementById('pcfg-keepalive').value) || 5,
+        access_log: document.getElementById('pcfg-access-log').checked,
+    };
+    try {
+        const resp = await fetch(`/apps/{{ app.id }} /process-config`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('input[name="_csrf_token"]')?.value || '',
+            },
+            body: JSON.stringify(config),
+        });
+        const data = await resp.json();
+        if (data.ok) {
+            el.innerHTML = `<span class="text-green-400">✓ Config tersimpan, service direstart</span>`;
+            if (data.command) {
+                const cmdInput = document.querySelector('input[name="command"]');
+                if (cmdInput) cmdInput.value = data.command;
+            }
+        } else {
+            el.innerHTML = `<span class="text-red-400">✗ ${data.error || 'gagal'}</span>`;
+        }
+    } catch(e) {
+        el.innerHTML = `<span class="text-red-400">✗ Error: ${e.message}</span>`;
+    }
+}
+
+async function saveLimits() {
+    const el = document.getElementById('limits-status');
+    el.className = 'text-[13px] mb-2';
+    el.innerHTML = '<span class="text-t3">⏳ Applying limits & restart...</span>';
+    el.classList.remove('hidden');
+    const limits = {
+        memory_limit: document.getElementById('limits-memory').value.trim(),
+        cpu_quota: document.getElementById('limits-cpu').value.trim(),
+        nice: document.getElementById('limits-nice').value.trim(),
+        oom_score_adjust: document.getElementById('limits-oom').value.trim(),
+    };
+    try {
+        const resp = await fetch(`/apps/{{ app.id }} /limits`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('input[name="_csrf_token"]')?.value || '',
+            },
+            body: JSON.stringify(limits),
+        });
+        const data = await resp.json();
+        if (data.ok) {
+            el.innerHTML = `<span class="text-green-400">✓ Limits diterapkan, service direstart</span>`;
+        } else {
+            el.innerHTML = `<span class="text-red-400">✗ ${data.error || 'gagal'}</span>`;
+        }
+    } catch(e) {
+        el.innerHTML = `<span class="text-red-400">✗ Error: ${e.message}</span>`;
+    }
+}
+</script>
 {% endblock %}

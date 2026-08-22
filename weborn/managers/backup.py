@@ -66,9 +66,15 @@ class BackupManager:
             shutil.rmtree(staging)
         with tarfile.open(archive) as tar:
             for m in tar.getmembers():
+                # Block absolute paths and .. traversal
                 if m.name.startswith("/") or ".." in Path(m.name).parts:
                     raise ValueError(f"Arsip tidak aman: {m.name}")
-            tar.extractall(staging)
+                # Block symlinks pointing outside archive
+                if m.issym() or m.islnk():
+                    target = m.linkname
+                    if target.startswith("/") or ".." in target:
+                        raise ValueError(f"Symlink tidak aman: {m.name} -> {target}")
+            tar.extractall(staging, filter="data")
 
         import shutil
         result = {"www": False, "db": False}

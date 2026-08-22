@@ -195,16 +195,14 @@ class AccountManager:
 
     # ---------- default accounts ----------
     async def bootstrap(self) -> dict:
-        """Pastikan ada akun default: admin (hak root) + www-data (service)."""
+        """Cek apakah www-data ada (untuk service web). Admin dibuat via setup wizard."""
         results = []
-        admin = self.find("admin")
-        if admin is None:
-            results.append(await self.create("admin", "admin", privilege="admin",
-                                             services=["ssh"], shell="/bin/bash"))
         www = self.find("www-data")
         if www is None:
-            results.append(await self.create("www-data", "rahasia", privilege="service",
-                                             shell="/usr/sbin/nologin"))
+            # Buat www-data tanpa password (service account, nologin)
+            if self.executor.mode in ("local", "wsl"):
+                r = await self.executor.run("useradd", "-r", "-s", "/usr/sbin/nologin", "www-data")
+                results.append({"ok": r.ok, "output": r.output})
         return {"ok": all(r.get("ok", True) for r in results),
                 "output": "\n".join(r.get("output", r.get("error", "")) for r in results)}
 

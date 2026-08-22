@@ -8,27 +8,27 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start">
     <div class="card">
-        <h3 class="text-sm mb-3.5">➕ Tambah {{ 'Proxy' if kind == 'reverse' else 'CDN Rule' }}</h3>
+        <h3 class="text-sm mb-3.5">{{ icon('plus', 'w-5 h-5') }} Tambah {{ 'Proxy' if kind == 'reverse' else 'CDN Rule' }}</h3>
         <form method="post" action="/proxies/add">
             <input type="hidden" name="ptype" value="{{ kind }}">
             <div class="field">
                 <label>Nama</label>
                 <input name="name" placeholder="app-main" required>
-            </div>
+           </div>
             <div class="field">
                 <label>Source (domain/path)</label>
                 <input name="source" placeholder="app.example.com" required>
-            </div>
+           </div>
             <div class="field">
                 <label>Target</label>
                 <input name="target" placeholder="http://127.0.0.1:8000" required>
-            </div>
+           </div>
             <div class="field">
                 <label><input type="checkbox" name="cache" value="1"> Aktifkan cache</label>
-            </div>
+           </div>
             <button type="submit" class="btn primary w-full justify-center">Tambah</button>
-        </form>
-    </div>
+       </form>
+   </div>
 
     <div class="card !p-0 overflow-hidden">
         <table>
@@ -39,19 +39,19 @@
                     <td><b>{{ p.name }}</b></td>
                     <td class="mono text-[13px]">{{ p.source }}</td>
                     <td class="mono text-[13px]">{{ p.target }}</td>
-                    <td>{{ '✅' if p.cache else '—' }}</td>
+                    <td>{{ icon('check', 'w-5 h-5') if p.cache else '—' }}</td>
                     <td>
-                        <form method="post" action="/proxies/{{ p.id }}/delete" style="display:inline"
-                              onsubmit="return confirm('Hapus {{ p.name }}?')">
-                            <button class="btn danger !py-1 !px-2.5" data-tip="Hapus {{ p.name }}">🗑</button>
-                        </form>
-                    </td>
-                </tr>
+                        <form method="post" action="/proxies/{{ p.id }} /delete" style="display:inline"
+                              onsubmit="return confirm('Hapus {{ p.name }} ?')">
+                            <button class="btn danger !py-1 !px-2.5" data-tip="Hapus {{ p.name }}">{{ icon('trash', 'w-5 h-5') }} ️</button>
+                       </form>
+                   </td>
+               </tr>
             {% else %}
                 <tr><td colspan="5" class="text-t3 text-center py-7">Belum ada entri.</td></tr>
             {% endfor %}
-            </tbody>
-        </table>
-    </div>
+           </tbody>
+       </table>
+   </div>
 </div>
 {% endblock %}

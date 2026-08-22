@@ -7,26 +7,26 @@
 <div class="card mb-4">
     <div class="flex gap-2 flex-wrap items-center">
         <span class="badge {{ 'ok' if nginx.active else 'warn' }}">{{ 'ACTIVE' if nginx.active else nginx.state|upper }}</span>
-        <span class="badge info">{% if nginx.installed %}{% if nginx.version and nginx.version != '—' %}v{{ nginx.version }}{% else %}terpasang{% endif %}{% else %}<span class="lamp err"></span>Belum terpasang{% endif %}</span>
+        <span class="badge info">{% if nginx.installed %}{% if nginx.version and nginx.version != '—' %}v{{ nginx.version }} {% else %}terpasang{% endif %}{% else %}<span class="lamp err"></span>Belum terpasang{% endif %}</span>
         {% if nginx.installed %}
-            <button class="btn" data-tip="Jalankan nginx" onclick="weborn.simplePost('/web-server/nginx/start','Menjalankan nginx',true)">▶ Start</button>
-            <button class="btn" data-tip="Restart nginx" onclick="weborn.simplePost('/web-server/nginx/restart','Merestart nginx',true)">🔄 Restart</button>
-            <button class="btn" data-tip="Hentikan nginx" onclick="weborn.simplePost('/web-server/nginx/stop','Menghentikan nginx',true)">⏹ Stop</button>
-            <button class="btn" data-tip="Reload konfigurasi tanpa downtime" onclick="weborn.simplePost('/web-server/nginx/reload','Reload nginx',false)">♻ Reload</button>
-            <button class="btn" data-tip="Uji validitas konfigurasi (nginx -t)" onclick="weborn.simplePost('/web-server/nginx/test','Uji konfigurasi nginx',false)">✔ Test</button>
+            <button class="btn" data-tip="Jalankan nginx" onclick="weborn.simplePost('/web-server/nginx/start','Menjalankan nginx',true)">{{ icon('play', 'w-5 h-5') }} Start</button>
+            <button class="btn" data-tip="Restart nginx" onclick="weborn.simplePost('/web-server/nginx/restart','Merestart nginx',true)">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
+            <button class="btn" data-tip="Hentikan nginx" onclick="weborn.simplePost('/web-server/nginx/stop','Menghentikan nginx',true)">{{ icon('stop', 'w-5 h-5') }} Stop</button>
+            <button class="btn" data-tip="Reload konfigurasi tanpa downtime" onclick="weborn.simplePost('/web-server/nginx/reload','Reload nginx',false)">{{ icon('arrow-path', 'w-5 h-5') }} Reload</button>
+            <button class="btn" data-tip="Uji validitas konfigurasi (nginx -t)" onclick="weborn.simplePost('/web-server/nginx/test','Uji konfigurasi nginx',false)">{{ icon('check', 'w-5 h-5') }} Test</button>
         {% else %}
             <button class="btn primary" data-tip="Install nginx ke server"
-                    onclick="weborn.streamPost('/addons/nginx/install/stream','Menginstall nginx',true)">📥 Install Nginx</button>
+                    onclick="weborn.streamPost('/addons/nginx/install/stream','Menginstall nginx',true)">{{ icon('arrow-down-tray', 'w-5 h-5') }} Install Nginx</button>
         {% endif %}
-    </div>
+   </div>
 </div>
 
 <div class="card">
-    <h3 class="text-sm mb-2.5">📄 Konfigurasi situs (data/configs/nginx)</h3>
+    <h3 class="text-sm mb-2.5">{{ icon('document-text', 'w-5 h-5') }} Konfigurasi situs (data/configs/nginx)</h3>
     {% if configs %}
     <ul class="mono list-none text-[12.5px] leading-[2]">
         {% for c in configs %}<li>• {{ c }}</li>{% endfor %}
-    </ul>
+   </ul>
     {% else %}
     <p class="text-t3 text-[13px]">Belum ada konfigurasi. Tambahkan domain/proxy untuk meng-generate file conf.</p>
     {% endif %}

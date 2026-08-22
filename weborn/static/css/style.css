@@ -1,6 +1,6 @@
 /* ============================================================
    Weborn — tema (CSS variables) & override.
-   Referensi: OmniRoute (dark-first, coral-red + indigo accent)
+   Referensi: Admin Tailwind
    ============================================================ */
 
 :root {
@@ -94,3 +94,14 @@ html[data-theme="light"] {
 
 /* ── xterm.js row alignment fix ── */
 #trace-terminal { padding: 0 !important; width: 100%; box-sizing: border-box; }
+
+/* ── Prose (markdown) theme overrides ── */
+.prose { --tw-prose-body: var(--text-1); --tw-prose-headings: var(--text-1); --tw-prose-lead: var(--text-1); --tw-prose-links: var(--accent-2); --tw-prose-bold: var(--text-1); --tw-prose-counters: var(--text-3); --tw-prose-bullets: var(--accent-2); --tw-prose-hr: var(--panel-border); --tw-prose-quotes: var(--text-2); --tw-prose-quote-borders: var(--accent-2); --tw-prose-captions: var(--text-3); --tw-prose-code: var(--accent); --tw-prose-pre-code: var(--text-1); --tw-prose-pre-bg: var(--bg-0); --tw-prose-th-borders: var(--panel-border); --tw-prose-td-borders: var(--table-cell-border); }
+.prose :where(code):not(:where([class~="not-prose"],[class~="not-prose"] *)) { color: var(--accent); font-size: 0.85em; background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; }
+.prose :where(code):not(:where([class~="not-prose"],[class~="not-prose"] *))::before, .prose :where(code):not(:where([class~="not-prose"],[class~="not-prose"] *))::after { content: none; }
+.prose :where(pre):not(:where([class~="not-prose"],[class~="not-prose"] *)) { background: var(--bg-0); border: 1px solid var(--panel-border); border-radius: 10px; }
+.prose :where(a):not(:where([class~="not-prose"],[class~="not-prose"] *)) { color: var(--accent-2); text-decoration: underline; text-underline-offset: 2px; }
+.prose :where(a):not(:where([class~="not-prose"],[class~="not-prose"] *)):hover { color: var(--accent-3); }
+.prose :where(strong):not(:where([class~="not-prose"],[class~="not-prose"] *)) { color: var(--text-1); font-weight: 700; }
+html[data-theme="light"] .prose { --tw-prose-body: var(--text-1); --tw-prose-headings: var(--text-1); --tw-prose-links: var(--accent-2); --tw-prose-bold: var(--text-1); --tw-prose-code: var(--err); --tw-prose-pre-code: var(--text-1); --tw-prose-pre-bg: var(--bg-0); }
+html[data-theme="light"] .prose :where(code):not(:where([class~="not-prose"],[class~="not-prose"] *)) { background: rgba(0,0,0,0.06); }

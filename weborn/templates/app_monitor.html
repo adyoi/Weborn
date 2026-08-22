@@ -7,11 +7,11 @@
 {% endblock %}
 {% block content %}
 <div class="flex items-center justify-between mb-5">
-    <h1 class="text-xl font-bold">🧠 Apps Monitor</h1>
+    <div class="page-title text-[22px] font-bold mb-1">{{ icon('cpu-chip', 'w-5 h-5') }} Apps Monitor</div>
     <div class="flex gap-2">
-        <button onclick="location.reload()" class="btn text-xs">↻ Refresh</button>
-        <button onclick="autoRefresh()" id="auto-btn" class="btn text-xs">⏱ Auto: OFF</button>
-    </div>
+        <button onclick="location.reload()" class="btn text-xs">{{ icon('square-3-stack-3d', 'w-5 h-5') }} Refresh</button>
+        <button onclick="autoRefresh()" id="auto-btn" class="btn text-xs">{{ icon('clock', 'w-5 h-5') }} Auto: OFF</button>
+   </div>
 </div>
 
 {# ── Summary Cards ── #}
@@ -19,33 +19,33 @@
     <div class="card p-4 text-center">
         <div class="text-2xl font-bold text-green-400">{{ apps | selectattr('gunicorn_status', 'eq', 'active') | list | length }}</div>
         <div class="text-t3 text-xs mt-1">Running</div>
-    </div>
+   </div>
     <div class="card p-4 text-center">
         <div class="text-2xl font-bold text-gray-400">{{ apps | selectattr('gunicorn_status', 'eq', 'stopped') | list | length }}</div>
         <div class="text-t3 text-xs mt-1">Stopped</div>
-    </div>
+   </div>
     <div class="card p-4 text-center">
         <div class="text-2xl font-bold">{{ apps | selectattr('process_manager', 'in', ['gunicorn','uvicorn']) | list | length }}</div>
         <div class="text-t3 text-xs mt-1">Managed Apps</div>
-    </div>
+   </div>
     <div class="card p-4 text-center">
         <div class="text-2xl font-bold">{{ apps | map(attribute='workers') | map('length') | sum + panel_info.workers | length }}</div>
         <div class="text-t3 text-xs mt-1">Total Workers</div>
-    </div>
+   </div>
     <div class="card p-4 text-center">
         <div class="text-2xl font-bold {% if orphans %}text-amber-400{% endif %}">{{ orphans | length }}</div>
         <div class="text-t3 text-xs mt-1">Orphans</div>
-    </div>
+   </div>
 </div>
 
 {# ── Weborn Panel (self-monitoring) ── #}
 <div class="card p-5 mb-4">
     <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-3">
-            <a href="/apps/panel/monitor" class="font-bold text-sm hover:underline">🖥 Weborn Panel</a>
+            <a href="/apps/panel/monitor" class="font-bold text-sm hover:underline">{{ icon('computer-desktop', 'w-5 h-5') }} Weborn Panel</a>
             <span class="text-t3 text-xs font-mono">port {{ panel_info.port }}</span>
-            <span class="text-t3 text-xs">({{ panel_info.mode }})</span>
-        </div>
+            <span class="text-t3 text-xs">({{ panel_info.mode }} )</span>
+       </div>
         <div class="flex items-center gap-2">
             {# ── Status badge ── #}
             {% if panel_info.master_pid %}
@@ -55,15 +55,15 @@
             {% endif %}
             {# ── Trace log button ── #}
             <button onclick="openTrace('panel', 'Weborn Panel')"
-                    class="btn sm accent">📜 Trace</button>
-        </div>
-    </div>
+                    class="btn sm accent">{{ icon('document-text', 'w-5 h-5') }} Trace</button>
+       </div>
+   </div>
     {% if panel_info.workers %}
     <div class="mt-2">
         <div class="text-t3 text-[13px] mb-1">
             Master PID: <span class="font-mono">{{ panel_info.master_pid }}</span>
             · Workers: <span class="font-mono">{{ panel_info.workers | length }}</span>
-        </div>
+       </div>
         <div class="overflow-x-auto">
             <table class="text-xs font-mono w-full">
                 <thead>
@@ -73,8 +73,8 @@
                         <th class="pb-1 pr-3">MEM%</th>
                         <th class="pb-1 pr-3">Uptime</th>
                         <th class="pb-1">Command</th>
-                    </tr>
-                </thead>
+                   </tr>
+               </thead>
                 <tbody>
                     {% for w in panel_info.workers %}
                     <tr class="border-t border-line/30">
@@ -83,17 +83,17 @@
                         <td class="py-1 pr-3">{{ w.mem }}</td>
                         <td class="py-1 pr-3">{{ w.uptime }}</td>
                         <td class="py-1 truncate max-w-[300px]">{{ w.cmd }}</td>
-                    </tr>
+                   </tr>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+               </tbody>
+           </table>
+       </div>
+   </div>
     {% else %}
     <div class="text-t3 text-[13px]">
         Process mode: <span class="font-mono">{{ panel_info.mode }}</span>
         {% if panel_info.pids %} · PIDs: <span class="font-mono">{{ panel_info.pids | join(', ') }}</span>{% endif %}
-    </div>
+   </div>
     {% endif %}
 </div>
 
@@ -107,10 +107,10 @@
             {# ── Row 1: Name + Status + Controls ── #}
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-3">
-                    <a href="/apps/{{ app.id }}/monitor" class="font-bold text-sm hover:underline">{{ app.name }}</a>
+                    <a href="/apps/{{ app.id }} /monitor" class="font-bold text-sm hover:underline">{{ app.name }}</a>
                     <span class="text-t3 text-xs font-mono">{{ app.app_type }}</span>
-                    <span class="text-t3 text-xs">({{ app.process_manager }})</span>
-                </div>
+                    <span class="text-t3 text-xs">({{ app.process_manager }} )</span>
+               </div>
                 <div class="flex items-center gap-2">
                     {# ── Status badge ── #}
                     {% if app.gunicorn_status == 'active' %}
@@ -122,20 +122,20 @@
                     {% endif %}
 
                     {# ── Control buttons: Start | Stop | Restart ── #}
-                    <button onclick="weborn.simplePost('/apps/{{ app.id }}/start','Start {{ app.name }}',true)"
+                    <button onclick="weborn.simplePost('/apps/{{ app.id }} /start','Start {{ app.name }} ',true)"
                             class="btn sm"
-                            {% if app.gunicorn_status == 'active' %}disabled{% endif %}>▶ Start</button>
-                    <button onclick="weborn.simplePost('/apps/{{ app.id }}/stop','Stop {{ app.name }}',true)"
+                            {% if app.gunicorn_status == 'active' %}disabled{% endif %}>{{ icon('play', 'w-5 h-5') }} Start</button>
+                    <button onclick="weborn.simplePost('/apps/{{ app.id }} /stop','Stop {{ app.name }} ',true)"
                             class="btn sm"
-                            {% if app.gunicorn_status != 'active' %}disabled{% endif %}>⏹ Stop</button>
-                    <button onclick="weborn.simplePost('/apps/{{ app.id }}/restart','Restart {{ app.name }}',true)"
-                            class="btn sm">🔄 Restart</button>
+                            {% if app.gunicorn_status != 'active' %}disabled{% endif %}>{{ icon('stop', 'w-5 h-5') }} Stop</button>
+                    <button onclick="weborn.simplePost('/apps/{{ app.id }} /restart','Restart {{ app.name }} ',true)"
+                            class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
 
                     {# ── Trace log button — opens xterm.js modal ── #}
-                    <button onclick="openTrace({{ app.id }}, '{{ app.name }}')"
-                            class="btn sm accent">📜 Trace</button>
-                </div>
-            </div>
+                    <button onclick="openTrace({{ app.id }} , '{{ app.name }} ')"
+                            class="btn sm accent">{{ icon('document-text', 'w-5 h-5') }} Trace</button>
+               </div>
+           </div>
 
             {# ── Row 2: Workers table (gunicorn/uvicorn) ── #}
             {% if app.process_manager in ['gunicorn', 'uvicorn'] and app.workers %}
@@ -143,7 +143,7 @@
                 <div class="text-t3 text-[13px] mb-1">
                     Master PID: <span class="font-mono">{{ app.master_pid }}</span>
                     · Workers: <span class="font-mono">{{ app.workers | length }}</span>
-                </div>
+               </div>
                 <div class="overflow-x-auto">
                     <table class="text-xs font-mono w-full">
                         <thead>
@@ -153,8 +153,8 @@
                                 <th class="pb-1 pr-3">MEM%</th>
                                 <th class="pb-1 pr-3">Uptime</th>
                                 <th class="pb-1">Command</th>
-                            </tr>
-                        </thead>
+                           </tr>
+                       </thead>
                         <tbody>
                             {% for w in app.workers %}
                             <tr class="border-t border-line/30">
@@ -163,12 +163,12 @@
                                 <td class="py-1 pr-3">{{ w.mem }}</td>
                                 <td class="py-1 pr-3">{{ w.uptime }}</td>
                                 <td class="py-1 truncate max-w-[300px]">{{ w.cmd }}</td>
-                            </tr>
+                           </tr>
                             {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                       </tbody>
+                   </table>
+               </div>
+           </div>
             {% elif app.process_manager not in ['gunicorn', 'uvicorn'] %}
             <div class="text-t3 text-[13px] mt-1">
                 Process manager: <span class="font-mono">{{ app.process_manager }}</span>
@@ -176,11 +176,11 @@
                 {% elif app.process_manager == 'direct' %} (direct process, no Gunicorn)
                 {% else %} (Nginx serves directly)
                 {% endif %}
-            </div>
+           </div>
             {% endif %}
-        </div>
+       </div>
         {% endfor %}
-    </div>
+   </div>
     {% else %}
     <div class="text-t3 text-sm">Belum ada aplikasi</div>
     {% endif %}
@@ -191,14 +191,14 @@
 <div class="card p-5 mt-4">
     <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2">
-            <span class="font-bold text-sm text-amber-400">⚠️ Orphan Processes</span>
+            <span class="font-bold text-sm text-amber-400">{{ icon('exclamation-triangle', 'w-5 h-5') }} Orphan Processes</span>
             <span class="text-t3 text-xs">Running outside systemd management</span>
-        </div>
+       </div>
         <div class="flex items-center gap-2">
             <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[13px] font-mono">{{ orphans | length }}</span>
             <button onclick="killAllOrphans()" class="btn sm" style="color:var(--red)">Kill All</button>
-        </div>
-    </div>
+       </div>
+   </div>
     <div class="overflow-x-auto">
         <table class="text-xs font-mono w-full">
             <thead>
@@ -211,8 +211,8 @@
                     <th class="pb-1 pr-3">Uptime</th>
                     <th class="pb-1 pr-3">Command</th>
                     <th class="pb-1"></th>
-                </tr>
-            </thead>
+               </tr>
+           </thead>
             <tbody>
                 {% for p in orphans %}
                 <tr class="border-t border-line/30">
@@ -224,14 +224,14 @@
                     <td class="py-1 pr-3">{{ p.uptime }}</td>
                     <td class="py-1 pr-3 truncate max-w-[300px]">{{ p.cmd }}</td>
                     <td class="py-1">
-                        <button onclick="killOrphan('{{ p.pid }}', '{{ p.cmd[:40] }}')"
+                        <button onclick="killOrphan('{{ p.pid }} ', '{{ p.cmd[:40] }} ')"
                                 class="btn sm" style="color:var(--red)">Kill</button>
-                    </td>
-                </tr>
+                   </td>
+               </tr>
                 {% endfor %}
-            </tbody>
-        </table>
-    </div>
+           </tbody>
+       </table>
+   </div>
 </div>
 {% endif %}
 
@@ -243,15 +243,15 @@
             <div class="flex items-center gap-2">
                 <span class="w-modal-title" style="margin:0" id="trace-title">Trace Log</span>
                 <span class="text-t3 text-xs font-mono" id="trace-sub"></span>
-            </div>
-            <button class="btn sm" onclick="closeTrace()">✕ Close</button>
-        </div>
+           </div>
+            <button class="btn sm" onclick="closeTrace()">{{ icon('x-mark', 'w-5 h-5') }} Close</button>
+       </div>
         <div id="trace-terminal" style="height:400px; background:#1a1a2e; border-radius:8px; padding:8px;"></div>
         <div class="flex items-center justify-between mt-2">
             <span class="text-t3 text-[11px]" id="trace-status">Connected — auto-scroll aktif</span>
-            <button class="btn sm" onclick="clearTrace()">🗑 Clear</button>
-        </div>
-    </div>
+            <button class="btn sm" onclick="clearTrace()">{{ icon('trash', 'w-5 h-5') }} Clear</button>
+       </div>
+   </div>
 </div>
 
 <script>

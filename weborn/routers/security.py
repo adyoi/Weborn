@@ -33,7 +33,7 @@ async def clamav_page(request: Request, msg: str = "",
                 from datetime import datetime
                 db_date = datetime.fromtimestamp(int(ts)).strftime("%Y-%m-%d %H:%M")
     return render(request, "security_clamav.html", {
-        "user": user, "installed": installed, "version": version,
+        "user": user, "installed": installed, "clam_version": version,
         "db_date": db_date, "scan_result": scan_result,
         "msg": msg, "active": "clamav",
     })

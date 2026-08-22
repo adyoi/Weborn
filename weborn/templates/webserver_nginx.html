@@ -3,26 +3,26 @@
 {% block content %}
 <div class="flex items-center justify-between mb-4">
     <div>
-        <h1 class="text-xl font-bold">🌐 Nginx Web Server</h1>
-        <div class="text-t3 text-xs mt-0.5">Reverse proxy + static file server</div>
-    </div>
+        <div class="page-title text-[22px] font-bold mb-1">{{ icon('globe-alt', 'w-5 h-5') }} Nginx Web Server</div>
+        <div class="page-sub text-t3 text-[13px] mb-5">Reverse proxy + static file server</div>
+   </div>
     <div class="flex items-center gap-3">
         <span class="st {{ 'active' if nginx_status == 'active' else 'inactive' }}">{{ nginx_status }}</span>
-        <button onclick="weborn.simplePost('/web-server/nginx/restart','Restart Nginx',false)" class="btn primary sm">🔄 Restart</button>
-        <button onclick="weborn.simplePost('/web-server/nginx/reload','Reload Config',false)" class="btn sm">↻ Reload</button>
-    </div>
+        <button onclick="weborn.simplePost('/web-server/nginx/restart','Restart Nginx',false)" class="btn primary sm">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
+        <button onclick="weborn.simplePost('/web-server/nginx/reload','Reload Config',false)" class="btn sm">{{ icon('square-3-stack-3d', 'w-5 h-5') }} Reload</button>
+   </div>
 </div>
 
 <div class="grid grid-cols-2 gap-3 mb-4">
     <div class="card">
         <div class="text-t3 text-[14px] mb-1">Version</div>
         <div class="font-mono text-[14px]">{{ nginx_version or '—' }}</div>
-    </div>
+   </div>
     <div class="card">
         <div class="text-t3 text-[14px] mb-1">Config Test</div>
         <div id="nginx-test" class="font-mono text-[14px]">—</div>
         <button onclick="testNginx()" class="btn sm mt-1.5">Test Config</button>
-    </div>
+   </div>
 </div>
 
 <div class="card mb-4">
@@ -32,9 +32,13 @@
         {% for site in sites %}
         <div class="flex items-center justify-between p-2 bg-black/10 rounded text-[13px]">
             <code class="mono">{{ site }}</code>
-        </div>
+            <div class="flex gap-1">
+                <button class="btn sm" onclick="viewSite('{{ site }} ')">{{ icon('document-text', 'w-5 h-5') }}</button>
+                <button class="btn danger sm" onclick="deleteSite('{{ site }} ')">{{ icon('trash', 'w-5 h-5') }}</button>
+           </div>
+       </div>
         {% endfor %}
-    </div>
+   </div>
     {% else %}
     <div class="text-t3 text-[13px]">Belum ada site config</div>
     {% endif %}
@@ -49,7 +53,7 @@
         <div class="pl-2 text-t3">├─ WSGI → <span class="text-[var(--ok)]">Gunicorn</span> (sync) → socket</div>
         <div class="pl-2 text-t3">├─ ASGI → <span class="text-[var(--ok)]">Gunicorn</span> + <span class="text-[var(--warn)]">Uvicorn</span> → socket</div>
         <div class="pl-2 text-t3">└─ Node → reverse proxy port</div>
-    </div>
+   </div>
 </div>
 
 <script>
@@ -60,5 +64,40 @@ function testNginx() {
         document.getElementById('nginx-test').textContent = '✓ Config OK';
     }, 1500);
 }
+
+function viewSite(name) {
+    document.getElementById('site-view-name').textContent = name;
+    document.getElementById('site-view-content').textContent = 'Memuat…';
+    weborn.modal.open('modal-site-view');
+    fetch('/web-server/nginx/site/' + encodeURIComponent(name))
+      .then(r=>r.json()).then(d=>{
+        document.getElementById('site-view-content').textContent = d.content || '(kosong)';
+      }).catch(e=>{
+        document.getElementById('site-view-content').textContent = 'Error: ' + e.message;
+      });
+}
+
+function deleteSite(name) {
+    if (!confirm('Hapus site config ' + name + '?')) return;
+    var csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
+    fetch('/web-server/nginx/site/' + encodeURIComponent(name) + '/delete', {
+      method: 'POST',
+      headers: {'X-CSRF-Token': csrfToken}
+    }).then(r=>r.json()).then(d=>{
+      if(d.ok) location.reload();
+      else alert('Error: ' + (d.output||''));
+    });
+}
 </script>
+
+<div id="modal-site-view" class="w-modal" onclick="if(event.target===this)weborn.modal.close(this)">
+    <div class="w-modal-box" style="width:min(95vw,800px)">
+        <h3 class="w-modal-title">{{ icon('document-text', 'w-5 h-5') }} Site Config: <span id="site-view-name"></span></h3>
+        <pre id="site-view-content" class="!font-mono !text-[13px] !leading-relaxed p-3 rounded border overflow-auto max-h-[60vh]"
+             style="background:var(--bg-2);border-color:var(--panel-border);white-space:pre-wrap"></pre>
+        <div class="flex justify-end mt-2">
+            <button class="btn sm" onclick="weborn.modal.close(document.getElementById('modal-site-view'))">Tutup</button>
+       </div>
+   </div>
+</div>
 {% endblock %}

@@ -70,7 +70,22 @@ class Executor:
 
     def _audit(self, cmd: str, result: ExecResult):
         LOG_DIR.mkdir(parents=True, exist_ok=True)
-        line = f"[{datetime.now().isoformat()}] {cmd} -> rc={result.returncode} ok={result.ok}"
+        import re as _re
+        sanitized = cmd
+        # Redact password-bearing patterns before logging
+        sanitized = _re.sub(
+            r"(chpasswd\s+.*)",
+            "[REDACTED chpasswd]",
+            sanitized, count=1, flags=_re.IGNORECASE)
+        sanitized = _re.sub(
+            r"(password\s*=\s*).{6,}",
+            r"\1[REDACTED]",
+            sanitized, flags=_re.IGNORECASE)
+        sanitized = _re.sub(
+            r"(-p\s+)([^ ]{6,})",
+            r"\1[REDACTED]",
+            sanitized)
+        line = f"[{datetime.now().isoformat()}] {sanitized} -> rc={result.returncode} ok={result.ok}"
         try:
             with open(LOG_DIR / "audit.log", "a") as f:
                 f.write(line + "\n")
@@ -81,10 +96,13 @@ class Executor:
 class LocalExecutor(Executor):
     """Menjalankan perintah langsung (linux production) dengan sudo."""
 
+    COMMAND_TIMEOUT = 60  # seconds
+    MAX_OUTPUT = 1024 * 1024  # 1MB
+
     def __init__(self, mode: str = "local"):
         super().__init__(mode)
 
-    async def run(self, *cmd: str) -> ExecResult:
+    async def run(self, *cmd: str, timeout: int | None = None) -> ExecResult:
         # Prepend sudo untuk perintah yang butuh root
         privileged = {"apt-get", "apt", "systemctl", "ufw", "certbot",
                       "fail2ban-client", "freshclam", "clamscan", "useradd",
@@ -93,25 +111,41 @@ class LocalExecutor(Executor):
             cmd = ("sudo", "-n", "-S", *cmd)  # -n = no password prompt, -S = read from stdin
 
         cmdline = " ".join(shlex.quote(c) for c in cmd)
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
+        effective_timeout = timeout or self.COMMAND_TIMEOUT
         try:
-            # Pipe empty string to stdin in case sudo asks for password
-            stdout, stderr = await proc.communicate(input=b"")
-        except RuntimeError:
-            # stdin pipe may be closed by OS under heavy concurrency
-            stdout, stderr = await proc.communicate(input=None)
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    proc.communicate(input=b""),
+                    timeout=effective_timeout,
+                )
+            except asyncio.TimeoutError:
+                proc.kill()
+                await proc.communicate()
+                return ExecResult(ok=False, returncode=-1, stdout="", stderr="timeout", cmd=cmdline)
+            # Cap output size
+            stdout_str = stdout.decode(errors="replace")[:self.MAX_OUTPUT]
+            stderr_str = stderr.decode(errors="replace")[:self.MAX_OUTPUT]
+        except Exception as e:
+            return ExecResult(ok=False, returncode=-1, stdout="", stderr=str(e), cmd=cmdline)
         result = ExecResult(
             ok=proc.returncode == 0,
             returncode=proc.returncode,
-            stdout=stdout.decode(errors="replace"),
-            stderr=stderr.decode(errors="replace"),
+            stdout=stdout_str,
+            stderr=stderr_str,
             cmd=cmdline,
         )
+        # Detect sudo failure (password required but NOPASSWD not configured)
+        if "password is required" in stderr_str.lower() or "a password is required" in stderr_str.lower():
+            result = ExecResult(ok=False, returncode=proc.returncode,
+                                stdout=stdout_str,
+                                stderr="Sudo NOPASSWD belum dikonfigurasi. Jalankan: sudo visudo -f /etc/sudoers.d/weborn && tambahkan: admin ALL=(ALL) NOPASSWD: ALL",
+                                cmd=cmdline)
         self._audit(cmdline, result)
         return result
 
@@ -162,7 +196,16 @@ class WSLExecutor(Executor):
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        stdout, stderr = await proc.communicate()
+        try:
+            stdout, stderr = await asyncio.wait_for(
+                proc.communicate(),
+                timeout=60,
+            )
+        except asyncio.TimeoutError:
+            proc.kill()
+            await proc.wait()
+            self._audit(cmdline, ExecResult(ok=False, returncode=-1, stdout="", stderr="timeout"))
+            return ExecResult(ok=False, returncode=-1, stdout="", stderr="timeout", cmd=cmdline)
         result = ExecResult(
             ok=proc.returncode == 0,
             returncode=proc.returncode,

@@ -14,6 +14,9 @@ from ..ui import render
 
 router = APIRouter(tags=["Panel Users"])
 
+_PASSWORD_RE = _re.compile(
+    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]).{8,}$')
+
 
 @router.get("/panel-accounts", response_class=HTMLResponse)
 async def panel_accounts_page(request: Request, msg: str = "",
@@ -44,8 +47,8 @@ async def panel_accounts_create(
     if len(username) < 3:
         return RedirectResponse("/panel-accounts?msg=Username%20minimal%203%20karakter",
                                 status_code=303)
-    if len(password) < 6:
-        return RedirectResponse("/panel-accounts?msg=Password%20minimal%206%20karakter",
+    if not _PASSWORD_RE.match(password):
+        return RedirectResponse("/panel-accounts?msg=Password%20minimal%208%20karakter%20dengan%20huruf%20besar%2C%20kecil%2C%20angka%2C%20dan%20simbol",
                                 status_code=303)
     ok = create_panel_user(username, password, role)
     if not ok:
@@ -54,17 +57,21 @@ async def panel_accounts_create(
 
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        if _re.match(r"^[a-z_][a-z0-9_-]{2,31}$", username):
-            check = await ex.run("bash", "-c",
-                                 f"id {shlex.quote(username)} >/dev/null 2>&1 && echo exists || echo new")
-            if "new" in check.stdout:
-                await ex.run("useradd", "-m", "-s", "/bin/bash", "-G", "sudo", username)
-                await ex.run("bash", "-c",
-                             f"echo {shlex.quote(username + ':' + password)} | sudo chpasswd")
-                await ex.run("usermod", "-aG", "ssh-user", username)
-            else:
-                await ex.run("bash", "-c",
-                             f"echo {shlex.quote(username + ':' + password)} | sudo chpasswd")
+        try:
+            if _re.match(r"^[a-z_][a-z0-9_-]{2,31}$", username):
+                check = await ex.run("bash", "-c",
+                                     f"id {shlex.quote(username)} >/dev/null 2>&1 && echo exists || echo new")
+                if "new" in check.stdout:
+                    await ex.run("useradd", "-m", "-s", "/bin/bash", "-G", "sudo", username)
+                    await ex.run("bash", "-c",
+                                 f"echo {shlex.quote(username + ':' + password)} | sudo chpasswd")
+                    await ex.run("usermod", "-aG", "ssh-user", username)
+                else:
+                    await ex.run("bash", "-c",
+                                 f"echo {shlex.quote(username + ':' + password)} | sudo chpasswd")
+        except Exception as e:
+            return RedirectResponse(f"/panel-accounts?msg=Gagal%20buat%20user%20OS:%20{str(e)[:50]}",
+                                    status_code=303)
 
     return RedirectResponse("/panel-accounts?msg=Akun%20panel%20dibuat", status_code=303)
 
@@ -78,8 +85,8 @@ async def panel_accounts_password(
 ):
     if hasattr(user, "headers"):
         return user
-    if len(password) < 6:
-        return RedirectResponse("/panel-accounts?msg=Password%20baru%20minimal%206%20karakter",
+    if len(password) < 8 or not _PASSWORD_RE.match(password):
+        return RedirectResponse("/panel-accounts?msg=Password%20baru%20minimal%208%20karakter%20dengan%20huruf%20besar%2C%20kecil%2C%20angka%2C%20dan%20simbol",
                                 status_code=303)
     from ..db import get_conn, verify_password
     if user_id == user.get("id"):
@@ -101,12 +108,15 @@ async def panel_accounts_password(
     username = row["username"] if row else ""
     ex = get_executor()
     if ex.mode in ("local", "wsl") and username:
-        if _re.match(r"^[a-z_][a-z0-9_-]{2,31}$", username):
-            check = await ex.run("bash", "-c",
-                                 f"id {shlex.quote(username)} >/dev/null 2>&1 && echo exists || echo new")
-            if "exists" in check.stdout:
-                await ex.run("bash", "-c",
-                             f"echo {shlex.quote(username + ':' + password)} | sudo chpasswd")
+        try:
+            if _re.match(r"^[a-z_][a-z0-9_-]{2,31}$", username):
+                check = await ex.run("bash", "-c",
+                                     f"id {shlex.quote(username)} >/dev/null 2>&1 && echo exists || echo new")
+                if "exists" in check.stdout:
+                    await ex.run("bash", "-c",
+                                 f"echo {shlex.quote(username + ':' + password)} | sudo chpasswd")
+        except Exception:
+            pass  # Password panel sudah diupdate, sync OS gagal tapi tidak kritis
 
     return RedirectResponse("/panel-accounts?msg=Password%20diperbarui", status_code=303)
 
@@ -115,6 +125,18 @@ async def panel_accounts_password(
 async def panel_accounts_toggle(user_id: int, user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    # Prevent self-deactivate
+    if user_id == user.get("id"):
+        return RedirectResponse("/panel-accounts?msg=Tidak%20bisa%20nonaktifkan%20akun%20sendiri",
+                                status_code=303)
+    # Prevent deactivate last admin
+    from ..db import list_panel_users
+    accounts = list_panel_users()
+    active_admins = [a for a in accounts if a["role"] == "admin" and a.get("is_active", 1)]
+    target = next((a for a in accounts if a["id"] == user_id), None)
+    if target and target["role"] == "admin" and len(active_admins) <= 1:
+        return RedirectResponse("/panel-accounts?msg=Tidak%20bisa%20nonaktifkan%20admin%20terakhir",
+                                status_code=303)
     toggle_panel_user_active(user_id)
     return RedirectResponse("/panel-accounts?msg=Akun%20diaktifkan/dinonaktifkan",
                             status_code=303)
@@ -135,9 +157,34 @@ async def panel_accounts_role(user_id: int, role: str = Form("user"),
     return RedirectResponse("/panel-accounts?msg=Role%20diperbarui", status_code=303)
 
 
+@router.post("/panel-accounts/{user_id}/timeout")
+async def panel_accounts_timeout(user_id: int, timeout: int = Form(300),
+                                 user: dict = Depends(require_admin)):
+    if hasattr(user, "headers"):
+        return user
+    timeout = max(0, min(timeout, 86400))  # 0 = disabled, max 24h
+    from ..db import update_session_timeout
+    update_session_timeout(user_id, timeout)
+    label = "nonaktif" if timeout == 0 else f"{timeout // 60} menit"
+    return RedirectResponse(f"/panel-accounts?msg=Session%20timeout%20diatur%20ke%20{label}",
+                            status_code=303)
+
+
 @router.post("/panel-accounts/{user_id}/delete")
 async def panel_accounts_delete(user_id: int, user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    # Prevent self-delete
+    if user_id == user.get("id"):
+        return RedirectResponse("/panel-accounts?msg=Tidak%20bisa%20hapus%20akun%20sendiri",
+                                status_code=303)
+    # Prevent delete last admin
+    accounts = list_panel_users()
+    target = next((a for a in accounts if a["id"] == user_id), None)
+    if target and target["role"] == "admin":
+        admin_count = sum(1 for a in accounts if a["role"] == "admin")
+        if admin_count <= 1:
+            return RedirectResponse("/panel-accounts?msg=Tidak%20bisa%20hapus%20admin%20terakhir",
+                                    status_code=303)
     delete_panel_user(user_id)
     return RedirectResponse("/panel-accounts?msg=Akun%20panel%20dihapus", status_code=303)

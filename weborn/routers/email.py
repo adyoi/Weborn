@@ -7,7 +7,7 @@ import string
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 
 from ..auth import require_admin, require_user
 from ..config import CONF_TEMPLATES_DIR, CONFIG_DIR
@@ -17,13 +17,17 @@ from ..ui import render
 
 router = APIRouter(tags=["Mail Server"])
 
+
+def _sse(event: str, data: dict) -> str:
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
 MAIL_STACK = {
     "postfix": {"pkg": "postfix", "unit": "postfix", "bin": "postfix"},
     "dovecot": {"pkg": "dovecot-core dovecot-imapd dovecot-pop3d", "unit": "dovecot", "bin": "dovecot"},
     "rspamd": {"pkg": "rspamd", "unit": "rspamd", "bin": "rspamd"},
     "opendkim": {"pkg": "opendkim opendkim-tools", "unit": "opendkim", "bin": "opendkim"},
-    "roundcube": {"pkg": "roundcube-core roundcube-mysql roundcube-plugins", "unit": "roundcube", "bin": "roundcube"},
-    "spamc": {"pkg": "spamassassin spamc", "unit": "spamassassin", "bin": "spamassassin"},
+    "roundcube": {"pkg": "roundcube-core roundcube-mysql roundcube-plugins", "unit": "apache2", "bin": "roundcube"},
+    "spamc": {"pkg": "spamassassin spamc", "unit": "spamassassin", "bin": "spamc"},
 }
 
 MAIL_DOMAINS_CACHE: dict = {}
@@ -70,8 +74,12 @@ async def _check_mail_stack():
         installed = False
         active = False
         if ex.mode in ("local", "wsl"):
-            r = await ex.run("bash", "-c", f"command -v {info['bin']} && echo yes || echo no")
-            installed = "yes" in r.stdout
+            if svc == "roundcube":
+                r = await ex.run("bash", "-c", "ls /var/lib/roundcube 2>/dev/null && echo yes || echo no")
+                installed = "yes" in r.stdout
+            else:
+                r = await ex.run("bash", "-c", f"command -v {info['bin']} 2>/dev/null && echo yes || echo no")
+                installed = "yes" in r.stdout
             if installed and info["unit"]:
                 r2 = await ex.run("bash", "-c", f"systemctl is-active {info['unit']} 2>/dev/null || echo inactive")
                 active = r2.stdout.strip() == "active"
@@ -113,136 +121,144 @@ async def email_setup_wizard(domain: str = Form(...),
                               user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
-    ex = get_executor()
     domain = domain.strip().lower()
     server_ip = _get_server_ip()
 
-    if ex.mode in ("local", "wsl"):
-        # ── Step 1: Install packages ──
-        pkgs = " ".join(info["pkg"] for info in MAIL_STACK.values())
-        await ex.run("bash", "-c", f"DEBIAN_FRONTEND=noninteractive apt-get install -y -qq {pkgs}")
+    async def gen():
+        ex = get_executor()
+        try:
+            # ── Step 1: Install packages ──
+            yield _sse("step", {"step": "Install packages"})
+            pkgs = " ".join(info["pkg"] for info in MAIL_STACK.values())
+            await ex.run("bash", "-c", f"sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq {pkgs}")
 
-        # ── Step 2: Set hostname ──
-        qdomain = shlex.quote(f"mail.{domain}")
-        await ex.run("bash", "-c", f"echo {qdomain} > /etc/hostname")
-        await ex.run("bash", "-c", f"hostname {qdomain}")
+            # ── Step 2: Set hostname ──
+            yield _sse("step", {"step": "Set hostname"})
+            qdomain = shlex.quote(f"mail.{domain}")
+            await ex.run("bash", "-c", f"sudo bash -c 'echo {qdomain} > /etc/hostname'")
+            await ex.run("bash", "-c", f"sudo hostname {qdomain}")
 
-        # ── Step 3: Create SSL cert (self-signed if no certbot) ──
-        ssl_dir = f"/etc/ssl/mail.{domain}"
-        qssl_dir = shlex.quote(ssl_dir)
-        qdomain_cn = shlex.quote(f"mail.{domain}")
-        await ex.run("bash", "-c",
-                     f"sudo mkdir -p {qssl_dir} && "
-                     f"sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 "
-                     f"-keyout {qssl_dir}/privkey.pem "
-                     f"-out {qssl_dir}/fullchain.pem "
-                     f'-subj "/CN={qdomain_cn}" 2>/dev/null')
+            # ── Step 3: Create SSL cert ──
+            yield _sse("step", {"step": "Buat SSL certificate"})
+            ssl_dir = f"/etc/ssl/mail.{domain}"
+            qssl_dir = shlex.quote(ssl_dir)
+            qdomain_cn = shlex.quote(f"mail.{domain}")
+            await ex.run("bash", "-c",
+                         f"sudo mkdir -p {qssl_dir} && "
+                         f"sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 "
+                         f"-keyout {qssl_dir}/privkey.pem "
+                         f"-out {qssl_dir}/fullchain.pem "
+                         f'-subj "/CN={qdomain_cn}" 2>/dev/null')
 
-        # ── Step 4: Configure Postfix ──
-        ctx = {"domain": domain, "generated_at": datetime.now().isoformat()}
-        postfix_cf = _render_template("postfix-main.cf.j2", ctx)
-        if postfix_cf:
-            # Fix TLS path for self-signed
-            postfix_cf = postfix_cf.replace(
-                f"/etc/letsencrypt/live/{domain}/fullchain.pem",
-                f"{ssl_dir}/fullchain.pem"
-            )
-            postfix_cf = postfix_cf.replace(
-                f"/etc/letsencrypt/live/{domain}/privkey.pem",
-                f"{ssl_dir}/privkey.pem"
-            )
-            await ex.write_file("/etc/postfix/main.cf", postfix_cf)
-        await ex.run("bash", "-c", f"sed -i 's/^smtp      inet  n       -       n       -       -       smtpd/smtp      inet  n       -       -       -       -       smtpd/' /etc/postfix/master.cf 2>/dev/null || true")
+            # ── Step 4: Configure Postfix ──
+            yield _sse("step", {"step": "Konfigurasi Postfix"})
+            ctx = {"domain": domain, "generated_at": datetime.now().isoformat()}
+            postfix_cf = _render_template("postfix-main.cf.j2", ctx)
+            if postfix_cf:
+                postfix_cf = postfix_cf.replace(
+                    f"/etc/letsencrypt/live/{domain}/fullchain.pem",
+                    f"{ssl_dir}/fullchain.pem"
+                ).replace(
+                    f"/etc/letsencrypt/live/{domain}/privkey.pem",
+                    f"{ssl_dir}/privkey.pem"
+                )
+                await ex.write_file("/etc/postfix/main.cf", postfix_cf)
+            await ex.run("bash", "-c", f"sudo sed -i 's/^smtp      inet  n       -       n       -       -       smtpd/smtp      inet  n       -       -       -       -       smtpd/' /etc/postfix/master.cf 2>/dev/null || true")
 
-        # ── Step 5: Configure Dovecot ──
-        dovecot_mail = _render_template("dovecot-10-mail.conf.j2", {})
-        dovecot_auth = _render_template("dovecot-10-auth.conf.j2", ctx)
-        dovecot_ssl = _render_template("dovecot-10-ssl.conf.j2", ctx)
-        if dovecot_ssl:
-            dovecot_ssl = dovecot_ssl.replace(
-                f"/etc/letsencrypt/live/{domain}/fullchain.pem",
-                f"{ssl_dir}/fullchain.pem"
-            ).replace(
-                f"/etc/letsencrypt/live/{domain}/privkey.pem",
-                f"{ssl_dir}/privkey.pem"
-            )
-        if dovecot_auth:
-            dovecot_auth = dovecot_auth.replace(
-                f"/etc/letsencrypt/live/{domain}/fullchain.pem",
-                f"{ssl_dir}/fullchain.pem"
-            ).replace(
-                f"/etc/letsencrypt/live/{domain}/privkey.pem",
-                f"{ssl_dir}/privkey.pem"
-            )
-        if dovecot_mail:
-            await ex.write_file("/etc/dovecot/conf.d/10-mail.conf", dovecot_mail)
-        if dovecot_auth:
-            await ex.write_file("/etc/dovecot/conf.d/10-auth.conf", dovecot_auth)
-        if dovecot_ssl:
-            await ex.write_file("/etc/dovecot/conf.d/10-ssl.conf", dovecot_ssl)
+            # ── Step 5: Configure Dovecot ──
+            yield _sse("step", {"step": "Konfigurasi Dovecot"})
+            dovecot_mail = _render_template("dovecot-10-mail.conf.j2", {})
+            dovecot_auth = _render_template("dovecot-10-auth.conf.j2", ctx)
+            dovecot_ssl = _render_template("dovecot-10-ssl.conf.j2", ctx)
+            if dovecot_ssl:
+                dovecot_ssl = dovecot_ssl.replace(
+                    f"/etc/letsencrypt/live/{domain}/fullchain.pem",
+                    f"{ssl_dir}/fullchain.pem"
+                ).replace(
+                    f"/etc/letsencrypt/live/{domain}/privkey.pem",
+                    f"{ssl_dir}/privkey.pem"
+                )
+            if dovecot_auth:
+                dovecot_auth = dovecot_auth.replace(
+                    f"/etc/letsencrypt/live/{domain}/fullchain.pem",
+                    f"{ssl_dir}/fullchain.pem"
+                ).replace(
+                    f"/etc/letsencrypt/live/{domain}/privkey.pem",
+                    f"{ssl_dir}/privkey.pem"
+                )
+            if dovecot_mail:
+                await ex.write_file("/etc/dovecot/conf.d/10-mail.conf", dovecot_mail)
+            if dovecot_auth:
+                await ex.write_file("/etc/dovecot/conf.d/10-auth.conf", dovecot_auth)
+            if dovecot_ssl:
+                await ex.write_file("/etc/dovecot/conf.d/10-ssl.conf", dovecot_ssl)
 
-        # ── Step 6: Configure OpenDKIM ──
-        await ex.run("bash", "-c", "sudo mkdir -p /etc/opendkim /var/lib/opendkim/keys /var/spool/postfix/opendkim")
-        dkim_key_dir = f"/var/lib/opendkim/keys"
-        await ex.run("bash", "-c",
-                     f"sudo opendkim-genkey -D {dkim_key_dir} -d {domain} -s weborn -b 2048 2>/dev/null || true")
-        await ex.run("bash", "-c", f"sudo chown -R opendkim:opendkim {dkim_key_dir} 2>/dev/null || true")
+            # ── Step 6: Configure OpenDKIM ──
+            yield _sse("step", {"step": "Konfigurasi OpenDKIM"})
+            await ex.run("bash", "-c", "sudo mkdir -p /etc/opendkim /var/lib/opendkim/keys /var/spool/postfix/opendkim")
+            dkim_key_dir = "/var/lib/opendkim/keys"
+            await ex.run("bash", "-c",
+                         f"sudo opendkim-genkey -D {dkim_key_dir} -d {shlex.quote(domain)} -s weborn -b 2048 2>/dev/null || true")
+            await ex.run("bash", "-c", f"sudo chown -R opendkim:opendkim {dkim_key_dir} 2>/dev/null || true")
 
-        dkim_trusted = _render_template("opendkim-TrustedHosts.j2", ctx)
-        dkim_keytable = _render_template("opendkim-KeyTable.j2", ctx)
-        dkim_sigtable = _render_template("opendkim-SigningTable.j2", ctx)
-        dkim_conf = _render_template("opendkim.conf.j2", ctx)
-        if dkim_trusted:
-            await ex.write_file("/etc/opendkim/TrustedHosts", dkim_trusted)
-        if dkim_keytable:
-            await ex.write_file("/etc/opendkim/KeyTable", dkim_keytable)
-        if dkim_sigtable:
-            await ex.write_file("/etc/opendkim/SigningTable", dkim_sigtable)
-        if dkim_conf:
-            await ex.write_file("/etc/opendkim.conf", dkim_conf)
+            dkim_trusted = _render_template("opendkim-TrustedHosts.j2", ctx)
+            dkim_keytable = _render_template("opendkim-KeyTable.j2", ctx)
+            dkim_sigtable = _render_template("opendkim-SigningTable.j2", ctx)
+            dkim_conf = _render_template("opendkim.conf.j2", ctx)
+            if dkim_trusted:
+                await ex.write_file("/etc/opendkim/TrustedHosts", dkim_trusted)
+            if dkim_keytable:
+                await ex.write_file("/etc/opendkim/KeyTable", dkim_keytable)
+            if dkim_sigtable:
+                await ex.write_file("/etc/opendkim/SigningTable", dkim_sigtable)
+            if dkim_conf:
+                await ex.write_file("/etc/opendkim.conf", dkim_conf)
 
-        # ── Step 7: Configure Rspamd ──
-        await ex.run("bash", "-c", "sudo mkdir -p /etc/rspamd/local.d /var/lib/rspamd/dkim")
-        rspamd_conf = _render_template("rspamd-local.conf.j2", ctx)
-        if rspamd_conf:
-            await ex.write_file("/etc/rspamd/local.d/local.conf", rspamd_conf)
+            # ── Step 7: Configure Rspamd ──
+            yield _sse("step", {"step": "Konfigurasi Rspamd"})
+            await ex.run("bash", "-c", "sudo mkdir -p /etc/rspamd/local.d /var/lib/rspamd/dkim")
+            rspamd_conf = _render_template("rspamd-local.conf.j2", ctx)
+            if rspamd_conf:
+                await ex.write_file("/etc/rspamd/local.d/local.conf", rspamd_conf)
 
-        # ── Step 8: Create mail directory structure ──
-        await ex.run("bash", "-c",
-                     "mkdir -p /var/mail/vhosts /etc/postfix/opendkim 2>/dev/null || true")
+            # ── Step 8: Create mail directory structure ──
+            yield _sse("step", {"step": "Buat direktori mailbox"})
+            await ex.run("bash", "-c",
+                         "sudo mkdir -p /var/mail/vhosts /etc/postfix/opendkim 2>/dev/null || true")
 
-        # ── Step 9: Enable & start all services ──
-        for svc, info in MAIL_STACK.items():
-            if info["unit"]:
-                await ex.run("systemctl", "enable", info["unit"])
-                await ex.run("systemctl", "restart", info["unit"])
+            # ── Step 9: Enable & start all services ──
+            yield _sse("step", {"step": "Aktifkan semua service"})
+            for svc, info in MAIL_STACK.items():
+                if info["unit"]:
+                    yield _sse("step", {"step": f"Start {svc}", "output": f"sudo systemctl enable + restart {info['unit']}"})
+                    await ex.run("bash", "-c", f"sudo systemctl enable {info['unit']} 2>/dev/null || true")
+                    await ex.run("bash", "-c", f"sudo systemctl restart {info['unit']} 2>/dev/null || true")
 
-    # ── Step 10: Generate DNS records ──
-    now = datetime.now().isoformat()
-    with get_conn() as conn:
-        # Remove old mail DNS records
-        conn.execute("DELETE FROM dns_records WHERE name = ? OR name LIKE ?",
-                     (domain, f"mail.{domain}"))
-        # MX record
-        conn.execute(
-            "INSERT INTO dns_records(name, type, value, ttl, created_at) VALUES (?,?,?,?,?)",
-            (domain, "MX", f"10 mail.{domain}", 300, now))
-        # A record for mail subdomain
-        conn.execute(
-            "INSERT INTO dns_records(name, type, value, ttl, created_at) VALUES (?,?,?,?,?)",
-            (f"mail.{domain}", "A", server_ip, 300, now))
-        # SPF
-        conn.execute(
-            "INSERT INTO dns_records(name, type, value, ttl, created_at) VALUES (?,?,?,?,?)",
-            (domain, "TXT", f"v=spf1 mx a ip4:{server_ip} ~all", 300, now))
-        # DMARC
-        conn.execute(
-            "INSERT INTO dns_records(name, type, value, ttl, created_at) VALUES (?,?,?,?,?)",
-            (f"_dmarc.{domain}", "TXT", f"v=DMARC1; p=quarantine; rua=mailto:admin@{domain}", 300, now))
-        conn.commit()
+            # ── Step 10: Generate DNS records ──
+            yield _sse("step", {"step": "Generate DNS records"})
+            now = datetime.now().isoformat()
+            with get_conn() as conn:
+                conn.execute("DELETE FROM dns_records WHERE name = ? OR name LIKE ?",
+                             (domain, f"mail.{domain}"))
+                conn.execute(
+                    "INSERT INTO dns_records(name, type, value, ttl, created_at) VALUES (?,?,?,?,?)",
+                    (domain, "MX", f"10 mail.{domain}", 300, now))
+                conn.execute(
+                    "INSERT INTO dns_records(name, type, value, ttl, created_at) VALUES (?,?,?,?,?)",
+                    (f"mail.{domain}", "A", server_ip, 300, now))
+                conn.execute(
+                    "INSERT INTO dns_records(name, type, value, ttl, created_at) VALUES (?,?,?,?,?)",
+                    (domain, "TXT", f"v=spf1 mx a ip4:{server_ip} ~all", 300, now))
+                conn.execute(
+                    "INSERT INTO dns_records(name, type, value, ttl, created_at) VALUES (?,?,?,?,?)",
+                    (f"_dmarc.{domain}", "TXT", f"v=DMARC1; p=quarantine; rua=mailto:admin@{domain}", 300, now))
+                conn.commit()
 
-    return RedirectResponse("/email?msg=Mail%20server%20dikonfigurasi%20untuk%20" + domain,
-                            status_code=303)
+            yield _sse("done", {"ok": True})
+        except Exception as e:
+            yield _sse("error", {"error": str(e)})
+
+    return StreamingResponse(gen(), media_type="text/event-stream")
 
 
 # ────────────────────────────────── Service Control ────────────────────────────
@@ -252,7 +268,6 @@ async def email_service_action(service: str, action: str,
                                user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
-    from starlette.responses import JSONResponse
     if service not in MAIL_STACK or action not in ("start", "stop", "restart"):
         return JSONResponse({"ok": False, "error": "Invalid action"})
     unit = MAIL_STACK[service]["unit"]
@@ -302,21 +317,20 @@ async def email_account_create(username: str = Form(...),
                                user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
-    import shlex
     ex = get_executor()
     full_email = f"{username}@{domain}"
     safe_user = shlex.quote(username)
     safe_pass = shlex.quote(f"{username}:{password}")
+    safe_home = shlex.quote(f"/home/{username}")
     if ex.mode in ("local", "wsl"):
         await ex.run("bash", "-c",
-                     f"useradd -m -s /usr/sbin/nologin {safe_user} 2>/dev/null || true")
+                     f"sudo useradd -m -s /usr/sbin/nologin {safe_user} 2>/dev/null || true")
         await ex.run("bash", "-c",
-                     f"echo {safe_pass} | chpasswd 2>/dev/null || true")
-        home = f"/home/{username}"
+                     f"echo {safe_pass} | sudo chpasswd 2>/dev/null || true")
         await ex.run("bash", "-c",
-                     f"mkdir -p {home}/Maildir/{{cur,new,tmp}} 2>/dev/null || true")
+                     f"sudo mkdir -p {safe_home}/Maildir/{{cur,new,tmp}} 2>/dev/null || true")
         await ex.run("bash", "-c",
-                     f"chown -R {safe_user}:{safe_user} {home}/Maildir 2>/dev/null || true")
+                     f"sudo chown -R {safe_user}:{safe_user} {safe_home}/Maildir 2>/dev/null || true")
     return RedirectResponse(f"/email/accounts?domain={domain}&msg=Akun%20{full_email}%20dibuat",
                             status_code=303)
 
@@ -329,7 +343,7 @@ async def email_account_delete(username: str = Form(...),
         return user
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        await ex.run("userdel", "-r", username)
+        await ex.run("bash", "-c", f"sudo userdel -r {shlex.quote(username)} 2>/dev/null || true")
     return RedirectResponse(f"/email/accounts?domain={domain}&msg=Akun%20dihapus",
                             status_code=303)
 
@@ -341,11 +355,10 @@ async def email_account_password(username: str = Form(...),
                                  user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
-    import shlex
     ex = get_executor()
     safe_pass = shlex.quote(f"{username}:{password}")
     if ex.mode in ("local", "wsl"):
-        await ex.run("bash", "-c", f"echo {safe_pass} | chpasswd")
+        await ex.run("bash", "-c", f"echo {safe_pass} | sudo chpasswd")
     return RedirectResponse(f"/email/accounts?domain={domain}&msg=Password%20diperbarui",
                             status_code=303)
 
@@ -415,7 +428,7 @@ async def email_webmail_page(request: Request, msg: str = "",
     if ex.mode in ("local", "wsl"):
         r = await ex.run("bash", "-c", "ls /var/lib/roundcube 2>/dev/null && echo yes || echo no")
         installed = "yes" in r.stdout
-        r = await ex.run("bash", "-c", "systemctl is-active roundcube 2>/dev/null || echo inactive")
+        r = await ex.run("bash", "-c", "systemctl is-active apache2 2>/dev/null || echo inactive")
         running = r.stdout.strip() == "active"
         r = await ex.run("bash", "-c", "hostname -I 2>/dev/null | awk '{print $1}'")
         ip = r.stdout.strip()
@@ -432,14 +445,13 @@ async def email_webmail_page(request: Request, msg: str = "",
 async def email_webmail_install(user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
-    from starlette.responses import JSONResponse
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
         await ex.run("bash", "-c",
-                     "DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "
+                     "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "
                      "roundcube-core roundcube-mysql roundcube-plugins")
-        await ex.run("bash", "-c", "sudo systemctl enable roundcube 2>/dev/null || true")
-        await ex.run("bash", "-c", "sudo systemctl restart roundcube 2>/dev/null || true")
+        await ex.run("bash", "-c", "sudo systemctl enable apache2 2>/dev/null || true")
+        await ex.run("bash", "-c", "sudo systemctl restart apache2 2>/dev/null || true")
     return JSONResponse({"ok": True, "output": "Roundcube dipasang"})
 
 
@@ -456,11 +468,15 @@ async def email_security_page(request: Request, msg: str = "",
     spamassassin_installed, spamassassin_active = False, False
     opendkim_installed, opendkim_active = False, False
     if ex.mode in ("local", "wsl"):
-        for svc, info in [("rspamd", "rspamd"), ("clamav", "clamav-daemon"),
-                          ("spamassassin", "spamassassin"), ("opendkim", "opendkim")]:
-            r = await ex.run("bash", "-c", f"command -v {info} && echo yes || echo no")
+        for svc, unit, bin_name in [
+            ("rspamd", "rspamd", "rspamd"),
+            ("clamav", "clamav-daemon", "clamd"),
+            ("spamassassin", "spamassassin", "spamc"),
+            ("opendkim", "opendkim", "opendkim"),
+        ]:
+            r = await ex.run("bash", "-c", f"command -v {bin_name} 2>/dev/null && echo yes || echo no")
             is_installed = "yes" in r.stdout
-            r2 = await ex.run("bash", "-c", f"systemctl is-active {info} 2>/dev/null || echo inactive")
+            r2 = await ex.run("bash", "-c", f"systemctl is-active {unit} 2>/dev/null || echo inactive")
             is_active = r2.stdout.strip() == "active"
             if svc == "rspamd":
                 rspamd_installed, rspamd_active = is_installed, is_active
@@ -485,10 +501,9 @@ async def email_security_install(user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
     ex = get_executor()
-    from starlette.responses import JSONResponse
     if ex.mode in ("local", "wsl"):
         pkgs = "rspamd opendkim opendkim-tools spamassassin spamc clamav clamav-daemon"
-        await ex.run("bash", "-c", f"DEBIAN_FRONTEND=noninteractive apt-get install -y -qq {pkgs}")
+        await ex.run("bash", "-c", f"sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq {pkgs}")
         for svc in ["rspamd", "opendkim", "spamassassin", "clamav-daemon"]:
             await ex.run("bash", "-c", f"sudo systemctl enable {svc} 2>/dev/null || true")
             await ex.run("bash", "-c", f"sudo systemctl restart {svc} 2>/dev/null || true")
@@ -500,7 +515,6 @@ async def email_security_service(service: str, action: str,
                                  user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
-    from starlette.responses import JSONResponse
     service_map = {"rspamd": "rspamd", "clamav": "clamav-daemon",
                    "spamassassin": "spamassassin", "opendkim": "opendkim"}
     svc = service_map.get(service)

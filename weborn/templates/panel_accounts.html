@@ -3,9 +3,9 @@
 {% block content %}
 <div class="flex items-center justify-between mb-4">
     <div>
-        <h1 class="text-xl font-bold">🔑 Panel Users</h1>
-        <div class="text-t3 text-xs mt-0.5">Akun Weborn panel (login ke control panel ini)</div>
-    </div>
+        <div class="page-title text-[22px] font-bold mb-1">{{ icon('key', 'w-5 h-5') }} Panel Users</div>
+        <div class="page-sub text-t3 text-[13px] mb-5">Akun Weborn panel (login ke control panel ini)</div>
+   </div>
 </div>
 
 {% if msg %}<div class="msg {{ 'ok' if 'Gagal' not in msg and 'salah' not in msg else 'err' }}">{{ msg|replace('%20', ' ') }}</div>{% endif %}
@@ -13,32 +13,32 @@
 <div class="grid grid-cols-1 lg:grid-cols-[340px_1fr] items-start gap-4">
     {# ── Create Form ── #}
     <div class="card">
-        <h3 class="text-xs font-bold mb-2">➕ Tambah Akun Panel</h3>
+        <h3 class="text-xs font-bold mb-2">{{ icon('plus', 'w-5 h-5') }} Tambah Akun Panel</h3>
         <form method="post" action="/panel-accounts/create">
             <div class="field">
                 <label class="text-[13px]">Username</label>
                 <input name="username" required minlength="3" class="sm" placeholder="username">
-            </div>
+           </div>
             <div class="field">
                 <label class="text-[13px]">Password</label>
                 <input name="password" type="password" required minlength="6" class="sm">
-            </div>
+           </div>
             <div class="field">
                 <label class="text-[13px]">Role</label>
                 <select name="role" class="sm">
                     <option value="user">User (view only)</option>
                     <option value="admin">Admin (full access)</option>
-                </select>
-            </div>
+               </select>
+           </div>
             <button type="submit" class="btn primary sm w-full justify-center">Buat Akun</button>
-        </form>
-    </div>
+       </form>
+   </div>
 
     {# ── Accounts Table + Login Logs ── #}
     <div class="space-y-4">
         <div class="card !p-0 overflow-auto">
             <table>
-                <thead><tr><th>Username</th><th>Role</th><th>Status</th><th>Dibuat</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>Username</th><th>Role</th><th>Status</th><th>Timeout</th><th>Dibuat</th><th>Aksi</th></tr></thead>
                 <tbody>
                 {% for a in accounts %}
                     <tr>
@@ -50,34 +50,44 @@
                             {% else %}
                             <span class="st inactive">inactive</span>
                             {% endif %}
-                        </td>
+                       </td>
+                        <td class="text-[13px]">
+                            {% set t = a.get('session_timeout', 300) %}
+                            {% if t == 0 %}
+                                <span class="text-t3">Nonaktif</span>
+                            {% else %}
+                                {{ (t // 60)|string }} m
+                            {% endif %}
+                       </td>
                         <td class="mono text-[14px]">{{ a.created_at[:10] }}</td>
                         <td class="whitespace-nowrap">
                             {# Change Password Modal Trigger #}
-                            <button onclick="openPassModal({{ a.id }},'{{ a.username }}')" class="btn sm" data-tip="Ganti password">🔑</button>
+                            <button onclick="openPassModal({{ a.id }} ,'{{ a.username }} ')" class="btn sm" data-tip="Ganti password">{{ icon('key', 'w-5 h-5') }}</button>
                             {# Change Role #}
-                            <button onclick="openRoleModal({{ a.id }},'{{ a.username }}','{{ a.role }}')" class="btn sm" data-tip="Ganti role">🏷️</button>
+                            <button onclick="openRoleModal({{ a.id }} ,'{{ a.username }} ','{{ a.role }} ')" class="btn sm" data-tip="Ganti role">{{ icon('tag', 'w-5 h-5') }} ️</button>
+                            {# Session Timeout #}
+                            <button onclick="openTimeoutModal({{ a.id }} ,'{{ a.username }} ',{{ a.get('session_timeout', 300) }} )" class="btn sm" data-tip="Session timeout">{{ icon('clock', 'w-5 h-5') }} ️</button>
                             {# Toggle Active #}
-                            <form method="post" action="/panel-accounts/{{ a.id }}/toggle" style="display:inline">
+                            <form method="post" action="/panel-accounts/{{ a.id }} /toggle" style="display:inline">
                                 <button class="btn sm" data-tip="{{ 'Nonaktifkan' if a.get('is_active', 1) else 'Aktifkan' }}">
-                                    {{ '🟢' if a.get('is_active', 1) else '🔴' }}
-                                </button>
-                            </form>
+                                    {{ icon('check', 'w-5 h-5') if a.get('is_active', 1) else icon('circle-stack', 'w-5 h-5') }} 
+                               </button>
+                           </form>
                             {# Delete #}
-                            <form method="post" action="/panel-accounts/{{ a.id }}/delete" style="display:inline"
-                                  onsubmit="return confirm('Hapus akun panel {{ a.username }}?')">
-                                <button class="btn danger sm" data-tip="Hapus {{ a.username }}">🗑</button>
-                            </form>
-                        </td>
-                    </tr>
+                            <form method="post" action="/panel-accounts/{{ a.id }} /delete" style="display:inline"
+                                  onsubmit="return confirm('Hapus akun panel {{ a.username }} ?')">
+                                <button class="btn danger sm" data-tip="Hapus {{ a.username }}">{{ icon('trash', 'w-5 h-5') }} ️</button>
+                           </form>
+                       </td>
+                   </tr>
                 {% endfor %}
-                </tbody>
-            </table>
-        </div>
+               </tbody>
+           </table>
+       </div>
 
         {# ── Login Log ── #}
         <div class="card">
-            <h3 class="text-xs font-bold mb-2">📄 Login Log (50 terakhir)</h3>
+            <h3 class="text-xs font-bold mb-2">{{ icon('document-text', 'w-5 h-5') }} Login Log (50 terakhir)</h3>
             {% if logs %}
             <div class="max-h-48 overflow-auto">
                 <table class="text-[14px]">
@@ -88,66 +98,97 @@
                         <td class="mono">{{ l.created_at[:16] }}</td>
                         <td>{{ l.username }}</td>
                         <td class="mono">{{ l.ip or '—' }}</td>
-                        <td><span class="badge {{ 'ok' if l.success else 'err' }}">{{ '✓ OK' if l.success else '✗ FAIL' }}</span></td>
-                    </tr>
+                        <td><span class="badge {{ 'ok' if l.success else 'err' }}">{{ icon('check', 'w-5 h-5') if l.success else icon('x-mark', 'w-5 h-5') }} {{ 'OK' if l.success else 'FAIL' }}</span></td>
+                   </tr>
                     {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                   </tbody>
+               </table>
+           </div>
             {% else %}
             <div class="text-t3 text-[13px]">Belum ada log login</div>
             {% endif %}
-        </div>
-    </div>
+       </div>
+   </div>
 </div>
 
 {# ── Change Password Modal ── #}
 <div id="pass-modal" class="overlay">
     <div class="progress-card w-[380px] bg-pane border border-line rounded-2xl p-5 shadow-glow-purple">
-        <h3 class="text-sm font-bold mb-3">🔑 Ganti Password</h3>
+        <h3 class="text-sm font-bold mb-3">{{ icon('key', 'w-5 h-5') }} Ganti Password</h3>
         <form id="pass-form" method="post">
             <div class="field">
                 <label class="text-[13px]">Username</label>
                 <input id="pass-user" class="sm" readonly>
-            </div>
+           </div>
             <div class="field">
                 <label class="text-[13px]">Password Sekarang</label>
                 <input name="current_password" type="password" required minlength="6" class="sm">
-            </div>
+           </div>
             <div class="field">
                 <label class="text-[13px]">Password Baru</label>
                 <input name="password" type="password" required minlength="6" class="sm">
-            </div>
+           </div>
             <div class="flex gap-2 justify-end">
                 <button type="button" class="btn sm" onclick="document.getElementById('pass-modal').classList.remove('visible')">Batal</button>
                 <button type="submit" class="btn primary sm">Simpan</button>
-            </div>
-        </form>
-    </div>
+           </div>
+       </form>
+   </div>
 </div>
 
 {# ── Change Role Modal ── #}
 <div id="role-modal" class="overlay">
     <div class="progress-card w-[380px] bg-pane border border-line rounded-2xl p-5 shadow-glow-purple">
-        <h3 class="text-sm font-bold mb-3">🏷️ Ganti Role</h3>
+        <h3 class="text-sm font-bold mb-3">{{ icon('tag', 'w-5 h-5') }} Ganti Role</h3>
         <form id="role-form" method="post">
             <div class="field">
                 <label class="text-[13px]">Username</label>
                 <input id="role-user" class="sm" readonly>
-            </div>
+           </div>
             <div class="field">
                 <label class="text-[13px]">Role</label>
                 <select name="role" id="role-select" class="sm">
                     <option value="user">User (view only)</option>
                     <option value="admin">Admin (full access)</option>
-                </select>
-            </div>
+               </select>
+           </div>
             <div class="flex gap-2 justify-end">
                 <button type="button" class="btn sm" onclick="document.getElementById('role-modal').classList.remove('visible')">Batal</button>
                 <button type="submit" class="btn primary sm">Simpan</button>
-            </div>
-        </form>
-    </div>
+           </div>
+       </form>
+   </div>
+</div>
+
+{# ── Session Timeout Modal ── #}
+<div id="timeout-modal" class="overlay">
+    <div class="progress-card w-[380px] bg-pane border border-line rounded-2xl p-5 shadow-glow-purple">
+        <h3 class="text-sm font-bold mb-3">{{ icon('clock', 'w-5 h-5') }} Session Idle Timeout</h3>
+        <form id="timeout-form" method="post">
+            <div class="field">
+                <label class="text-[13px]">Username</label>
+                <input id="timeout-user" class="sm" readonly>
+           </div>
+            <div class="field">
+                <label class="text-[13px]">Timeout (detik)</label>
+                <select name="timeout" id="timeout-select" class="sm">
+                    <option value="0">Nonaktif (selalu aktif)</option>
+                    <option value="60">1 menit</option>
+                    <option value="180">3 menit</option>
+                    <option value="300">5 menit</option>
+                    <option value="600">10 menit</option>
+                    <option value="900">15 menit</option>
+                    <option value="1800">30 menit</option>
+                    <option value="3600">1 jam</option>
+               </select>
+           </div>
+            <div class="text-t3 text-[12px] mb-3">Panel akan redirect ke login jika tidak ada aktivitas selama durasi di atas. Proses tetap berjalan.</div>
+            <div class="flex gap-2 justify-end">
+                <button type="button" class="btn sm" onclick="document.getElementById('timeout-modal').classList.remove('visible')">Batal</button>
+                <button type="submit" class="btn primary sm">Simpan</button>
+           </div>
+       </form>
+   </div>
 </div>
 
 <script>
@@ -161,6 +202,12 @@ function openRoleModal(id, username, currentRole) {
     document.getElementById('role-user').value = username;
     document.getElementById('role-select').value = currentRole;
     document.getElementById('role-modal').classList.add('visible');
+}
+function openTimeoutModal(id, username, currentTimeout) {
+    document.getElementById('timeout-form').action = '/panel-accounts/' + id + '/timeout';
+    document.getElementById('timeout-user').value = username;
+    document.getElementById('timeout-select').value = currentTimeout;
+    document.getElementById('timeout-modal').classList.add('visible');
 }
 </script>
 {% endblock %}

@@ -1,18 +1,63 @@
 {% extends "base.html" %}
 {% block title %}Log Server &amp; Aplikasi - Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">📄 Log Server &amp; Aplikasi</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('document-text', 'w-5 h-5') }} Log Server &amp; Aplikasi</div>
 <div class="page-sub text-t3 text-[13px] mb-5">Lihat error log sistem, layanan, dan aplikasi</div>
 
-<div class="flex gap-2 flex-wrap mb-4">
+<div class="flex gap-2 flex-wrap mb-4 items-center">
     {% for key, (_, label) in sources.items() %}
-    <a class="btn {{ 'primary' if source == key else '' }}" href="/logs?source={{ key }}">{{ label }}</a>
+    <a class="btn {{ 'primary' if source == key else '' }}" href="/logs?source={{ key }}&lines={{ lines }}">{{ label }}</a>
     {% endfor %}
+    <div class="flex-1"></div>
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+    <select id="log-lines" onchange="changeLines()" class="text-[13px] px-2 py-1 border border-line/40 rounded bg-bg2">
+        <option value="50" {{ 'selected' if lines == 50 }} >50 baris</option>
+        <option value="120" {{ 'selected' if lines == 120 }} >120 baris</option>
+        <option value="300" {{ 'selected' if lines == 300 }} >300 baris</option>
+        <option value="500" {{ 'selected' if lines == 500 }} >500 baris</option>
+   </select>
+    {% if source in ('panel', 'audit') %}
+    <button class="btn danger sm" onclick="clearLog()">{{ icon('trash', 'w-5 h-5') }} Clear</button>
+    {% endif %}
+    <button class="btn sm" onclick="scrollBottom()">⬇️ Bottom</button>
 </div>
 
 <div class="card">
     <h3 class="text-sm mb-2.5">{{ sources[source][1] if source in sources else 'Log' }}</h3>
     {% if not ok %}<div class="msg err">Sumber log belum tersedia di sistem ini (fallback: dry-run / file belum ada).</div>{% endif %}
-    <pre class="output max-h-[70vh]">{{ output }}</pre>
+    <pre id="log-output" class="output max-h-[70vh]">{{ output }}</pre>
 </div>
+
+<script>
+(function() {
+    var el = document.getElementById('log-output');
+    if (el) el.scrollTop = el.scrollHeight;
+
+    window.changeLines = function() {
+        var v = document.getElementById('log-lines').value;
+        window.location.href = '/logs?source={{ source }}&lines=' + v;
+    };
+    window.scrollBottom = function() {
+        var el = document.getElementById('log-output');
+        if (el) el.scrollTop = el.scrollHeight;
+    };
+    window.clearLog = function() {
+        if (!confirm('Hapus semua log {{ source }} ?')) return;
+        var csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
+        fetch('/logs/{{ source }} /clear', {
+            method: 'POST',
+            headers: {'X-CSRF-Token': csrfToken}
+        }).then(function(r){ return r.json(); }).then(function(d){
+            if (d.ok) {
+                document.getElementById('log-output').textContent = '';
+                weborn.toast('Log dibersihkan', 'ok');
+            } else {
+                weborn.toast(d.error || 'Gagal', 'err');
+            }
+        }).catch(function(e) {
+            weborn.toast('Error: ' + e.message, 'err');
+        });
+    };
+})();
+</script>
 {% endblock %}

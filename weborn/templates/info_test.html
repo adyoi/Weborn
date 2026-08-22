@@ -1,62 +1,68 @@
 {% extends "base.html" %}
 {% block title %}Test — Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">🧪 Test</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('beaker', 'w-5 h-5') }} Test</div>
 <div class="page-sub text-t3 text-[13px] mb-5">Cek ketersediaan service & tools di server</div>
 
 <div class="card mb-4">
-    <button class="btn primary sm" onclick="runTest()" id="btn-test">▶ Jalankan Test</button>
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+    <button class="btn primary sm" onclick="runTest()" id="btn-test">{{ icon('play', 'w-5 h-5') }} Jalankan Test</button>
 </div>
 
 {# ── Python Packages ── #}
 <div class="card !p-0 overflow-hidden mb-4">
-    <div class="px-4 py-2 border-b border-line/30 font-bold text-sm">🐍 Python Packages</div>
+    <div class="px-4 py-2 border-b border-line/30 font-bold text-sm">{{ icon('bolt', 'w-5 h-5') }} Python Packages</div>
     <table>
-        <thead><tr><th>Package</th><th>Status</th><th>Version</th></tr></thead>
+        <thead><tr><th>Package</th><th>Module</th><th>Status</th><th>Version</th></tr></thead>
         <tbody id="python-results">
-            <tr><td colspan="3" class="text-center text-t3 py-5">Klik tombol di atas untuk mulai test.</td></tr>
-        </tbody>
-    </table>
+            <tr><td colspan="4" class="text-center text-t3 py-5">Klik tombol di atas untuk mulai test.</td></tr>
+       </tbody>
+   </table>
 </div>
 
 {# ── Linux Packages ── #}
 <div class="card !p-0 overflow-hidden">
-    <div class="px-4 py-2 border-b border-line/30 font-bold text-sm">🐧 Linux Packages</div>
+    <div class="px-4 py-2 border-b border-line/30 font-bold text-sm">{{ icon('globe-alt', 'w-5 h-5') }} Linux Packages</div>
     <table>
         <thead><tr><th>Package</th><th>Status</th><th>Output</th></tr></thead>
         <tbody id="linux-results">
             <tr><td colspan="3" class="text-center text-t3 py-5">Klik tombol di atas untuk mulai test.</td></tr>
-        </tbody>
-    </table>
+       </tbody>
+   </table>
 </div>
 
 <script>
-function renderTable(tbodyId, items) {
+function renderTable(tbodyId, items, showModule) {
     var html = '';
     (items || []).forEach(function(r) {
         var cls = r.ok ? 'active' : 'failed';
         var ico = r.ok ? '✅' : '❌';
         html += '<tr><td class="text-[14px]">' + r.label + '</td>';
+        if (showModule) {
+            html += '<td class="mono text-[13px] text-t3">' + (r.module || '-') + '</td>';
+        }
         html += '<td><span class="st ' + cls + '">' + ico + '</span></td>';
         html += '<td class="mono text-[13px] text-t3">' + r.output + '</td></tr>';
     });
-    document.getElementById(tbodyId).innerHTML = html || '<tr><td colspan="3" class="text-center py-3">No results</td></tr>';
+    var cols = showModule ? 4 : 3;
+    document.getElementById(tbodyId).innerHTML = html || '<tr><td colspan="' + cols + '" class="text-center py-3">No results</td></tr>';
 }
 
 function runTest() {
     var btn = document.getElementById('btn-test');
     btn.disabled = true; btn.textContent = '⏳ Testing...';
-    document.getElementById('python-results').innerHTML = '<tr><td colspan="3" class="text-center py-3 text-[14px]">Testing...</td></tr>';
+    document.getElementById('python-results').innerHTML = '<tr><td colspan="4" class="text-center py-3 text-[14px]">Testing...</td></tr>';
     document.getElementById('linux-results').innerHTML = '<tr><td colspan="3" class="text-center py-3 text-[14px]">Testing...</td></tr>';
 
-    fetch('/info/test/run', {method:'POST'}).then(function(r){return r.json()}).then(function(d){
-        renderTable('python-results', d.python);
-        renderTable('linux-results', d.linux);
-        btn.disabled = false; btn.textContent = '▶ Jalankan Test';
+    var csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
+    fetch('/info/test/run', {method:'POST', headers: {'X-CSRF-Token': csrfToken}} ).then(function(r){return r.json()}).then(function(d){
+        renderTable('python-results', d.python, true);
+        renderTable('linux-results', d.linux, false);
+        btn.disabled = false; btn.textContent = '▶️ Jalankan Test';
     }).catch(function(){
-        document.getElementById('python-results').innerHTML = '<tr><td colspan="3" class="text-center text-t3 py-3">Error</td></tr>';
+        document.getElementById('python-results').innerHTML = '<tr><td colspan="4" class="text-center text-t3 py-3">Error</td></tr>';
         document.getElementById('linux-results').innerHTML = '<tr><td colspan="3" class="text-center text-t3 py-3">Error</td></tr>';
-        btn.disabled = false; btn.textContent = '▶ Jalankan Test';
+        btn.disabled = false; btn.textContent = '▶️ Jalankan Test';
     });
 }
 </script>

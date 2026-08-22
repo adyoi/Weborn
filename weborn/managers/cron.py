@@ -26,7 +26,11 @@ class CronManager:
         for c in crons:
             if not c["enabled"]:
                 continue
-            lines.append(f"{c['schedule']} {c['user']} {c['command']}")
+            # Sanitize: reject commands containing newlines (injection prevention)
+            cmd = c["command"].replace("\n", "").replace("\r", "")
+            schedule = c["schedule"].replace("\n", "").replace("\r", "")
+            user = c["user"].replace("\n", "").replace("\r", "")
+            lines.append(f"{schedule} {user} {cmd}")
         return "\n".join(lines) + "\n"
 
     async def apply(self, crons: list[dict]):

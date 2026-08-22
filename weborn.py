@@ -1,7 +1,7 @@
 """Entry point Weborn Control Panel.
 
-Jalankan:  python run.py          (dev, dry-run)
-           python run.py --local  (linux: eksekusi sistem nyata)
+Jalankan:  python weborn.py          (dev, dry-run)
+           python weborn.py --local  (linux: eksekusi sistem nyata)
 """
 
 import os

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Layanan (systemd) - Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">⚙️ Service Manager</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('cog-6-tooth', 'w-5 h-5') }} Service Manager</div>
 <div class="page-sub text-t3 text-[13px] mb-5">Kelola unit systemd: start / stop / restart / reload / enable / disable</div>
 
 {% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
@@ -18,22 +18,22 @@
                     {% elif s.active == 'failed' %}<span class="badge err">FAILED</span>
                     {% else %}<span class="badge warn">{{ s.active or '—' }}</span>{% endif %}
                     <span class="badge info">{{ s.sub or '' }}</span>
-                </td>
+               </td>
                 <td><span class="badge {{ 'ok' if s.enabled == 'enabled' else 'info' }}">{{ s.enabled or '—' }}</span></td>
                 <td class="text-t2 text-xs">{{ s.desc or '' }}</td>
                 <td class="whitespace-nowrap">
-                    <button class="btn !py-1 !px-2" data-tip="Mulai {{ s.name }}" onclick="weborn.simplePost('/services/{{ s.name }}/start','Menjalankan {{ s.name }}',true)">▶</button>
-                    <button class="btn !py-1 !px-2" data-tip="Restart {{ s.name }}" onclick="weborn.simplePost('/services/{{ s.name }}/restart','Merestart {{ s.name }}',true)">🔄</button>
-                    <button class="btn !py-1 !px-2" data-tip="Hentikan {{ s.name }}" onclick="weborn.simplePost('/services/{{ s.name }}/stop','Menghentikan {{ s.name }}',true)">⏹</button>
+                    <button class="btn !py-1 !px-2" data-tip="Mulai {{ s.name }}" onclick="weborn.simplePost('/services/{{ s.name }} /start','Menjalankan {{ s.name }} ',true)">{{ icon('play', 'w-5 h-5') }} ️</button>
+                    <button class="btn !py-1 !px-2" data-tip="Restart {{ s.name }}" onclick="weborn.simplePost('/services/{{ s.name }} /restart','Merestart {{ s.name }} ',true)">{{ icon('arrow-path', 'w-5 h-5') }}</button>
+                    <button class="btn !py-1 !px-2" data-tip="Hentikan {{ s.name }}" onclick="weborn.simplePost('/services/{{ s.name }} /stop','Menghentikan {{ s.name }} ',true)">{{ icon('stop', 'w-5 h-5') }} ️</button>
                     {% if s.enabled == 'enabled' %}
-                        <button class="btn !py-1 !px-2" data-tip="Nonaktifkan dari boot" onclick="weborn.simplePost('/services/{{ s.name }}/disable','Menonaktifkan {{ s.name }}',true)">📵</button>
+                        <button class="btn !py-1 !px-2" data-tip="Nonaktifkan dari boot" onclick="weborn.simplePost('/services/{{ s.name }} /disable','Menonaktifkan {{ s.name }} ',true)">{{ icon('no-symbol', 'w-5 h-5') }}</button>
                     {% else %}
-                        <button class="btn !py-1 !px-2" data-tip="Aktifkan saat boot" onclick="weborn.simplePost('/services/{{ s.name }}/enable','Mengaktifkan {{ s.name }}',true)">🔌</button>
+                        <button class="btn !py-1 !px-2" data-tip="Aktifkan saat boot" onclick="weborn.simplePost('/services/{{ s.name }} /enable','Mengaktifkan {{ s.name }} ',true)">{{ icon('bolt', 'w-5 h-5') }}</button>
                     {% endif %}
-                </td>
-            </tr>
+               </td>
+           </tr>
         {% endfor %}
-        </tbody>
-    </table>
+       </tbody>
+   </table>
 </div>
 {% endblock %}

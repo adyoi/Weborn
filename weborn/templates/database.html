@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}MySQL / MariaDB - Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">🗄️ MySQL / MariaDB</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('server-stack', 'w-5 h-5') }} MySQL / MariaDB</div>
 <div class="page-sub text-t3 text-[13px] mb-5">Kelola database, users, dan privileges MySQL</div>
 
 {% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
@@ -14,12 +14,12 @@
 
     {# ─── Databases ─── #}
     <div class="card">
-        <h3 class="text-sm mb-3 font-bold">📦 Databases</h3>
+        <h3 class="text-sm mb-3 font-bold">{{ icon('cube', 'w-5 h-5') }} Databases</h3>
         <form method="post" action="/database/create" class="flex gap-2 mb-3">
             <input name="name" placeholder="nama_database" required class="flex-1"
                    pattern="[a-zA-Z0-9_]+" title="huruf, angka, underscore">
             <button type="submit" class="btn primary">+ Buat</button>
-        </form>
+       </form>
         <table>
             <thead><tr><th>Nama</th><th></th></tr></thead>
             <tbody>
@@ -27,22 +27,22 @@
             <tr>
                 <td class="mono text-[13px]">{{ db }}</td>
                 <td class="text-right">
-                    <form method="post" action="/database/{{ db }}/drop" style="display:inline"
-                          onsubmit="return confirm('Hapus {{ db }}?')">
-                        <button class="btn danger !py-0.5 !px-2 text-[13px]">🗑</button>
-                    </form>
-                </td>
-            </tr>
+                    <form method="post" action="/database/{{ db }} /drop" style="display:inline"
+                          onsubmit="return confirm('Hapus {{ db }} ?')">
+                        <button class="btn danger !py-0.5 !px-2 text-[13px]">{{ icon('trash', 'w-5 h-5') }} ️</button>
+                   </form>
+               </td>
+           </tr>
             {% else %}
             <tr><td colspan="2" class="text-t3 text-center py-4">Belum ada database</td></tr>
             {% endfor %}
-            </tbody>
-        </table>
-    </div>
+           </tbody>
+       </table>
+   </div>
 
     {# ─── Users ─── #}
     <div class="card">
-        <h3 class="text-sm mb-3 font-bold">👤 Users & Privileges</h3>
+        <h3 class="text-sm mb-3 font-bold">{{ icon('user', 'w-5 h-5') }} Users & Privileges</h3>
         <form method="post" action="/database/user/create" class="grid grid-cols-2 gap-2 mb-3">
             <input name="username" placeholder="username" required class="text-[13px]">
             <input name="password" type="password" placeholder="password" required class="text-[13px]">
@@ -52,9 +52,9 @@
                 {% for db in dbs %}
                 <label class="text-[13px]"><input type="checkbox" name="privileges" value="{{ db }}"> {{ db }}</label>
                 {% endfor %}
-            </div>
+           </div>
             <button type="submit" class="btn primary col-span-2">+ Buat User</button>
-        </form>
+       </form>
         <table>
             <thead><tr><th>User</th><th>Host</th><th>Databases</th><th></th></tr></thead>
             <tbody>
@@ -64,17 +64,17 @@
                 <td class="text-[13px] text-t3">{{ u.host }}</td>
                 <td class="text-[13px]">{{ user_dbs_map.get(u.user, [])|join(', ') or '—' }}</td>
                 <td class="text-right">
-                    <form method="post" action="/database/user/{{ u.user }}/delete" style="display:inline"
-                          onsubmit="return confirm('Hapus user {{ u.user }}?')">
-                        <button class="btn danger !py-0.5 !px-2 text-[13px]">🗑</button>
-                    </form>
-                </td>
-            </tr>
+                    <form method="post" action="/database/user/{{ u.user }} /delete" style="display:inline"
+                          onsubmit="return confirm('Hapus user {{ u.user }} ?')">
+                        <button class="btn danger !py-0.5 !px-2 text-[13px]">{{ icon('trash', 'w-5 h-5') }} ️</button>
+                   </form>
+               </td>
+           </tr>
             {% else %}
             <tr><td colspan="4" class="text-t3 text-center py-4">Belum ada user</td></tr>
             {% endfor %}
-            </tbody>
-        </table>
-    </div>
+           </tbody>
+       </table>
+   </div>
 </div>
 {% endblock %}

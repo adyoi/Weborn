@@ -1,5 +1,7 @@
 """Reverse Proxy & CDN."""
+import re
 from datetime import datetime
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -12,6 +14,10 @@ from ..ui import render
 from starlette.responses import JSONResponse
 
 router = APIRouter(tags=["Web Server"])
+
+_PROXY_NAME_RE = re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9\-]*$')
+_DOMAIN_RE = re.compile(r'^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?)*$')
+_PATH_RE = re.compile(r'^(/[a-zA-Z0-9_\-./]*)?$')
 
 
 def _list_proxies(kind: str | None = None):
@@ -61,6 +67,21 @@ async def proxies_add(request: Request, name: str = Form(...),
         return user
     if ptype not in ("reverse", "cdn"):
         return JSONResponse({"ok": False, "error": "tipe tidak dikenal"}, status_code=400)
+    name = name.strip()
+    if not _PROXY_NAME_RE.match(name):
+        dest = "/reverse-proxy" if ptype == "reverse" else "/cdn"
+        return RedirectResponse(f"{dest}?msg=Nama%20proxy%20tidak%20valid", status_code=303)
+    source = source.strip()
+    if not _DOMAIN_RE.match(source):
+        dest = "/reverse-proxy" if ptype == "reverse" else "/cdn"
+        return RedirectResponse(f"{dest}?msg=Source%20harus%20domain%20valid", status_code=303)
+    parsed = urlparse(target)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        dest = "/reverse-proxy" if ptype == "reverse" else "/cdn"
+        return RedirectResponse(f"{dest}?msg=Target%20harus%20URL%20valid%20(http/https)", status_code=303)
+    if parsed.path and not _PATH_RE.match(parsed.path):
+        dest = "/reverse-proxy" if ptype == "reverse" else "/cdn"
+        return RedirectResponse(f"{dest}?msg=Path%20target%20tidak%20valid", status_code=303)
     try:
         with get_conn() as conn:
             conn.execute(

@@ -2,8 +2,6 @@
 import hashlib
 import hmac
 
-from starlette.datastructures import MutableHeaders
-from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp, Receive, Scope, Send
 
@@ -56,10 +54,10 @@ class CSRFMiddleware:
             return await self.app(scope, receive, send)
 
         path = scope["path"]
-        if any(path.startswith(p) for p in self.EXEMPT_PATHS):
+        if path in self.EXEMPT_PATHS:
             return await self.app(scope, receive, send)
 
-        if path.startswith("/ws/") or path.startswith("/api/"):
+        if path.startswith("/ws/"):
             return await self.app(scope, receive, send)
 
         headers = dict(scope.get("headers", []))
@@ -73,9 +71,12 @@ class CSRFMiddleware:
 
         if "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
             body = b""
+            MAX_BODY = 2 * 1024 * 1024  # 2MB limit
             while True:
                 message = await receive()
                 body += message.get("body", b"")
+                if len(body) > MAX_BODY:
+                    return Response("Request body terlalu besar", status_code=413)
                 if not message.get("more_body", False):
                     break
 
@@ -99,12 +100,13 @@ class CSRFMiddleware:
                             break
 
             if not validate_csrf_token(csrf_token, session_id):
-                return Response("CSRF token invalid", status_code=403)
+                header_token = headers.get(b"x-csrf-token", b"").decode("latin-1")
+                if not validate_csrf_token(header_token, session_id):
+                    return Response("CSRF token invalid", status_code=403)
 
             async def receive_body():
                 return {"type": "http.request", "body": body}
 
-            scope["_csrf_cached_body"] = body
             return await self.app(scope, receive_body, send)
 
         elif "application/json" in content_type:

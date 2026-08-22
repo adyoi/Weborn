@@ -11,11 +11,11 @@
 <div class="min-h-screen grid place-items-center p-5">
     <div class="w-[420px] p-8 bg-glass border border-line rounded-[18px] backdrop-blur shadow-glow-purple">
         <div class="flex justify-end mb-[-14px]">
-            <button class="btn" onclick="weborn.cycleTheme()" data-tip="Tema: Sistem / Terang / Gelap">🌓</button>
-        </div>
+            <button class="btn" onclick="weborn.cycleTheme()" data-tip="Tema: Sistem / Terang / Gelap">{{ icon('sun', 'w-5 h-5') }}</button>
+       </div>
         <div class="flex justify-center pb-3.5">
-            <div class="hex big">🐝</div>
-        </div>
+            <div class="hex big">{{ icon('bolt', 'w-5 h-5') }}</div>
+       </div>
         <h1 class="text-center text-xl mb-1">Setup Weborn</h1>
         <div class="text-center text-t3 text-xs mb-5">Buat akun admin panel untuk pertama kali</div>
         {% if error %}
@@ -25,21 +25,21 @@
             <div class="field">
                 <label>Username</label>
                 <input name="username" required minlength="3" autofocus>
-            </div>
+           </div>
             <div class="field">
                 <label>Password</label>
                 <input name="password" type="password" required minlength="6">
-            </div>
+           </div>
             <div class="field">
                 <label>Konfirmasi Password</label>
                 <input name="password_confirm" type="password" required minlength="6">
-            </div>
+           </div>
             <button type="submit" class="btn primary w-full justify-center !py-[11px]">
                 Buat Akun &amp; Lanjut
-            </button>
-        </form>
+           </button>
+       </form>
         <div class="text-[11.5px] text-t3 text-center mt-3.5">Akun ini akan menjadi admin utama panel</div>
-    </div>
+   </div>
 </div>
 <script src="/static/js/panel.js"></script>
 </body>

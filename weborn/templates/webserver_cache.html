@@ -3,46 +3,46 @@
 {% block content %}
 <div class="flex items-center justify-between mb-4">
     <div>
-        <h1 class="text-xl font-bold">⚡ Cache & Session Store</h1>
-        <div class="text-t3 text-xs mt-0.5">Redis + Memcached — object cache & session management</div>
-    </div>
+        <div class="page-title text-[22px] font-bold mb-1">{{ icon('bolt', 'w-5 h-5') }} Cache & Session Store</div>
+        <div class="page-sub text-t3 text-[13px] mb-5">Redis + Memcached — object cache & session management</div>
+   </div>
 </div>
 
 <div class="grid grid-cols-2 gap-3">
     {# ── Redis ── #}
     <div class="card">
         <div class="flex items-center justify-between mb-2">
-            <h2 class="font-bold text-xs">🔴 Redis</h2>
+            <h2 class="font-bold text-xs">{{ icon('circle-stack', 'w-5 h-5') }} Redis</h2>
             <span class="st {{ 'active' if redis_status == 'active' else 'inactive' }}">{{ redis_status }}</span>
-        </div>
+       </div>
         {% if redis_info %}
         <pre class="bg-black/10 rounded p-2 text-[14px] font-mono overflow-auto max-h-32 mb-2">{{ redis_info }}</pre>
         {% else %}
         <div class="bg-black/10 rounded p-2 text-t3 text-[14px] font-mono">Redis tidak aktif</div>
         {% endif %}
         <div class="flex gap-1.5">
-            <button onclick="weborn.simplePost('/web-server/redis/start','Start Redis',false)" class="btn sm">▶ Start</button>
-            <button onclick="weborn.simplePost('/web-server/redis/restart','Restart Redis',false)" class="btn sm">🔄 Restart</button>
-            <button onclick="weborn.simplePost('/web-server/redis/stop','Stop Redis',false)" class="btn danger sm">⏹ Stop</button>
-        </div>
-    </div>
+            <button onclick="weborn.simplePost('/web-server/redis/start','Start Redis',false)" class="btn sm">{{ icon('play', 'w-5 h-5') }} Start</button>
+            <button onclick="weborn.simplePost('/web-server/redis/restart','Restart Redis',false)" class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
+            <button onclick="weborn.simplePost('/web-server/redis/stop','Stop Redis',false)" class="btn danger sm">{{ icon('stop', 'w-5 h-5') }} Stop</button>
+       </div>
+   </div>
 
     {# ── Memcached ── #}
     <div class="card">
         <div class="flex items-center justify-between mb-2">
-            <h2 class="font-bold text-xs">⚡ Memcached</h2>
+            <h2 class="font-bold text-xs">{{ icon('bolt', 'w-5 h-5') }} Memcached</h2>
             <span class="st {{ 'active' if memcached_status == 'active' else 'inactive' }}">{{ memcached_status }}</span>
-        </div>
+       </div>
         <div class="bg-black/10 rounded p-2 text-[14px] font-mono mb-2">
             <div class="text-t3">Port: 11211 · Default memory: 64MB</div>
             <div class="text-t3">Use case: Session store, object cache</div>
-        </div>
+       </div>
         <div class="flex gap-1.5">
-            <button onclick="weborn.simplePost('/web-server/memcached/start','Start Memcached',false)" class="btn sm">▶ Start</button>
-            <button onclick="weborn.simplePost('/web-server/memcached/restart','Restart Memcached',false)" class="btn sm">🔄 Restart</button>
-            <button onclick="weborn.simplePost('/web-server/memcached/stop','Stop Memcached',false)" class="btn danger sm">⏹ Stop</button>
-        </div>
-    </div>
+            <button onclick="weborn.simplePost('/web-server/memcached/start','Start Memcached',false)" class="btn sm">{{ icon('play', 'w-5 h-5') }} Start</button>
+            <button onclick="weborn.simplePost('/web-server/memcached/restart','Restart Memcached',false)" class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
+            <button onclick="weborn.simplePost('/web-server/memcached/stop','Stop Memcached',false)" class="btn danger sm">{{ icon('stop', 'w-5 h-5') }} Stop</button>
+       </div>
+   </div>
 </div>
 
 <div class="card mt-3">
@@ -51,6 +51,6 @@
         <div>├─ <span class="text-[var(--warn)]">Redis</span> — Object cache + Session + Queue</div>
         <div>├─ <span class="text-[var(--accent)]">Memcached</span> — Lightweight cache + Session</div>
         <div>└─ <span class="text-[var(--ok)]">OPcache</span> — PHP bytecode cache (built-in)</div>
-    </div>
+   </div>
 </div>
 {% endblock %}

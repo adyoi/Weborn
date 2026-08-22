@@ -31,9 +31,15 @@ async def terminal_page(request: Request, user: dict = Depends(require_user)):
 
 
 @router.post("/terminal/run")
-async def terminal_run(cmd: str = Form(...), user: dict = Depends(require_admin)):
+async def terminal_run(cmd: str = Form(...), request: Request = None,
+                       user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    if request:
+        from ..ratelimit import limiter
+        ip = request.client.host if request.client else "unknown"
+        if limiter.is_limited(f"term:{ip}:{user.get('id')}", max_tokens=20, window_sec=60):
+            return JSONResponse({"ok": False, "error": "terlalu banyak perintah, coba lagi nanti"}, status_code=429)
     if len(cmd) > 4000:
         return JSONResponse({"ok": False, "error": "perintah terlalu panjang"}, status_code=400)
     r = await get_executor().run("bash", "-c", cmd)
@@ -73,7 +79,7 @@ async def terminal_ws(websocket: WebSocket):
             try:
                 result = subprocess.run(["id", username], capture_output=True, timeout=3)
                 if result.returncode == 0:
-                    os.execvp("su", ["su", "-", username])
+                    os.execvp("sudo", ["sudo", "-u", username, "-i"])
                 else:
                     os.execvp("/bin/bash", ["/bin/bash", "--login"])
             except Exception:

@@ -3,9 +3,9 @@
 {% block content %}
 <div class="flex items-center justify-between mb-4">
     <div>
-        <h1 class="text-xl font-bold">🧩 Addon Store</h1>
-        <div class="text-t3 text-xs mt-0.5">Install, konfigurasi, update, dan jalankan semua layanan & plugin</div>
-    </div>
+        <div class="page-title text-[22px] font-bold mb-1">{{ icon('puzzle-piece', 'w-5 h-5') }} Addon Store</div>
+        <div class="page-sub text-t3 text-[13px] mb-5">Install, konfigurasi, update, dan jalankan semua layanan & plugin</div>
+   </div>
 </div>
 
 {# ── Filters ── #}
@@ -24,7 +24,7 @@
         <span><span class="st failed text-[13px]">failed</span> = Error (check logs)</span>
         <span><span class="st inactive text-[13px]">unknown</span> = Runtime tanpa systemd (normal)</span>
         <span><span class="st failed text-[13px]">not installed</span> = Belum terpasang</span>
-    </div>
+   </div>
 </div>
 
 {# ── Addon Grid ── #}
@@ -36,61 +36,61 @@
             <span class="text-[28px] leading-none">{{ a.icon }}</span>
             {% if st.installed %}
                 <span class="st {{ 'active' if st.active else ('failed' if st.state == 'failed' else 'inactive') }}">
-                    {{ st.state[:12] }}
-                </span>
+                    {{ st.state[:12] }} 
+               </span>
             {% else %}
                 <span class="st failed">not installed</span>
             {% endif %}
-        </div>
+       </div>
         <h3 class="text-[13px] font-bold mt-1.5">{{ a.name }}</h3>
         <p class="text-t2 text-[13px] leading-[1.5] mb-1.5">{{ a.description }}</p>
         <div class="text-[14px] text-t3 mb-2">
-            {{ a.category }} • {{ a.type }}
-            {% if a.ports %} • :{{ a.ports|join('/:') }}{% endif %}
-            {% if st.installed and st.version and st.version != '—' %} • v{{ st.version[:20] }}{% endif %}
-        </div>
+            {{ a.category }} • {{ a.type }} 
+            {% if a.ports %} • :{{ a.ports|join('/:') }} {% endif %}
+            {% if st.installed and st.version and st.version != '—' %} • {{ st.version[:20] }} {% endif %}
+       </div>
 
         {% if st.installed and not st.active and st.state == 'unknown' %}
         <div class="bg-black/10 rounded p-1.5 text-[13px] text-t3 mb-2">
-            ℹ️ Runtime/plugin — tidak punya systemd unit
-        </div>
+            {{ icon('information-circle', 'w-5 h-5') }} Runtime/plugin — tidak punya systemd unit
+       </div>
         {% endif %}
 
         {% if st.state == 'failed' %}
         <div class="bg-red-500/10 rounded p-1.5 text-[13px] text-red-400 mb-2">
-            ⚠️ Service error — cek log atau restart
-        </div>
+            {{ icon('exclamation-triangle', 'w-5 h-5') }} Service error — cek log atau restart
+       </div>
         {% endif %}
 
         <div class="flex gap-1 flex-wrap border-t border-line pt-2">
             {% if st.installed %}
-                <a class="btn sm" href="/addons/{{ a.id }}">⚙️ Kelola</a>
+                <a class="btn sm" href="/addons/{{ a.id }}">{{ icon('cog-6-tooth', 'w-5 h-5') }} Kelola</a>
                 {% if a.systemd_unit %}
-                <button class="btn sm" title="Start" onclick="weborn.simplePost('/addons/{{ a.id }}/start','Start {{ a.name }}',true)">▶</button>
-                <button class="btn sm" title="Stop" onclick="weborn.simplePost('/addons/{{ a.id }}/stop','Stop {{ a.name }}',true)">⏹</button>
-                <button class="btn sm" title="Restart" onclick="weborn.simplePost('/addons/{{ a.id }}/restart','Restart {{ a.name }}',true)">🔄</button>
+                <button class="btn sm" title="Start" onclick="weborn.simplePost('/addons/{{ a.id }}/start','Start {{ a.name }} ',true)">{{ icon('play', 'w-5 h-5') }} ️</button>
+                <button class="btn sm" title="Stop" onclick="weborn.simplePost('/addons/{{ a.id }}/stop','Stop {{ a.name }} ',true)">{{ icon('stop', 'w-5 h-5') }} ️</button>
+                <button class="btn sm" title="Restart" onclick="weborn.simplePost('/addons/{{ a.id }}/restart','Restart {{ a.name }} ',true)">{{ icon('arrow-path', 'w-5 h-5') }}</button>
                 {% endif %}
-                <button class="btn sm" title="Update" onclick="weborn.streamPost('/addons/{{ a.id }}/update/stream','Update {{ a.name }}',true)">⬆</button>
+                <button class="btn sm" title="Update" onclick="weborn.streamPost('/addons/{{ a.id }}/update/stream','Update {{ a.name }} ',true)">{{ icon('arrow-up', 'w-4 h-4') }}</button>
                 <button class="btn danger sm" title="Uninstall"
-                        onclick="if(confirm('Hapus {{ a.name }}?'))weborn.streamPost('/addons/{{ a.id }}/uninstall/stream','Hapus {{ a.name }}',true)">🗑</button>
+                        onclick="if(confirm('Hapus {{ a.name }} ?'))weborn.streamPost('/addons/{{ a.id }}/uninstall/stream','Hapus {{ a.name }} ',true)">{{ icon('trash', 'w-5 h-5') }} ️</button>
             {% else %}
                 <button class="btn primary sm w-full justify-center" title="Install {{ a.name }}"
-                        onclick="weborn.streamPost('/addons/{{ a.id }}/install/stream','Install {{ a.name }}',true)">📥 Install {{ a.name }}</button>
+                        onclick="weborn.streamPost('/addons/{{ a.id }}/install/stream','Install {{ a.name }} ',true)">{{ icon('arrow-down-tray', 'w-5 h-5') }} Install {{ a.name }}</button>
             {% endif %}
-        </div>
-    </div>
+       </div>
+   </div>
     {% else %}
     <div class="card col-span-full text-center text-t3 text-[14px] py-6">
         Tidak ada addon ditemukan.
-    </div>
+   </div>
     {% endfor %}
 </div>
 
 <div class="card mt-4">
-    <h3 class="text-xs font-bold mb-1.5">➕ Install Addon 3rd Party</h3>
+    <h3 class="text-xs font-bold mb-1.5">{{ icon('plus', 'w-5 h-5') }} Install Addon 3rd Party</h3>
     <p class="text-t2 text-[13px] leading-[1.5]">
         Drop manifest <code class="mono text-[14px]">.json</code> ke
         <code class="mono text-[14px]">data/addons/</code> lalu muat ulang halaman.
-    </p>
+   </p>
 </div>
 {% endblock %}

@@ -3,9 +3,11 @@ from fastapi import Request
 from fastapi.templating import Jinja2Templates
 
 from .config import SESSION_COOKIE, TEMPLATES_DIR, VERSION
+from .icons import icon
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 templates.env.globals["version"] = VERSION
+templates.env.globals["icon"] = icon
 
 
 def render(request: Request, name: str, context: dict | None = None):

@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from datetime import datetime
+import time as _time
+import psutil
 
 from ..auth import require_user
 from ..db import list_apps, list_panel_users
@@ -11,9 +13,21 @@ from ..ui import render
 router = APIRouter(tags=["Dashboard"])
 
 
+def _get_panel_start() -> float:
+    """Get panel start time. Use parent (reloader) creation time so --reload
+    doesn't reset the clock. Fallback to current time."""
+    try:
+        parent = psutil.Process().parent()
+        if parent and parent.pid > 1:
+            return parent.create_time()
+    except (psutil.NoSuchProcess, psutil.AccessDenied):
+        pass
+    return _time.time()
+
+
 def system_stats() -> dict:
     try:
-        import psutil, time
+        import time
         vmem = psutil.virtual_memory()
         dsk = psutil.disk_usage("/")
         boot = psutil.boot_time()
@@ -31,7 +45,7 @@ def system_stats() -> dict:
         uptime_str = " ".join(parts)
 
         boot_dt = datetime.fromtimestamp(boot)
-        panel_start = datetime.fromtimestamp(psutil.Process().create_time())
+        panel_start = datetime.fromtimestamp(_get_panel_start())
         downtime_sec = int(panel_start.timestamp() - boot)
         if downtime_sec > 60:
             d_h = downtime_sec // 3600

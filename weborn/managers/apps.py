@@ -19,6 +19,7 @@ Setiap aplikasi mendapat:
 - unit systemd sendiri (weborn-<name>.service)
 """
 import re
+import shlex
 from datetime import datetime
 
 from ..config import APP_TYPES, FRAMEWORKS, GUNICORN_SOCK_DIR, RUNTIMES, WEB_ROOT
@@ -140,9 +141,9 @@ def _slug(name: str) -> str:
 def _detect_pm(command: str) -> str:
     """Detect process manager from command string."""
     c = command.strip().lower()
-    if c.startswith("gunicorn") or "gunicorn" in c.split():
+    if "gunicorn" in c:
         return "gunicorn"
-    if c.startswith("uvicorn") or "uvicorn" in c.split():
+    if "uvicorn" in c:
         return "uvicorn"
     if "php-fpm" in c or "php_fpm" in c:
         return "php-fpm"
@@ -377,16 +378,19 @@ class AppManager:
         if self.ex.mode in ("local", "wsl"):
             await self._ensure_dirs(slug)
 
+            qhome = shlex.quote(home)
+            quser = shlex.quote(os_user)
+
             steps += [
-                ("mkdir", f"sudo mkdir -p {home}"),
+                ("mkdir", f"sudo mkdir -p {qhome}"),
                 ("user", f"id {os_user} >/dev/null 2>&1 || "
-                         f"sudo useradd -r -M -d {home} -s /bin/false {os_user}"),
+                         f"sudo useradd -r -M -d {qhome} -s /bin/false {os_user}"),
             ]
 
             # Auto-install gunicorn + uvicorn if not present
             steps.append(("deps",
                 "python3 -c 'import gunicorn' 2>/dev/null || "
-                "sudo python3 -m pip install --break-system-packages gunicorn uvicorn 2>/dev/null || true"))
+                "sudo python3 -m pip install --break-system-packages gunicorn uvicorn 2>/dev/null"))
 
             # Write sample app if directory is empty
             steps.append(("sample", self._write_sample_app(home, app_type)))
@@ -395,7 +399,7 @@ class AppManager:
                 ("env", self._write_env(home, port, app_type, name)),
                 ("unit", self._write_unit(unit, os_user, home, command, app_type)),
                 ("glog", f"sudo mkdir -p /var/log/{slug} && sudo chown {os_user}:{os_user} /var/log/{slug}"),
-                ("chown", f"sudo chown -R {os_user}:{os_user} {home}"),
+                ("chown", f"sudo chown -R {quser}:{quser} {qhome}"),
                 ("reload", "sudo systemctl daemon-reload"),
                 ("start", f"sudo systemctl enable --now {unit}"),
             ]
@@ -498,13 +502,28 @@ class AppManager:
 
     @staticmethod
     def _write_unit(unit: str, os_user: str, home: str, command: str | None,
-                    app_type: str) -> str:
+                    app_type: str, limits: dict | None = None) -> str:
         slug = _slug(unit.replace("weborn-", "").replace(".service", ""))
         if command:
             exec_line = f"ExecStart=/bin/bash -c 'cd {home} && {command}'"
         else:
             # PHP-FPM or static: unit just ensures directory perms
             exec_line = f"ExecStart=/bin/true"
+        limits = limits or {}
+        limit_lines = ""
+        mem_limit = limits.get("memory_limit", "")
+        if mem_limit:
+            limit_lines += f"MemoryMax={mem_limit}\n"
+            limit_lines += f"MemoryHigh={mem_limit}\n"
+        cpu_quota = limits.get("cpu_quota", "")
+        if cpu_quota:
+            limit_lines += f"CPUQuota={cpu_quota}\n"
+        nice = limits.get("nice", "")
+        if nice:
+            limit_lines += f"Nice={nice}\n"
+        oom_score = limits.get("oom_score_adjust", "")
+        if oom_score:
+            limit_lines += f"OOMScoreAdjust={oom_score}\n"
         content = (
             "[Unit]\n"
             f"Description=Weborn app ({app_type})\n"
@@ -516,8 +535,12 @@ class AppManager:
             f"EnvironmentFile={home}/.env\n"
             f"{exec_line}\n"
             "Restart=on-failure\n"
-            "RestartSec=5\n\n"
-            "[Install]\n"
+            "RestartSec=5\n"
+        )
+        if limit_lines:
+            content += limit_lines
+        content += (
+            "\n[Install]\n"
             "WantedBy=multi-user.target\n"
         )
         import base64
@@ -539,19 +562,85 @@ class AppManager:
                 return {"ok": r.ok, "output": r.stdout + r.stderr}
             set_app_status(app_id, "running" if action != "stop" else "stopped")
             return {"ok": True, "output": f"[dry-run] systemctl {action} {app['unit']}"}
+        if action == "reload":
+            return await self.reload(app_id)
         return {"ok": False, "error": "aksi tidak dikenal"}
+
+    async def reload(self, app_id: int) -> dict:
+        """Graceful reload: send SIGHUP to master process."""
+        app = get_app(app_id)
+        if not app:
+            return {"ok": False, "error": "app tidak ditemukan"}
+        if self.ex.mode not in ("local", "wsl"):
+            return {"ok": True, "output": "[dry-run] reload"}
+        slug = _slug(app["name"])
+        unit = f"weborn-{slug}.service"
+        r = await self.ex.run("bash", "-c",
+                              f"sudo systemctl show {unit} --property=MainPID --value 2>/dev/null")
+        pid = r.stdout.strip()
+        if not pid or not pid.isdigit() or int(pid) <= 0:
+            return await self.control(app_id, "restart")
+        r2 = await self.ex.run("bash", "-c", f"kill -HUP {pid} 2>/dev/null")
+        return {"ok": r2.ok, "output": f"Sent SIGHUP to PID {pid}"}
+
+    async def update_process_config(self, app_id: int, config: dict) -> dict:
+        """Update process manager config (workers, timeout, etc.) and rebuild unit."""
+        app = get_app(app_id)
+        if not app:
+            return {"ok": False, "error": "app tidak ditemukan"}
+        stored = app.get("app_type", "")
+        app_type = stored if stored else _app_type_for(app["language"], app.get("framework", ""))
+        type_info = APP_TYPES.get(app_type, {})
+        pm = type_info.get("process_manager", "gunicorn")
+        if pm not in ("gunicorn", "uvicorn"):
+            return {"ok": False, "error": "hanya app gunicorn/uvicorn yang bisa dikonfigurasi"}
+        new_command = self.build_process_command(app_type, config, app["name"])
+        # Update DB
+        from ..db import get_conn
+        with get_conn() as conn:
+            conn.execute("UPDATE apps SET command = ? WHERE id = ?", (new_command, app_id))
+            conn.commit()
+        # Rewrite systemd unit
+        if self.ex.mode in ("local", "wsl"):
+            slug = _slug(app["name"])
+            unit_cmd = self._write_unit(app["unit"], app["user"], app["home_dir"],
+                                        new_command, app_type)
+            await self.ex.run("bash", "-c", unit_cmd)
+            await self.ex.run("bash", "-c", "sudo systemctl daemon-reload")
+            # Restart app with new config
+            await self.ex.run("bash", "-c", f"sudo systemctl restart {app['unit']}")
+        return {"ok": True, "command": new_command, "output": f"Config updated, restarted {app['unit']}"}
+
+    async def update_limits(self, app_id: int, limits: dict) -> dict:
+        """Update resource limits for an app (memory, CPU, etc.) and rebuild unit."""
+        app = get_app(app_id)
+        if not app:
+            return {"ok": False, "error": "app tidak ditemukan"}
+        stored = app.get("app_type", "")
+        app_type = stored if stored else _app_type_for(app["language"], app.get("framework", ""))
+        if self.ex.mode in ("local", "wsl"):
+            unit_cmd = self._write_unit(app["unit"], app["user"], app["home_dir"],
+                                        app["command"], app_type, limits=limits)
+            await self.ex.run("bash", "-c", unit_cmd)
+            await self.ex.run("bash", "-c", "sudo systemctl daemon-reload")
+            await self.ex.run("bash", "-c", f"sudo systemctl restart {app['unit']}")
+        return {"ok": True, "output": f"Limits updated, restarted {app['unit']}"}
 
     async def delete(self, app_id: int) -> dict:
         app = get_app(app_id)
         if not app:
             return {"ok": False, "error": "app tidak ditemukan"}
         if self.ex.mode in ("local", "wsl"):
+            qunit = shlex.quote(app['unit'])
+            qsock = shlex.quote(f"{GUNICORN_SOCK_DIR}/{_slug(app['name'])}.sock")
+            qhome = shlex.quote(app['home_dir'])
+            quser = shlex.quote(app['user'])
             steps = [
-                ("stop", f"sudo systemctl disable --now {app['unit']} 2>/dev/null || true"),
-                ("rmunit", f"sudo rm -f /etc/systemd/system/{app['unit']}"),
-                ("sock", f"sudo rm -f {GUNICORN_SOCK_DIR}/{_slug(app['name'])}.sock"),
-                ("rmdir", f"sudo rm -rf {app['home_dir']}"),
-                ("rmuser", f"sudo userdel {app['user']} 2>/dev/null || true"),
+                ("stop", f"sudo systemctl disable --now {qunit} 2>/dev/null || true"),
+                ("rmunit", f"sudo rm -f /etc/systemd/system/{qunit}"),
+                ("sock", f"sudo rm -f {qsock}"),
+                ("rmdir", f"sudo rm -rf {qhome}"),
+                ("rmuser", f"sudo userdel {quser} 2>/dev/null || true"),
             ]
             for _, cmd in steps:
                 await self.ex.run("bash", "-c", cmd)
@@ -568,17 +657,140 @@ class AppManager:
             a["app_type"] = stored if stored else _app_type_for(a["language"], a.get("framework", ""))
             if a.get("command"):
                 a["process_manager"] = _detect_pm(a["command"])
+                # Parse worker count from command
+                cfg = self.parse_process_config(a["command"])
+                a["workers"] = cfg.get("workers", 0)
+                a["timeout"] = cfg.get("timeout", 0)
             else:
                 a["process_manager"] = APP_TYPES.get(a["app_type"], {}).get("process_manager", "direct")
+                a["workers"] = 0
+                a["timeout"] = 0
         return apps
+
+    # ---------------------------------------------------- process config
+    @staticmethod
+    def parse_process_config(command: str) -> dict:
+        """Parse gunicorn/uvicorn command into config dict."""
+        import shlex as _shlex
+        config = {
+            "workers": 4,
+            "timeout": 120,
+            "worker_class": "",
+            "bind": "",
+            "access_log": False,
+            "max_requests": 0,
+            "graceful_timeout": 30,
+            "keepalive": 5,
+        }
+        if not command:
+            return config
+        try:
+            parts = _shlex.split(command)
+        except ValueError:
+            return config
+        pm = _detect_pm(command)
+        i = 0
+        while i < len(parts):
+            p = parts[i]
+            if p in ("-w", "--workers") and i + 1 < len(parts):
+                try: config["workers"] = int(parts[i + 1])
+                except ValueError: pass
+                i += 2
+            elif p in ("-t", "--timeout") and i + 1 < len(parts):
+                try: config["timeout"] = int(parts[i + 1])
+                except ValueError: pass
+                i += 2
+            elif p in ("-k", "--worker-class") and i + 1 < len(parts):
+                config["worker_class"] = parts[i + 1]
+                i += 2
+            elif p in ("--bind",) and i + 1 < len(parts):
+                config["bind"] = parts[i + 1]
+                i += 2
+            elif p in ("--access-logfile",) and i + 1 < len(parts):
+                config["access_log"] = parts[i + 1] != "-"
+                i += 2
+            elif p == "--access-logfile -":
+                config["access_log"] = True
+                i += 1
+            elif p in ("--max-requests",) and i + 1 < len(parts):
+                try: config["max_requests"] = int(parts[i + 1])
+                except ValueError: pass
+                i += 2
+            elif p in ("--graceful-timeout",) and i + 1 < len(parts):
+                try: config["graceful_timeout"] = int(parts[i + 1])
+                except ValueError: pass
+                i += 2
+            elif p in ("--keep-alive",) and i + 1 < len(parts):
+                try: config["keepalive"] = int(parts[i + 1])
+                except ValueError: pass
+                i += 2
+            elif p.startswith("--workers="):
+                try: config["workers"] = int(p.split("=", 1)[1])
+                except ValueError: pass
+                i += 1
+            elif p.startswith("--timeout="):
+                try: config["timeout"] = int(p.split("=", 1)[1])
+                except ValueError: pass
+                i += 1
+            else:
+                i += 1
+        # Detect worker class from command if not set
+        if not config["worker_class"]:
+            if "uvicorn.workers.UvicornWorker" in command:
+                config["worker_class"] = "uvicorn.workers.UvicornWorker"
+            elif "gevent" in command:
+                config["worker_class"] = "gevent"
+            elif "gthread" in command:
+                config["worker_class"] = "gthread"
+        return config
+
+    @staticmethod
+    def build_process_command(app_type: str, config: dict, name: str = "") -> str:
+        """Rebuild gunicorn/uvicorn command from config dict."""
+        slug = _slug(name) if name else "app"
+        sock = f"{GUNICORN_SOCK_DIR}/{slug}.sock"
+        type_info = APP_TYPES.get(app_type, {})
+        pm = type_info.get("process_manager", "gunicorn")
+        if pm == "uvicorn":
+            parts = ["python3", "-m", "uvicorn", "main:app"]
+            parts.append(f"--workers {config.get('workers', 4)}")
+            parts.append(f"--host 0.0.0.0")
+            port = config.get("port", 0)
+            if port:
+                parts.append(f"--port {port}")
+            timeout = config.get("timeout", 120)
+            if timeout:
+                parts.append(f"--timeout {timeout}")
+            return " ".join(parts)
+        parts = ["python3", "-m", "gunicorn"]
+        parts.append(f"-w {config.get('workers', 4)}")
+        wc = config.get("worker_class", "")
+        if wc:
+            parts.append(f"-k {wc}")
+        parts.append(f"--bind unix:{sock}")
+        timeout = config.get("timeout", 120)
+        if timeout:
+            parts.append(f"--timeout {timeout}")
+        max_req = config.get("max_requests", 0)
+        if max_req:
+            parts.append(f"--max-requests {max_req}")
+        gt = config.get("graceful_timeout", 30)
+        if gt and gt != 30:
+            parts.append(f"--graceful-timeout {gt}")
+        ka = config.get("keepalive", 5)
+        if ka and ka != 5:
+            parts.append(f"--keep-alive {ka}")
+        if config.get("access_log"):
+            parts.append("--access-logfile -")
+        parts.append("main:app")
+        return " ".join(parts)
 
     # -------------------------------------------------------------- status
     async def get_process_status(self, name: str) -> dict:
         """Get process status for an app (gunicorn or uvicorn).
 
-        Process tree: systemd → bash (MainPID) → gunicorn/uvicorn master + workers
-        All processes (master + workers) are children of bash.
-        We find all children of MainPID and report them.
+        Process tree: systemd → bash (MainPID) → master → workers
+        We walk the full tree to find all descendants.
         """
         slug = _slug(name)
         unit = f"weborn-{slug}.service"
@@ -595,21 +807,36 @@ class AppManager:
                                f"systemctl show {unit} --property=MainPID --value 2>/dev/null")
         master_pid = r2.stdout.strip()
 
-        # Find all children of MainPID (master + workers are all direct children of bash)
+        # Walk process tree: find ALL descendants of MainPID
+        # Level 1: direct children of bash (master process)
+        # Level 2+: grandchildren (workers)
         workers = []
         if master_pid and master_pid.isdigit() and int(master_pid) > 0:
             r3 = await self.ex.run("bash", "-c",
-                                   f"ps --ppid {master_pid} -o pid,pcpu,pmem,etime,cmd --no-headers 2>/dev/null")
+                                   f"ps -eo pid,ppid,pcpu,pmem,etime,cmd --no-headers 2>/dev/null")
+            ppid_map = {}
             for line in r3.stdout.strip().splitlines():
-                parts = line.split(None, 4)
-                if len(parts) >= 5:
-                    workers.append({
-                        "pid": parts[0],
-                        "cpu": parts[1],
-                        "mem": parts[2],
-                        "uptime": parts[3],
-                        "cmd": parts[4],
-                    })
+                parts = line.split(None, 5)
+                if len(parts) >= 6:
+                    pid, ppid = parts[0], parts[1]
+                    ppid_map[pid] = (ppid, parts[2], parts[3], parts[4], parts[5])
+
+            # BFS from master_pid to find all descendants
+            queue = [master_pid]
+            seen = {master_pid}
+            while queue:
+                current = queue.pop(0)
+                for pid, (pp, cpu, mem, uptime, cmd) in ppid_map.items():
+                    if pp == current and pid not in seen:
+                        seen.add(pid)
+                        queue.append(pid)
+                        workers.append({
+                            "pid": pid,
+                            "cpu": cpu,
+                            "mem": mem,
+                            "uptime": uptime,
+                            "cmd": cmd,
+                        })
 
         return {
             "status": status,

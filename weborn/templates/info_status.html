@@ -1,41 +1,41 @@
 {% extends "base.html" %}
 {% block title %}Status — Info — Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">📊 System Status</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('chart-bar', 'w-5 h-5') }} System Status</div>
 <div class="page-sub text-t3 text-[13px] mb-5">Informasi lengkap sistem server</div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
     <div class="card">
-        <h3 class="text-xs font-bold mb-3">🖥️ System</h3>
+        <h3 class="text-xs font-bold mb-3">{{ icon('computer-desktop', 'w-5 h-5') }} System</h3>
         <table class="text-[13px] w-full">
             <tr><td class="text-t3 pr-3 py-1">Hostname</td><td class="mono">{{ info.hostname }}</td></tr>
             <tr><td class="text-t3 pr-3 py-1">OS</td><td>{{ info.os }}</td></tr>
             <tr><td class="text-t3 pr-3 py-1">Kernel</td><td class="mono">{{ info.kernel }}</td></tr>
             <tr><td class="text-t3 pr-3 py-1">Uptime</td><td>{{ info.uptime }}</td></tr>
             <tr><td class="text-t3 pr-3 py-1">Weborn</td><td class="mono">v{{ version }}</td></tr>
-        </table>
-    </div>
+       </table>
+   </div>
 
     <div class="card">
-        <h3 class="text-xs font-bold mb-3">⚡ Hardware</h3>
+        <h3 class="text-xs font-bold mb-3">{{ icon('bolt', 'w-5 h-5') }} Hardware</h3>
         <table class="text-[13px] w-full">
             <tr><td class="text-t3 pr-3 py-1">CPU</td><td>{{ info.cpu_model }}</td></tr>
             <tr><td class="text-t3 pr-3 py-1">Cores</td><td class="mono">{{ info.cores }}</td></tr>
             <tr><td class="text-t3 pr-3 py-1">RAM</td><td class="mono">{{ info.ram }}</td></tr>
             <tr><td class="text-t3 pr-3 py-1">Disk</td><td>{{ info.disk }}</td></tr>
-        </table>
-    </div>
+       </table>
+   </div>
 
     <div class="card">
-        <h3 class="text-xs font-bold mb-3">🌐 Network</h3>
+        <h3 class="text-xs font-bold mb-3">{{ icon('globe-alt', 'w-5 h-5') }} Network</h3>
         <table class="text-[13px] w-full">
             <tr><td class="text-t3 pr-3 py-1">LAN IP</td><td class="mono">{{ info.ip_lan }}</td></tr>
             <tr><td class="text-t3 pr-3 py-1">Public IP</td><td class="mono">{{ info.ip_pub }}</td></tr>
-        </table>
-    </div>
+       </table>
+   </div>
 
     <div class="card">
-        <h3 class="text-xs font-bold mb-3">🔧 Runtime</h3>
+        <h3 class="text-xs font-bold mb-3">{{ icon('wrench', 'w-5 h-5') }} Runtime</h3>
         <table class="text-[13px] w-full">
             <tr><td class="text-t3 pr-3 py-1">Python</td><td class="mono">{{ info.python }}</td></tr>
             <tr><td class="text-t3 pr-3 py-1">Node.js</td><td class="mono">{{ info.node }}</td></tr>
@@ -43,7 +43,7 @@
             <tr><td class="text-t3 pr-3 py-1">MariaDB</td><td class="mono">{{ info.mariadb }}</td></tr>
             <tr><td class="text-t3 pr-3 py-1">PostgreSQL</td><td class="mono">{{ info.postgresql }}</td></tr>
             <tr><td class="text-t3 pr-3 py-1">Redis</td><td class="mono">{{ info.redis }}</td></tr>
-        </table>
-    </div>
+       </table>
+   </div>
 </div>
 {% endblock %}

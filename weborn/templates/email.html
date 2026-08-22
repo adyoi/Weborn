@@ -3,9 +3,9 @@
 {% block content %}
 <div class="flex items-center justify-between mb-4">
     <div>
-        <h1 class="text-xl font-bold">📧 Mail Server</h1>
-        <div class="text-t3 text-xs mt-0.5">Postfix + Dovecot + Rspamd + OpenDKIM + Roundcube</div>
-    </div>
+        <div class="page-title text-[22px] font-bold mb-1">{{ icon('envelope', 'w-5 h-5') }} Mail Server</div>
+        <div class="page-sub text-t3 text-[13px] mb-5">Postfix + Dovecot + Rspamd + OpenDKIM + Roundcube</div>
+   </div>
 </div>
 
 {% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
@@ -14,12 +14,12 @@
 {% if not all_installed %}
 <div class="card mb-4 border border-[var(--accent)]/30">
     <div class="flex items-center justify-between mb-2">
-        <h3 class="text-xs font-bold">🚀 Mail Server Setup Wizard</h3>
-    </div>
+        <h3 class="text-xs font-bold">{{ icon('rocket-launch', 'w-5 h-5') }} Mail Server Setup Wizard</h3>
+   </div>
     <p class="text-[13px] text-t3 mb-3">
         Instalasi: Postfix (SMTP) + Dovecot (IMAP/POP3) + Rspamd (anti-spam) + OpenDKIM + Roundcube.
         Butuh domain yang sudah terdaftar di panel.
-    </p>
+   </p>
     {% if domains %}
     <div class="flex gap-2 items-end">
         <div class="flex-1">
@@ -28,10 +28,10 @@
                 {% for d in domains %}
                 <option value="{{ d.name }}">{{ d.name }}</option>
                 {% endfor %}
-            </select>
-        </div>
-        <button onclick="mailSetup()" class="btn primary sm">🚀 Install & Konfigurasi</button>
-    </div>
+           </select>
+       </div>
+        <button onclick="mailSetup()" class="btn primary sm">{{ icon('rocket-launch', 'w-5 h-5') }} Install & Konfigurasi</button>
+   </div>
     {% else %}
     <div class="msg err text-xs">Buat domain dulu di <a href="/domains" class="text-accent">Domain Manager</a>.</div>
     {% endif %}
@@ -49,19 +49,19 @@
         <div class="flex items-center justify-between mb-1.5">
             <h3 class="text-xs font-bold">{{ svc_name }}</h3>
             <span class="st {{ 'active' if stack[svc_key].active else ('inactive' if stack[svc_key].installed else 'failed') }}">{{ 'active' if stack[svc_key].active else ('stopped' if stack[svc_key].installed else 'not installed') }}</span>
-        </div>
+       </div>
         <div class="text-[14px] text-t3 mb-2">Port {{ svc_port }} — {{ svc_desc }}</div>
         {% if stack[svc_key].installed %}
         <div class="flex gap-1.5">
             {% if not stack[svc_key].active %}
-            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/start','Start {{ svc_name }}',false)" class="btn primary sm">▶ Start</button>
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }} /start','Start {{ svc_name }} ',false)" class="btn primary sm">{{ icon('play', 'w-5 h-5') }} Start</button>
             {% else %}
-            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/stop','Stop {{ svc_name }}',false)" class="btn danger sm">⏹ Stop</button>
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }} /stop','Stop {{ svc_name }} ',false)" class="btn danger sm">{{ icon('stop', 'w-5 h-5') }} Stop</button>
             {% endif %}
-            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/restart','Restart {{ svc_name }}',false)" class="btn sm">🔄</button>
-        </div>
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }} /restart','Restart {{ svc_name }} ',false)" class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }}</button>
+       </div>
         {% endif %}
-    </div>
+   </div>
     {% endfor %}
 </div>
 
@@ -75,31 +75,31 @@
         <div class="flex items-center justify-between mb-1.5">
             <h3 class="text-xs font-bold">{{ svc_name }}</h3>
             <span class="st {{ 'active' if stack[svc_key].active else ('inactive' if stack[svc_key].installed else 'failed') }}">{{ 'active' if stack[svc_key].active else ('stopped' if stack[svc_key].installed else 'not installed') }}</span>
-        </div>
+       </div>
         <div class="text-[14px] text-t3 mb-2">{{ svc_desc }}</div>
         {% if stack[svc_key].installed %}
         <div class="flex gap-1.5">
             {% if not stack[svc_key].active %}
-            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/start','Start {{ svc_name }}',false)" class="btn primary sm">▶ Start</button>
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }} /start','Start {{ svc_name }} ',false)" class="btn primary sm">{{ icon('play', 'w-5 h-5') }} Start</button>
             {% else %}
-            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/stop','Stop {{ svc_name }}',false)" class="btn danger sm">⏹ Stop</button>
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }} /stop','Stop {{ svc_name }} ',false)" class="btn danger sm">{{ icon('stop', 'w-5 h-5') }} Stop</button>
             {% endif %}
-            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/restart','Restart {{ svc_name }}',false)" class="btn sm">🔄</button>
-        </div>
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }} /restart','Restart {{ svc_name }} ',false)" class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }}</button>
+       </div>
         {% endif %}
-    </div>
+   </div>
     {% endfor %}
 </div>
 
 {% if all_installed and domains %}
 <div class="card mt-4">
-    <h3 class="text-xs mb-2 font-bold">ℹ️ Info Koneksi</h3>
+    <h3 class="text-xs mb-2 font-bold">{{ icon('information-circle', 'w-5 h-5') }} Info Koneksi</h3>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-[13px]">
-        <div><span class="text-t3">SMTP:</span> <code class="mono">mail.{{ domains[0].name }}:587</code></div>
-        <div><span class="text-t3">IMAP:</span> <code class="mono">mail.{{ domains[0].name }}:993</code></div>
-        <div><span class="text-t3">POP3:</span> <code class="mono">mail.{{ domains[0].name }}:995</code></div>
+        <div><span class="text-t3">SMTP:</span> <code class="mono">mail.{{ domains[0].name }} :587</code></div>
+        <div><span class="text-t3">IMAP:</span> <code class="mono">mail.{{ domains[0].name }} :993</code></div>
+        <div><span class="text-t3">POP3:</span> <code class="mono">mail.{{ domains[0].name }} :995</code></div>
         <div><span class="text-t3">Webmail:</span> <code class="mono">/roundcube</code></div>
-    </div>
+   </div>
 </div>
 {% endif %}
 

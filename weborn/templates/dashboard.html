@@ -3,48 +3,48 @@
 {% block content %}
 <div class="flex items-center justify-between mb-4">
     <div>
-        <h1 class="text-xl font-bold">📊 Dashboard</h1>
-        <div class="text-t3 text-xs mt-0.5">Ringkasan server & layanan Weborn</div>
-    </div>
+        <div class="page-title text-[22px] font-bold mb-1">{{ icon('chart-bar', 'w-6 h-6') }} Dashboard</div>
+        <div class="page-sub text-t3 text-[13px] mb-5">Ringkasan server & layanan Weborn</div>
+   </div>
     <span class="text-t3 text-[14px]">
-        {{ user.username }} • Uptime {{ stats.uptime_str }}{% if stats.downtime_str %} • Downtime {{ stats.downtime_str }}{% endif %} • Boot {{ stats.boot_time }}
-    </span>
+        {{ user.username }} • Uptime {{ stats.uptime_str }} {% if stats.downtime_str %} • Downtime {{ stats.downtime_str }} {% endif %} • Boot {{ stats.boot_time }} 
+   </span>
 </div>
 
 {# ── System Bar ── #}
 <div class="card mb-3 flex items-center gap-3 flex-wrap">
-    <span class="badge info text-[13px] px-3 py-1">🐧 {{ os }}</span>
+    <span class="badge info text-[13px] px-3 py-1">{{ icon('globe-alt', 'w-5 h-5') }} {{ os }}</span>
     {% if updates and updates > 0 %}
-    <a class="btn danger sm" href="/packages">⚠️ {{ updates }} update tersedia</a>
+    <a class="btn danger sm" href="/packages">{{ icon('exclamation-triangle', 'w-5 h-5') }} {{ updates }} update tersedia</a>
     {% else %}
-    <span class="badge ok text-[13px] px-3 py-1">✅ Up-to-date</span>
+    <span class="badge ok text-[13px] px-3 py-1">{{ icon('check', 'w-5 h-5') }} Up-to-date</span>
     {% endif %}
-    <a class="btn sm" href="/packages">📦 {{ packages_total }} paket</a>
-    <span class="badge info text-[13px] px-3 py-1">🔌 {{ installed_count }}/{{ total_addons }} Terpasang</span>
-    <span class="badge ok text-[13px] px-3 py-1">▶ {{ services_running }} Active</span>
-    <span class="badge warn text-[13px] px-3 py-1">⏹ {{ services_stopped }} Inactive</span>
+    <a class="btn sm" href="/packages">{{ icon('cube', 'w-5 h-5') }} {{ packages_total }} paket</a>
+    <span class="badge info text-[13px] px-3 py-1">{{ icon('puzzle-piece', 'w-5 h-5') }} {{ installed_count }} /{{ total_addons }} Terpasang</span>
+    <span class="badge ok text-[13px] px-3 py-1">{{ icon('play', 'w-5 h-5') }} {{ services_running }} Active</span>
+    <span class="badge warn text-[13px] px-3 py-1">{{ icon('stop', 'w-5 h-5') }} {{ services_stopped }} Inactive</span>
 </div>
 
 {# ── Stats Row ── #}
 <div class="grid grid-cols-4 gap-3 mb-4">
     <div class="card">
         <div class="text-t3 text-[14px] uppercase tracking-wide">CPU</div>
-        <div class="text-[24px] font-bold mt-1">{{ stats.cpu }}<small class="text-[14px] text-t2 font-normal ml-0.5">%</small></div>
-        <div class="stat-bar mt-2"><span style="width:{{ stats.cpu }}%"></span></div>
+        <div class="text-[24px] font-bold mt-1">{{ stats.cpu }} <small class="text-[14px] text-t2 font-normal ml-0.5">%</small></div>
+        <div class="stat-bar mt-2"><span style="width:{{ stats.cpu }} %"></span></div>
         <div class="text-t3 text-[13px] mt-1">{{ stats.cores }} core</div>
-    </div>
+   </div>
     <div class="card">
         <div class="text-t3 text-[14px] uppercase tracking-wide">RAM</div>
-        <div class="text-[24px] font-bold mt-1">{{ stats.ram }}<small class="text-[14px] text-t2 font-normal ml-0.5">%</small></div>
-        <div class="stat-bar mt-2"><span style="width:{{ stats.ram }}%"></span></div>
+        <div class="text-[24px] font-bold mt-1">{{ stats.ram }} <small class="text-[14px] text-t2 font-normal ml-0.5">%</small></div>
+        <div class="stat-bar mt-2"><span style="width:{{ stats.ram }} %"></span></div>
         <div class="text-t3 text-[13px] mt-1">{{ stats.ram_used }} / {{ stats.ram_total }} GB</div>
-    </div>
+   </div>
     <div class="card">
         <div class="text-t3 text-[14px] uppercase tracking-wide">Disk</div>
-        <div class="text-[24px] font-bold mt-1">{{ stats.disk }}<small class="text-[14px] text-t2 font-normal ml-0.5">%</small></div>
-        <div class="stat-bar mt-2"><span style="width:{{ stats.disk }}%"></span></div>
+        <div class="text-[24px] font-bold mt-1">{{ stats.disk }} <small class="text-[14px] text-t2 font-normal ml-0.5">%</small></div>
+        <div class="stat-bar mt-2"><span style="width:{{ stats.disk }} %"></span></div>
         <div class="text-t3 text-[13px] mt-1">{{ stats.disk_used }} / {{ stats.disk_total }} GB</div>
-    </div>
+   </div>
     <div class="card">
         <div class="text-t3 text-[14px] uppercase tracking-wide">Aplikasi</div>
         <div class="text-[24px] font-bold mt-1">{{ apps_total }}</div>
@@ -52,21 +52,21 @@
             <span class="text-[var(--ok)]">● {{ apps_running }} running</span>
             <span class="text-t3 mx-1">·</span>
             <span class="text-t3">● {{ apps_stopped }} stopped</span>
-        </div>
-    </div>
+       </div>
+   </div>
     <div class="card">
         <div class="text-t3 text-[14px] uppercase tracking-wide">Akun Panel</div>
         <div class="text-[24px] font-bold mt-1">{{ panel_users_count }}</div>
         <a href="/panel-accounts" class="text-[13px] text-accent hover:underline">Kelola →</a>
-    </div>
+   </div>
 </div>
 
 {# ── Status Layanan (table) ── #}
 <div class="card">
     <div class="flex items-center justify-between mb-3">
-        <h3 class="text-xs font-bold">⚙️ Status Layanan</h3>
+        <h3 class="text-xs font-bold">{{ icon('cog-6-tooth', 'w-5 h-5') }} Status Layanan</h3>
         <a href="/addons" class="text-[14px] text-accent hover:underline">Addon Store →</a>
-    </div>
+   </div>
     {% if services %}
     <div class="overflow-auto">
         <table class="text-[13px]">
@@ -77,8 +77,8 @@
                     <th>Versi</th>
                     <th>Status</th>
                     <th>Aksi</th>
-                </tr>
-            </thead>
+               </tr>
+           </thead>
             <tbody>
             {% for s in services %}
                 <tr>
@@ -86,31 +86,31 @@
                     <td>
                         <div class="font-bold">{{ s.addon.name }}</div>
                         <div class="text-t3 text-[13px]">{{ s.addon.category }} • {{ s.addon.packages|join(', ') }}</div>
-                    </td>
+                   </td>
                     <td class="mono text-[14px]">{{ s.version[:30] if s.version and s.version != '—' else '—' }}</td>
                     <td>
                         <span class="st {{ 'active' if s.active else ('inactive' if s.installed else 'failed') }}">
-                            {{ 'active' if s.active else (s.state if s.state != 'not-installed' else 'not installed') }}
-                        </span>
-                    </td>
+                            {{ 'active' if s.active else (s.state if s.state != 'not-installed' else 'not installed') }} 
+                       </span>
+                   </td>
                     <td class="whitespace-nowrap">
                         <div class="flex gap-1">
                             {% if s.installed and s.addon.systemd_unit %}
                             <button class="btn sm" title="Start"
-                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }}/start','Start {{ s.addon.name }}',true)">▶</button>
+                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }} /start','Start {{ s.addon.name }} ',true)">{{ icon('play', 'w-5 h-5') }}</button>
                             <button class="btn sm" title="Stop"
-                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }}/stop','Stop {{ s.addon.name }}',true)">⏹</button>
+                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }} /stop','Stop {{ s.addon.name }} ',true)">{{ icon('stop', 'w-5 h-5') }}</button>
                             <button class="btn sm" title="Restart"
-                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }}/restart','Restart {{ s.addon.name }}',true)">🔄</button>
+                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }} /restart','Restart {{ s.addon.name }} ',true)">{{ icon('arrow-path', 'w-5 h-5') }}</button>
                             {% endif %}
-                            <a href="/addons/{{ s.addon.id }}" class="btn sm" title="Kelola">⚙️</a>
-                        </div>
-                    </td>
-                </tr>
+                            <a href="/addons/{{ s.addon.id }}" class="btn sm" title="Kelola">{{ icon('cog-6-tooth', 'w-5 h-5') }}</a>
+                       </div>
+                   </td>
+               </tr>
             {% endfor %}
-            </tbody>
-        </table>
-    </div>
+           </tbody>
+       </table>
+   </div>
     {% else %}
     <div class="text-t3 text-[13px] text-center py-4">Belum ada layanan terinstall</div>
     {% endif %}

@@ -43,8 +43,10 @@ async def _mysql_users(ex) -> list[dict]:
 
 
 async def _mysql_user_dbs(ex, user: str) -> list:
+    if not USER_RE.match(user):
+        return []
     r = await ex.run("mysql", "-uroot", "-N", "-e",
-                     f"SELECT DISTINCT db FROM mysql.db WHERE user='{user}' ORDER BY db;")
+                     f"SELECT DISTINCT db FROM mysql.db WHERE user={shlex.quote(user)} ORDER BY db;")
     return sorted(line.strip() for line in r.stdout.splitlines() if line.strip())
 
 
@@ -137,6 +139,8 @@ async def database_user_grant(username: str, db: str = Form(...),
                               user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    if not USER_RE.match(username) or not DB_NAME_RE.match(db):
+        return RedirectResponse("/database?msg=Nama%20tidak%20valid", status_code=303)
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
         await ex.run("mysql", "-uroot", "-e",
@@ -149,6 +153,8 @@ async def database_user_grant(username: str, db: str = Form(...),
 async def database_user_delete(username: str, user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    if not USER_RE.match(username):
+        return RedirectResponse("/database?msg=Nama%20user%20tidak%20valid", status_code=303)
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
         await ex.run("mysql", "-uroot", "-e",
@@ -222,8 +228,9 @@ async def pg_user_create(username: str = Form(...), password: str = Form(...),
         return RedirectResponse("/database/pg?msg=Nama%20user%20tidak%20valid", status_code=303)
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
+        # PostgreSQL: identifiers unquoted or double-quoted, passwords single-quoted
         await ex.run("sudo", "-u", "postgres", "psql", "-c",
-                     f"CREATE USER {shlex.quote(username)} WITH PASSWORD {shlex.quote(password)};")
+                     f'CREATE USER "{username}" WITH PASSWORD {shlex.quote(password)};')
     return RedirectResponse("/database/pg?msg=User%20dibuat", status_code=303)
 
 
@@ -231,10 +238,12 @@ async def pg_user_create(username: str = Form(...), password: str = Form(...),
 async def pg_user_delete(username: str, user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    if not USER_RE.match(username):
+        return RedirectResponse("/database/pg?msg=Nama%20user%20tidak%20valid", status_code=303)
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
         await ex.run("sudo", "-u", "postgres", "psql", "-c",
-                     f"DROP USER IF EXISTS {shlex.quote(username)};")
+                     f'DROP USER IF EXISTS "{username}";')
     return RedirectResponse("/database/pg?msg=User%20dihapus", status_code=303)
 
 
@@ -243,10 +252,12 @@ async def pg_user_grant(username: str, db: str = Form(...),
                         user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    if not USER_RE.match(username) or not DB_NAME_RE.match(db):
+        return RedirectResponse("/database/pg?msg=Nama%20tidak%20valid", status_code=303)
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
         await ex.run("sudo", "-u", "postgres", "psql", "-c",
-                     f"GRANT ALL PRIVILEGES ON DATABASE {shlex.quote(db)} TO {shlex.quote(username)};")
+                     f'GRANT ALL PRIVILEGES ON DATABASE "{db}" TO "{username}";')
     return RedirectResponse("/database/pg?msg=Privilege%20ditambahkan", status_code=303)
 
 

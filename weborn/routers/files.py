@@ -1,6 +1,7 @@
 """File explorer: browse, edit, chown, chmod, create, delete."""
 import os
 import re
+import shlex
 import stat
 from datetime import datetime
 from pathlib import Path
@@ -103,7 +104,7 @@ async def files_page(request: Request, path: str = "", user: dict = Depends(requ
 
     if ex.mode in ("local", "wsl"):
         r = await ex.run("bash", "-c",
-                         f"sudo ls -la '{resolved}' 2>&1")
+                         f"sudo ls -la {shlex.quote(str(resolved))} 2>&1")
         lines = r.stdout.strip().splitlines()
         for line in lines[1:]:
             parts = line.split(None, 8)
@@ -184,7 +185,7 @@ async def files_rename(path: str = Form(...), new_name: str = Form(...),
         return JSONResponse({"ok": False, "error": f"'{new_name}' sudah ada"}, status_code=400)
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        r = await ex.run("bash", "-c", f"sudo mv '{resolved}' '{target}'")
+        r = await ex.run("bash", "-c", f"sudo mv {shlex.quote(str(resolved))} {shlex.quote(str(target))}")
         ok = r.ok
     else:
         resolved.rename(target)
@@ -205,7 +206,7 @@ async def files_compress(path: str, user: dict = Depends(require_admin)):
         tar_name = resolved.name + ".tar.gz"
         tar_path = f"/tmp/weborn-{tar_name}"
         r = await ex.run("bash", "-c",
-                         f"sudo tar -czf '{tar_path}' -C '{resolved.parent}' '{resolved.name}' 2>/dev/null")
+                         f"sudo tar -czf {shlex.quote(str(tar_path))} -C {shlex.quote(str(resolved.parent))} {shlex.quote(resolved.name)} 2>/dev/null")
         if r.ok:
             return FileResponse(tar_path, filename=tar_name, media_type="application/gzip")
     return JSONResponse({"error": "gagal compress"}, status_code=500)
@@ -225,7 +226,7 @@ async def files_download(path: str, user: dict = Depends(require_admin)):
         pass
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        r = await ex.run("bash", "-c", f"sudo cat '{resolved}' 2>/dev/null")
+        r = await ex.run("bash", "-c", f"sudo cat {shlex.quote(str(resolved))} 2>/dev/null")
         if r.ok:
             from fastapi.responses import Response
             return Response(content=r.stdout, media_type="application/octet-stream",
@@ -255,7 +256,7 @@ async def files_delete(path: str = Form(...), user: dict = Depends(require_admin
         return JSONResponse({"ok": False, "error": "path tidak valid"}, status_code=400)
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        r = await ex.run("bash", "-c", f"sudo rm -rf '{resolved}'")
+        r = await ex.run("bash", "-c", f"sudo rm -rf {shlex.quote(str(resolved))}")
         ok = r.ok
     else:
         if resolved.is_file():
@@ -344,14 +345,14 @@ async def files_create(path: str = Form(...), name: str = Form(...),
     ex = get_executor()
     if kind == "dir":
         if ex.mode in ("local", "wsl"):
-            r = await ex.run("bash", "-c", f"sudo mkdir -p '{target}'")
+            r = await ex.run("bash", "-c", f"sudo mkdir -p {shlex.quote(str(target))}")
             ok = r.ok
         else:
             target.mkdir(parents=True, exist_ok=True)
             ok = True
     else:
         if ex.mode in ("local", "wsl"):
-            r = await ex.run("bash", "-c", f"sudo touch '{target}' && sudo chown $(id -u):$(id -g) '{target}'")
+            r = await ex.run("bash", "-c", f"sudo touch {shlex.quote(str(target))} && sudo chown $(id -u):$(id -g) {shlex.quote(str(target))}")
             ok = r.ok
         else:
             target.touch()
@@ -374,7 +375,7 @@ async def files_edit_get(path: str, user: dict = Depends(require_admin)):
         pass
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        r = await ex.run("bash", "-c", f"sudo cat '{resolved}' 2>/dev/null")
+        r = await ex.run("bash", "-c", f"sudo cat {shlex.quote(str(resolved))} 2>/dev/null")
         if r.ok:
             return JSONResponse({"ok": True, "content": r.stdout, "path": str(resolved)})
     return JSONResponse({"ok": False, "error": "permission denied"}, status_code=403)
@@ -391,7 +392,7 @@ async def files_mkdir(path: str = Form(...), user: dict = Depends(require_admin)
         return JSONResponse({"ok": False, "error": "sudah ada"}, status_code=400)
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        r = await ex.run("bash", "-c", f"sudo mkdir -p '{resolved}'")
+        r = await ex.run("bash", "-c", f"sudo mkdir -p {shlex.quote(str(resolved))}")
         ok = r.ok
     else:
         resolved.mkdir(parents=True, exist_ok=True)

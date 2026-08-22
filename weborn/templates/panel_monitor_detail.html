@@ -9,7 +9,7 @@
 <div class="flex items-center justify-between mb-4">
     <div class="flex items-center gap-3">
         <a href="/apps/monitor" class="btn sm">← Kembali</a>
-        <h1 class="text-xl font-bold">🖥 Weborn Panel</h1>
+        <div class="page-title text-[22px] font-bold mb-1">{{ icon('computer-desktop', 'w-5 h-5') }} Weborn Panel</div>
         <span class="text-t3 text-xs font-mono">{{ panel.mode }}</span>
         <span class="text-t3 text-xs">port {{ panel.port }}</span>
         {% if panel.master_pid %}
@@ -17,30 +17,31 @@
         {% else %}
         <span class="px-2 py-0.5 rounded bg-gray-500/20 text-gray-400 text-[13px] font-mono">● stopped</span>
         {% endif %}
-    </div>
+   </div>
     <div class="flex gap-2">
-        <button onclick="location.reload()" class="btn sm">↻ Refresh</button>
-    </div>
+        <button onclick="location.reload()" class="btn sm">{{ icon('square-3-stack-3d', 'w-5 h-5') }} Refresh</button>
+   </div>
 </div>
+<div class="page-sub text-t3 text-[13px] mb-5">Monitor real-time Weborn Control Panel</div>
 
 {# ── Info Cards ── #}
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
     <div class="card p-3 text-center">
         <div class="text-lg font-bold">{{ panel.workers | length }}</div>
         <div class="text-t3 text-xs">Workers</div>
-    </div>
+   </div>
     <div class="card p-3 text-center">
         <div class="text-lg font-bold">{{ panel.master_pid or '—' }}</div>
         <div class="text-t3 text-xs">Master PID</div>
-    </div>
+   </div>
     <div class="card p-3 text-center">
-        <div class="text-lg font-bold">{{ '%.1f'|format(total_cpu) }}%</div>
+        <div class="text-lg font-bold">{{ '%.1f'|format(total_cpu) }} %</div>
         <div class="text-t3 text-xs">Total CPU</div>
-    </div>
+   </div>
     <div class="card p-3 text-center">
-        <div class="text-lg font-bold">{{ '%.1f'|format(total_mem) }}%</div>
+        <div class="text-lg font-bold">{{ '%.1f'|format(total_mem) }} %</div>
         <div class="text-t3 text-xs">Total MEM</div>
-    </div>
+   </div>
 </div>
 
 {# ── Panel Details ── #}
@@ -52,7 +53,7 @@
         <div class="text-t3">Port</div><div class="mono">{{ panel.port }}</div>
         <div class="text-t3">Master PID</div><div class="mono">{{ panel.master_pid or '—' }}</div>
         <div class="text-t3">All PIDs</div><div class="mono text-[13px]">{{ panel.pids | join(', ') if panel.pids else '—' }}</div>
-    </div>
+   </div>
 </div>
 
 {# ── Resource Usage ── #}
@@ -63,7 +64,7 @@
         {% for k, v in resource_info.items() %}
         <div class="text-t3">{{ k }}</div><div class="mono">{{ v }}</div>
         {% endfor %}
-    </div>
+   </div>
 </div>
 {% endif %}
 
@@ -72,17 +73,17 @@
     <div class="flex items-center justify-between mb-2">
         <h3 class="font-bold text-sm">Trace Log</h3>
         <div class="flex gap-2">
-            <span class="text-t3 text-[11px] font-mono" id="trace-status">Connecting…</span>
-            <button class="btn sm" onclick="clearTrace()">🗑 Clear</button>
-        </div>
-    </div>
+            <button class="btn sm" onclick="clearTrace()">{{ icon('trash', 'w-5 h-5') }} Clear</button>
+       </div>
+   </div>
     <div id="trace-terminal" style="height:300px; background:#1a1a2e; border-radius:8px; padding:8px;"></div>
+    <span class="text-t3 text-[11px] font-mono" id="trace-status">Connecting…</span>
 </div>
 
 {# ── Worker Table ── #}
 {% if panel.workers %}
 <div class="card p-4">
-    <h3 class="font-bold text-sm mb-2">Workers ({{ panel.workers | length }})</h3>
+    <h3 class="font-bold text-sm mb-2">Workers ({{ panel.workers | length }} )</h3>
     <div class="overflow-x-auto">
         <table class="text-xs font-mono w-full">
             <thead>
@@ -92,8 +93,8 @@
                     <th class="pb-1 pr-3">MEM%</th>
                     <th class="pb-1 pr-3">Uptime</th>
                     <th class="pb-1">Command</th>
-                </tr>
-            </thead>
+               </tr>
+           </thead>
             <tbody>
                 {% for w in panel.workers %}
                 <tr class="border-t border-line/30">
@@ -102,11 +103,11 @@
                     <td class="py-1 pr-3">{{ w.mem }}</td>
                     <td class="py-1 pr-3">{{ w.uptime }}</td>
                     <td class="py-1 truncate max-w-[400px]">{{ w.cmd }}</td>
-                </tr>
+               </tr>
                 {% endfor %}
-            </tbody>
-        </table>
-    </div>
+           </tbody>
+       </table>
+   </div>
 </div>
 {% endif %}
 

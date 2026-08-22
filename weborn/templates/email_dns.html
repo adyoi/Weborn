@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Mail DNS - Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">📡 Email DNS Records</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('signal', 'w-5 h-5') }} Email DNS Records</div>
 <div class="page-sub text-t3 text-[13px] mb-5">Konfigurasi MX, SPF, DKIM, DMARC untuk email delivery</div>
 
 {% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
@@ -13,43 +13,43 @@
 <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start gap-4">
     {# ─── Required Records ─── #}
     <div class="card">
-        <h3 class="text-sm mb-3 font-bold">📋 DNS Records yang Dibutuhkan</h3>
+        <h3 class="text-sm mb-3 font-bold">{{ icon('clipboard-document-list', 'w-5 h-5') }} DNS Records yang Dibutuhkan</h3>
         <div class="space-y-3 text-[14px]">
             <div class="bg-black/10 rounded-lg p-3">
                 <div class="font-bold mb-1">MX Record (Mail Exchanger)</div>
                 <code class="mono text-[13px]">
                     Type: MX<br>
-                    Name: {{ selected_domain or 'example.com' }}<br>
-                    Value: 10 mail.{{ selected_domain or 'example.com' }}<br>
+                    Name: {{ selected_domain or 'example.com' }} <br>
+                    Value: 10 mail.{{ selected_domain or 'example.com' }} <br>
                     TTL: 300
-                </code>
-            </div>
+               </code>
+           </div>
             <div class="bg-black/10 rounded-lg p-3">
                 <div class="font-bold mb-1">A Record (Mail Server)</div>
                 <code class="mono text-[13px]">
                     Type: A<br>
-                    Name: mail.{{ selected_domain or 'example.com' }}<br>
-                    Value: {{ server_ip }}<br>
+                    Name: mail.{{ selected_domain or 'example.com' }} <br>
+                    Value: {{ server_ip }} <br>
                     TTL: 300
-                </code>
-            </div>
+               </code>
+           </div>
             <div class="bg-black/10 rounded-lg p-3">
                 <div class="font-bold mb-1">TXT / SPF</div>
                 <code class="mono text-[13px]">
                     Type: TXT<br>
-                    Name: {{ selected_domain or 'example.com' }}<br>
+                    Name: {{ selected_domain or 'example.com' }} <br>
                     Value: v=spf1 mx a ip4:{{ server_ip }} ~all
-                </code>
-            </div>
+               </code>
+           </div>
             <div class="bg-black/10 rounded-lg p-3">
                 <div class="font-bold mb-1">TXT / DMARC</div>
                 <code class="mono text-[13px]">
                     Type: TXT<br>
-                    Name: _dmarc.{{ selected_domain or 'example.com' }}<br>
-                    Value: v=DMARC1; p=quarantine; rua=mailto:admin@{{ selected_domain or 'example.com' }}
-                </code>
-            </div>
-        </div>
+                    Name: _dmarc.{{ selected_domain or 'example.com' }} <br>
+                    Value: v=DMARC1; p=quarantine; rua=mailto:admin@{{ selected_domain or 'example.com' }} 
+               </code>
+           </div>
+       </div>
 
         {% if domains %}
         <form method="post" action="/email/dns/record" class="mt-4 space-y-2">
@@ -59,27 +59,27 @@
                 <option value="A">A</option>
                 <option value="TXT">TXT (SPF/DKIM/DMARC)</option>
                 <option value="CNAME">CNAME</option>
-            </select>
+           </select>
             <input name="name" placeholder="Nama (kosong = domain utama)" class="w-full text-[13px]">
             <input name="value" placeholder="Value" class="w-full text-[13px]" required>
             <input name="ttl" type="number" value="300" class="w-full text-[13px]">
             <button type="submit" class="btn primary w-full justify-center">+ Tambah Record</button>
-        </form>
+       </form>
         {% endif %}
-    </div>
+   </div>
 
     {# ─── Current Records ─── #}
     <div class="card !p-0 overflow-hidden">
         <div class="px-4 py-3 border-b border-line flex items-center gap-3">
-            <span class="text-sm font-bold">📡 Current DNS Records</span>
+            <span class="text-sm font-bold">{{ icon('signal', 'w-5 h-5') }} Current DNS Records</span>
             {% if domains|length > 1 %}
             <select class="text-[14px] !py-1" onchange="window.location='?domain='+this.value">
                 {% for d in domains %}
-                <option value="{{ d.name }}" {{ 'selected' if d.name == selected_domain }}>{{ d.name }}</option>
+                <option value="{{ d.name }}" {{ 'selected' if d.name == selected_domain }} >{{ d.name }}</option>
                 {% endfor %}
-            </select>
+           </select>
             {% endif %}
-        </div>
+       </div>
         <table>
             <thead><tr><th>Type</th><th>Name</th><th>Value</th><th>TTL</th><th></th></tr></thead>
             <tbody>
@@ -93,15 +93,15 @@
                     <form method="post" action="/email/dns/record/delete" style="display:inline">
                         <input type="hidden" name="record_id" value="{{ r.id }}">
                         <input type="hidden" name="domain" value="{{ selected_domain }}">
-                        <button class="btn danger !py-0.5 !px-2 text-[13px]">🗑</button>
-                    </form>
-                </td>
-            </tr>
+                        <button class="btn danger !py-0.5 !px-2 text-[13px]">{{ icon('trash', 'w-5 h-5') }} ️</button>
+                   </form>
+               </td>
+           </tr>
             {% else %}
             <tr><td colspan="5" class="text-t3 text-center py-7">Belum ada record</td></tr>
             {% endfor %}
-            </tbody>
-        </table>
-    </div>
+           </tbody>
+       </table>
+   </div>
 </div>
 {% endblock %}

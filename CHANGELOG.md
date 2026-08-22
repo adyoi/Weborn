@@ -2,7 +2,33 @@
 
 All notable changes to Weborn will be documented in this file.
 
-## [1.0.0] - 2026-08-20
+## [1.0.0] - 2026-08-21
+
+### Added
+- **Process Manager Config**: Edit worker count, timeout, worker class, max requests, graceful timeout, keep alive, access log per app
+- **Resource Limits (systemd)**: MemoryMax, CPUQuota, Nice, OOMScoreAdjust per app
+- **Process Config API**: `GET/POST /apps/{id}/process-config`, `POST /apps/{id}/limits`
+- **Graceful Reload**: SIGHUP reload without restart (`POST /apps/{id}/reload`)
+- **Process Status WebSocket**: `GET /ws/apps/{id}/process-status` (2s interval), `GET /ws/apps/all-status` (3s interval)
+- **Process Manager UI**: Full edit page with process config + resource limits panels, worker count + timeout in apps list
+- **Session Idle Lock**: Configurable per-user timeout (`session_timeout` column), idle check in `get_current_user()`, touch on login
+- **Session Timeout UI**: Timeout column in panel accounts, ⏱️ modal to set timeout per user
+
+### Fixed
+- **Dashboard Downtime**: `_get_panel_start()` uses parent process creation time (uvicorn reloader) so `--reload` doesn't reset clock
+- **Email Install Commands**: All `apt-get install` in `bash -c` now use `sudo` — previously silently failed with permission denied
+- **Email Status Detection**: Fixed wrong binary names (`clamav-daemon`→`clamd`, `spamassassin`→`spamc`); roundcube uses directory check (`/var/lib/roundcube`)
+- **Email Unit Names**: Roundcube service check uses `apache2` (not `roundcube` which doesn't exist on Debian)
+- **Email Mailbox Creation**: Added `sudo` to `useradd`, `chpasswd`, `mkdir`, `chown` in account creation
+- **Email Setup Wizard**: Added `sudo` to hostname, sed, mkdir, systemctl commands
+- **Self-Deactivate Guard**: Panel users can't deactivate or delete themselves
+- **Last Admin Guard**: Prevents deleting the last admin user
+- **PostgreSQL CREATE USER**: Uses double quotes for identifiers instead of single quotes
+
+### Changed
+- **Bootstrap**: No longer auto-creates `admin`/`admin` OS user; only creates `www-data` service user
+- **Executor Timeout**: Command timeout increased to 60s with 1MB output cap
+- **Executor**: Uses `asyncio.wait_for` with kill on timeout
 
 ### Added
 - **JWT Authentication**: Stateless JWT tokens replace Starlette session cookies — simpler decode, no DB session table needed for auth
@@ -18,7 +44,7 @@ All notable changes to Weborn will be documented in this file.
 - **Test Page Split**: Separated into Python Packages + Linux Packages tables with version detection
 - **Changelog Markdown**: Renders CHANGELOG.md as HTML via marked.js CDN
 - **SSL Support**: `--ssl-cert` / `--ssl-key` flags with automatic `secure` cookie flag
-- **Port Auto-Kill**: `run.py` kills existing process on same port before starting
+- **Port Auto-Kill**: `weborn.py` kills existing process on same port before starting
 
 ### Fixed
 - **WebSocket Cookie Decode**: Use `TimestampSigner` + `base64` + `json.loads` (matches Starlette format)

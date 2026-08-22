@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}PostgreSQL - Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">🐘 PostgreSQL</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('code-bracket', 'w-5 h-5') }} PostgreSQL</div>
 <div class="page-sub text-t3 text-[13px] mb-5">Kelola database PostgreSQL — port default 5432</div>
 
 {% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
@@ -14,12 +14,12 @@
 
     {# ─── Databases ─── #}
     <div class="card">
-        <h3 class="text-sm mb-3 font-bold">📦 Databases</h3>
+        <h3 class="text-sm mb-3 font-bold">{{ icon('cube', 'w-5 h-5') }} Databases</h3>
         <form method="post" action="/database/pg/create" class="flex gap-2 mb-3">
             <input name="name" placeholder="nama_database" required class="flex-1"
                    pattern="[a-zA-Z0-9_]+" title="huruf, angka, underscore">
             <button type="submit" class="btn primary">+ Buat</button>
-        </form>
+       </form>
         <table>
             <thead><tr><th>Nama</th><th></th></tr></thead>
             <tbody>
@@ -27,27 +27,27 @@
             <tr>
                 <td class="mono text-[13px]">{{ db }}</td>
                 <td class="text-right">
-                    <form method="post" action="/database/pg/{{ db }}/drop" style="display:inline"
-                          onsubmit="return confirm('Hapus {{ db }}?')">
-                        <button class="btn danger !py-0.5 !px-2 text-[13px]">🗑</button>
-                    </form>
-                </td>
-            </tr>
+                    <form method="post" action="/database/pg/{{ db }} /drop" style="display:inline"
+                          onsubmit="return confirm('Hapus {{ db }} ?')">
+                        <button class="btn danger !py-0.5 !px-2 text-[13px]">{{ icon('trash', 'w-5 h-5') }} ️</button>
+                   </form>
+               </td>
+           </tr>
             {% else %}
             <tr><td colspan="2" class="text-t3 text-center py-4">Belum ada database</td></tr>
             {% endfor %}
-            </tbody>
-        </table>
-    </div>
+           </tbody>
+       </table>
+   </div>
 
     {# ─── Users ─── #}
     <div class="card">
-        <h3 class="text-sm mb-3 font-bold">👤 Users</h3>
+        <h3 class="text-sm mb-3 font-bold">{{ icon('user', 'w-5 h-5') }} Users</h3>
         <form method="post" action="/database/pg/user/create" class="grid grid-cols-2 gap-2 mb-3">
             <input name="username" placeholder="username" required class="text-[13px]">
             <input name="password" type="password" placeholder="password" required class="text-[13px]">
             <button type="submit" class="btn primary col-span-2">+ Buat User</button>
-        </form>
+       </form>
         <table>
             <thead><tr><th>User</th><th></th></tr></thead>
             <tbody>
@@ -55,27 +55,27 @@
             <tr>
                 <td class="mono text-[13px]">{{ u }}</td>
                 <td class="text-right">
-                    <form method="post" action="/database/pg/user/{{ u }}/delete" style="display:inline"
-                          onsubmit="return confirm('Hapus user {{ u }}?')">
-                        <button class="btn danger !py-0.5 !px-2 text-[13px]">🗑</button>
-                    </form>
-                </td>
-            </tr>
+                    <form method="post" action="/database/pg/user/{{ u }} /delete" style="display:inline"
+                          onsubmit="return confirm('Hapus user {{ u }} ?')">
+                        <button class="btn danger !py-0.5 !px-2 text-[13px]">{{ icon('trash', 'w-5 h-5') }} ️</button>
+                   </form>
+               </td>
+           </tr>
             {% else %}
             <tr><td colspan="2" class="text-t3 text-center py-4">Belum ada user</td></tr>
             {% endfor %}
-            </tbody>
-        </table>
-    </div>
+           </tbody>
+       </table>
+   </div>
 </div>
 
 <div class="card mt-4">
-    <h3 class="text-sm mb-2 font-bold">ℹ️ Info Koneksi</h3>
+    <h3 class="text-sm mb-2 font-bold">{{ icon('information-circle', 'w-5 h-5') }} Info Koneksi</h3>
     <div class="grid grid-cols-2 gap-2 text-[13px]">
         <div><span class="text-t3">Host:</span> <code class="mono">127.0.0.1</code></div>
         <div><span class="text-t3">Port:</span> <code class="mono">5432</code></div>
         <div><span class="text-t3">Superuser:</span> <code class="mono">postgres</code></div>
         <div><span class="text-t3">Config:</span> <code class="mono">/etc/postgresql/*/main/postgresql.conf</code></div>
-    </div>
+   </div>
 </div>
 {% endblock %}

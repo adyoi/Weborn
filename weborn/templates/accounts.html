@@ -3,71 +3,110 @@
 {% block content %}
 <div class="flex items-center justify-between mb-4">
     <div>
-        <h1 class="text-xl font-bold">👤 OS Users</h1>
-        <div class="text-t3 text-xs mt-0.5">Akun OS setara privilege server — SSH, RDP, SFTP, VNC, NFS</div>
-    </div>
+        <div class="page-title text-[22px] font-bold mb-1">{{ icon('user', 'w-5 h-5') }} OS Users</div>
+        <div class="page-sub text-t3 text-[13px] mb-5">Akun OS setara privilege server — SSH, RDP, SFTP, VNC, NFS</div>
+   </div>
 </div>
 
 {% if msg %}<div class="msg {{ 'ok' if 'Gagal' not in msg else 'err' }}">{{ msg|replace('%20', ' ') }}</div>{% endif %}
 
+{# ── Access Options Reference ── #}
+<div class="card mb-4">
+    <h3 class="text-xs font-bold mb-2">{{ icon('signal', 'w-5 h-5') }} Remote Access Options</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-[14px]">
+        <div class="bg-black/10 rounded p-2">
+            <div class="font-bold text-[13px]">{{ icon('key', 'w-5 h-5') }} SSH</div>
+            <div class="text-t3">Port 22 · Terminal & SFTP</div>
+            <code class="text-[13px]">ssh user@server</code>
+       </div>
+        <div class="bg-black/10 rounded p-2">
+            <div class="font-bold text-[13px]">{{ icon('computer-desktop', 'w-5 h-5') }} RDP</div>
+            <div class="text-t3">Port 3389 · Desktop (xrdp)</div>
+            <code class="text-[13px]">rdp://server</code>
+       </div>
+        <div class="bg-black/10 rounded p-2">
+            <div class="font-bold text-[13px]">{{ icon('folder', 'w-5 h-5') }} SFTP</div>
+            <div class="text-t3">Port 22 · File transfer</div>
+            <code class="text-[13px]">sftp user@server</code>
+       </div>
+        <div class="bg-black/10 rounded p-2">
+            <div class="font-bold text-[13px]">{{ icon('computer-desktop', 'w-5 h-5') }} VNC</div>
+            <div class="text-t3">Port 5900 · Remote desktop</div>
+            <code class="text-[13px]">vnc://server:5900</code>
+       </div>
+   </div>
+</div>
+
 <div class="grid grid-cols-1 lg:grid-cols-[360px_1fr] items-start gap-4">
     {# ── Create Form ── #}
     <div class="card">
-        <h3 class="text-xs font-bold mb-2">➕ Buat Akun</h3>
+        <h3 class="text-xs font-bold mb-2">{{ icon('plus', 'w-5 h-5') }} Buat Akun</h3>
         <form method="post" action="/accounts/create">
             <div class="field">
                 <label class="text-[13px]">Username</label>
                 <input name="username" placeholder="joko" required class="sm">
-            </div>
+           </div>
             <div class="field">
                 <label class="text-[13px]">Password</label>
                 <input name="password" type="password" required class="sm">
-            </div>
+           </div>
             <div class="field">
                 <label class="text-[13px]">Level Privilege</label>
                 <select name="privilege" class="sm">
                     <option value="user">User (reguler)</option>
                     <option value="admin">Admin (sudo/wheel)</option>
                     <option value="service">Service (www-data, nologin)</option>
-                </select>
-            </div>
+               </select>
+           </div>
             <div class="field">
                 <label class="text-[13px]">Shell</label>
                 <select name="shell" class="sm">
                     <option value="/bin/bash">/bin/bash</option>
                     <option value="/usr/sbin/nologin">/usr/sbin/nologin</option>
                     <option value="/bin/zsh">/bin/zsh</option>
-                </select>
-            </div>
+               </select>
+           </div>
             <div class="field">
                 <label class="text-[13px] mb-1 block">Akses</label>
                 <div class="grid grid-cols-2 gap-x-3 gap-y-1">
                     {% for key, label in services.items() %}
                     <label class="!text-[13px] flex items-center gap-1.5">
-                        <input type="checkbox" name="services" value="{{ key }}" class="!w-3 !h-3"> {{ label }}
-                    </label>
+                        <input type="checkbox" name="services" value="{{ key }}" class="!w-3 !h-3"> {{ label }} 
+                   </label>
                     {% endfor %}
-                </div>
-            </div>
+               </div>
+           </div>
             <button type="submit" class="btn primary sm w-full justify-center">Buat Akun</button>
-        </form>
-    </div>
+       </form>
+   </div>
 
     {# ── Accounts Table ── #}
     <div class="card !p-0 overflow-auto">
-        <table>
+        <table class="table responsive">
             <thead><tr><th>User</th><th>UID</th><th>Priv</th><th>Shell</th><th>Home</th><th>Akses</th><th>Aksi</th></tr></thead>
             <tbody>
             {% for a in accounts %}
                 <tr>
-                    <td><b class="text-xs">{{ a.username }}</b></td>
+                    <td class="whitespace-nowrap">
+                        <form method="post" action="/accounts/{{ a.username }} /lock" style="display:inline">
+                            <button class="btn sm" data-tip="Kunci {{ a.username }}" title="Kunci">{{ icon('lock-closed', 'w-5 h-5') }}</button>
+                       </form>
+                        <form method="post" action="/accounts/{{ a.username }} /unlock" style="display:inline">
+                            <button class="btn sm" data-tip="Buka kunci {{ a.username }}" title="Unlock">{{ icon('lock-open', 'w-5 h-5') }}</button>
+                       </form>
+                        <form method="post" action="/accounts/{{ a.username }} /delete" style="display:inline"
+                              onsubmit="return confirm('Hapus {{ a.username }} ?')">
+                            <button class="btn danger sm" data-tip="Hapus {{ a.username }}" title="Hapus">{{ icon('trash', 'w-5 h-5') }} ️</button>
+                       </form>
+                   </td>
+                    <td class="whitespace-nowrap"><b class="text-xs">{{ a.username }}</b></td>
                     <td class="mono text-[14px]">{{ a.uid }}</td>
-                    <td>
+                    <td class="whitespace-nowrap">
                         <span class="badge {{ 'err' if a.privilege == 'root' else ('warn' if a.privilege == 'admin' else 'info') }}">
-                            {{ a.privilege }}
-                        </span>
-                        {% if a.locked %}<span class="badge err">🔒</span>{% endif %}
-                    </td>
+                            {{ a.privilege }} 
+                       </span>
+                        {% if a.locked %}<span class="badge err">{{ icon('lock-closed', 'w-5 h-5') }}</span>{% endif %}
+                   </td>
                     <td class="mono text-[14px]">{{ a.shell }}</td>
                     <td class="mono text-[14px]">{{ a.home }}</td>
                     <td>
@@ -77,51 +116,13 @@
                         {% else %}
                             <span class="text-t3 text-[14px]">—</span>
                         {% endfor %}
-                        </div>
-                    </td>
-                    <td class="whitespace-nowrap">
-                        <form method="post" action="/accounts/{{ a.username }}/lock" style="display:inline">
-                            <button class="btn sm" data-tip="Kunci {{ a.username }}" title="Kunci">🔒</button>
-                        </form>
-                        <form method="post" action="/accounts/{{ a.username }}/unlock" style="display:inline">
-                            <button class="btn sm" data-tip="Buka kunci {{ a.username }}" title="Unlock">🔓</button>
-                        </form>
-                        <form method="post" action="/accounts/{{ a.username }}/delete" style="display:inline"
-                              onsubmit="return confirm('Hapus {{ a.username }}?')">
-                            <button class="btn danger sm" data-tip="Hapus {{ a.username }}" title="Hapus">🗑</button>
-                        </form>
-                    </td>
-                </tr>
+                       </div>
+                   </td>
+               </tr>
             {% endfor %}
-            </tbody>
-        </table>
-    </div>
+           </tbody>
+       </table>
+   </div>
 </div>
 
-{# ── Access Options Reference ── #}
-<div class="card mt-4">
-    <h3 class="text-xs font-bold mb-2">📡 Remote Access Options</h3>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-[14px]">
-        <div class="bg-black/10 rounded p-2">
-            <div class="font-bold text-[13px]">🔑 SSH</div>
-            <div class="text-t3">Port 22 · Terminal & SFTP</div>
-            <code class="text-[13px]">ssh user@server</code>
-        </div>
-        <div class="bg-black/10 rounded p-2">
-            <div class="font-bold text-[13px]">🖥️ RDP</div>
-            <div class="text-t3">Port 3389 · Desktop (xrdp)</div>
-            <code class="text-[13px]">rdp://server</code>
-        </div>
-        <div class="bg-black/10 rounded p-2">
-            <div class="font-bold text-[13px]">📂 SFTP</div>
-            <div class="text-t3">Port 22 · File transfer</div>
-            <code class="text-[13px]">sftp user@server</code>
-        </div>
-        <div class="bg-black/10 rounded p-2">
-            <div class="font-bold text-[13px]">🖥️ VNC</div>
-            <div class="text-t3">Port 5900 · Remote desktop</div>
-            <code class="text-[13px]">vnc://server:5900</code>
-        </div>
-    </div>
-</div>
 {% endblock %}

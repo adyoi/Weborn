@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Apache — Weborn{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <div class="page-title text-[22px] font-bold mb-1">{{ icon('server-stack', 'w-5 h-5') }} Apache Web Server</div>
+        <div class="page-sub text-t3 text-[13px] mb-5">Web server klasik (cocok untuk PHP/Laravel legacy)</div>
+   </div>
+    <div class="flex items-center gap-3">
+        <span class="st {{ 'active' if apache_status == 'active' else 'inactive' }}">{{ apache_status }}</span>
+        <button onclick="weborn.simplePost('/web-server/apache/restart','Restart Apache',false)" class="btn primary sm">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
+        <button onclick="weborn.simplePost('/web-server/apache/reload','Reload Config',false)" class="btn sm">{{ icon('square-3-stack-3d', 'w-5 h-5') }} Reload</button>
+   </div>
+</div>
+
+<div class="grid grid-cols-2 gap-3 mb-4">
+    <div class="card">
+        <div class="text-t3 text-[14px] mb-1">Version</div>
+        <div class="font-mono text-[14px]">{{ apache_version or '—' }}</div>
+   </div>
+    <div class="card">
+        <div class="text-t3 text-[14px] mb-1">Config Test</div>
+        <div id="apache-test" class="font-mono text-[14px]">—</div>
+        <button onclick="testApache()" class="btn sm mt-1.5">Test Config</button>
+   </div>
+</div>
+
+<div class="card mb-4">
+    <h2 class="font-bold text-xs mb-2">Active Sites</h2>
+    {% if sites %}
+    <div class="space-y-1">
+        {% for site in sites %}
+        <div class="flex items-center justify-between p-2 bg-black/10 rounded text-[13px]">
+            <code class="mono">{{ site }}</code>
+       </div>
+        {% endfor %}
+   </div>
+    {% else %}
+    <div class="text-t3 text-[13px]">Belum ada site config</div>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <h2 class="font-bold text-xs mb-2">Installed Modules</h2>
+    {% if modules %}
+    <div class="flex flex-wrap gap-1.5">
+        {% for mod in modules %}
+        <span class="badge info mono text-[11px]">{{ mod }}</span>
+        {% endfor %}
+   </div>
+    {% else %}
+    <div class="text-t3 text-[13px]">Tidak ada info modul</div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2 class="font-bold text-xs mb-2">Data Flow</h2>
+    <div class="bg-black/10 rounded p-3 font-mono text-[14px] leading-relaxed">
+        <div><span class="text-[var(--accent)]">Apache</span> (80/443)</div>
+        <div class="pl-2 text-t3">├─ static → direct</div>
+        <div class="pl-2 text-t3">├─ PHP → <span class="text-[var(--accent-2)]">mod_proxy_fcgi</span> → PHP-FPM (socket)</div>
+        <div class="pl-2 text-t3">├─ WSGI → <span class="text-[var(--ok)]">mod_wsgi</span> / proxy</div>
+        <div class="pl-2 text-t3">└─ Node → reverse proxy port</div>
+   </div>
+</div>
+
+<script>
+function testApache() {
+    var el = document.getElementById('apache-test');
+    el.textContent = 'Testing…';
+    el.style.color = '';
+    fetch('/web-server/apache/test', {method:'POST'})
+      .then(r=>r.json()).then(d=>{
+        if(d.ok){ el.textContent='✓ Config OK'; el.style.color='var(--ok)'; }
+        else { el.textContent='✗ '+((d.output||'').slice(0,120)); el.style.color='var(--err)'; }
+      }).catch(e=>{ el.textContent='✗ '+e.message; el.style.color='var(--err)'; });
+}
+</script>
+{% endblock %}
