@@ -41,6 +41,21 @@ Client (Browser)
 
 Full documentation is available at **[https://adyoi.github.io/Weborn](https://adyoi.github.io/Weborn)** — Getting Started, Features, Architecture, and Changelog.
 
+## What's New (v1.0.1)
+
+- **GitHub Pages Documentation** — Full docs site: Getting Started, Features, Architecture, Changelog
+- **Unit Test Suite** — 52 tests: CSRF, JWT, rate limiter, executors, path traversal, worker injection
+- **`update.sh`** — One-command sync script for server deployment (tar + pip + restart)
+- **Password Policy** — Min 8 chars with uppercase, lowercase, digit, and symbol enforcement
+- **Path Traversal Fix** — PHP regex validation + `..` rejection in config editor
+- **Worker Class Injection** — Whitelist blocks shell injection via `worker_class` parameter
+- **Template XSS Fix** — All 19 HTML templates use `tojson` filter for user names in onclick
+- **Template URL Fix** — Space-in-url bugs fixed across all 19 HTML templates
+- **CSRF Token Fix** — Trailing space that broke HMAC validation removed
+- **Apache Auto-Install** — Auto-installs if missing when starting Apache manager
+- **Apache Port Auto-Increment** — Finds free ports when 80/443 are taken
+- **Addon Uninstall** — Trailing space URLs fixed + `apt-get autoremove` after removal
+
 ## What's New (v1.0.0)
 
 - **Process Manager Config** — Edit workers, timeout, worker class, resource limits per app (MemoryMax, CPUQuota, Nice, OOMScoreAdjust)
