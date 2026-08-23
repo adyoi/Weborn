@@ -9,7 +9,7 @@
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-Ready-009688" />
   <img alt="License" src="https://img.shields.io/badge/License-MIT-green" />
   <img alt="Platform" src="https://img.shields.io/badge/Platform-Linux%20%7C%20WSL-8A2BE2" />
-  <img alt="GitHub Actions" src="https://github.com/adyoi/Weborn/workflows/CI/badge.svg" />
+  <img alt="Version" src="https://img.shields.io/badge/Version-1.0.1-a855f7" />
 </p>
 
 Weborn is a self-hosted control panel for running, securing, and managing server-side services from one clean dashboard. It provides a unified interface for application deployment, domain management, database administration, monitoring, security hardening, and system operations.
@@ -56,18 +56,7 @@ Full documentation is available at **[https://adyoi.github.io/Weborn](https://ad
 - **Apache Port Auto-Increment** — Finds free ports when 80/443 are taken
 - **Addon Uninstall** — Trailing space URLs fixed + `apt-get autoremove` after removal
 
-## What's New (v1.0.0)
-
-- **Process Manager Config** — Edit workers, timeout, worker class, resource limits per app (MemoryMax, CPUQuota, Nice, OOMScoreAdjust)
-- **Graceful Reload** — SIGHUP reload without restart + real-time WebSocket monitoring
-- **Session Idle Lock** — Configurable per-user timeout with idle detection
-- **Security Hardening** — CSRF protection, WebSocket auth, rate limiting, shlex.quote() shell injection fixes
-- **Weborn Panel Self-Monitoring** — Monitor panel's own process, workers, CPU, MEM with Trace Log
-- **Process Monitor** — Orphan detection + kill APIs for rogue gunicorn/uvicorn processes
-- **Trace Log xterm.js Fix** — Removed CSS scale transform causing staircase text rendering
-- **SSL Support** — `--ssl-cert` / `--ssl-key` flags, automatic HTTPS cookie flag
-- **24 Frameworks** — 8 Python, 5 PHP, 7 Node.js with framework presets and starter files
-- **Addon Store (39 Addons)** — 7 categories, install/config/update/uninstall lifecycle
+See [CHANGELOG.md](CHANGELOG.md) for full version history.
 
 ## Key Features
 
