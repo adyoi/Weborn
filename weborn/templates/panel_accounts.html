@@ -66,15 +66,15 @@
                             {# Change Role #}
                             <button onclick="openRoleModal({{ a.id }} ,'{{ a.username }} ','{{ a.role }} ')" class="btn sm" data-tip="Ganti role">{{ icon('tag', 'w-5 h-5') }} ️</button>
                             {# Session Timeout #}
-                            <button onclick="openTimeoutModal({{ a.id }} ,'{{ a.username }} ',{{ a.get('session_timeout', 300) }} )" class="btn sm" data-tip="Session timeout">{{ icon('clock', 'w-5 h-5') }} ️</button>
+                            <button onclick="openTimeoutModal({{ a.id }}, {{ a.username | tojson }}, {{ a.get('session_timeout', 300) }})" class="btn sm" data-tip="Session timeout">{{ icon('clock', 'w-5 h-5') }} ️</button>
                             {# Toggle Active #}
-                            <form method="post" action="/panel-accounts/{{ a.id }} /toggle" style="display:inline">
+                            <form method="post" action="/panel-accounts/{{ a.id }}/toggle" style="display:inline">
                                 <button class="btn sm" data-tip="{{ 'Nonaktifkan' if a.get('is_active', 1) else 'Aktifkan' }}">
                                     {{ icon('check', 'w-5 h-5') if a.get('is_active', 1) else icon('circle-stack', 'w-5 h-5') }} 
                                </button>
                            </form>
                             {# Delete #}
-                            <form method="post" action="/panel-accounts/{{ a.id }} /delete" style="display:inline"
+                            <form method="post" action="/panel-accounts/{{ a.id }}/delete" style="display:inline"
                                   onsubmit="return confirm('Hapus akun panel {{ a.username }} ?')">
                                 <button class="btn danger sm" data-tip="Hapus {{ a.username }}">{{ icon('trash', 'w-5 h-5') }} ️</button>
                            </form>

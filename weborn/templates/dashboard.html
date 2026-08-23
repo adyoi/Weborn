@@ -20,9 +20,9 @@
     <span class="badge ok text-[13px] px-3 py-1">{{ icon('check', 'w-5 h-5') }} Up-to-date</span>
     {% endif %}
     <a class="btn sm" href="/packages">{{ icon('cube', 'w-5 h-5') }} {{ packages_total }} paket</a>
-    <span class="badge info text-[13px] px-3 py-1">{{ icon('puzzle-piece', 'w-5 h-5') }} {{ installed_count }} /{{ total_addons }} Terpasang</span>
+    <span class="badge info text-[13px] px-3 py-1">{{ icon('puzzle-piece', 'w-5 h-5') }} {{ installed_count }}/{{ total_addons }} Terpasang</span>
     <span class="badge ok text-[13px] px-3 py-1">{{ icon('play', 'w-5 h-5') }} {{ services_running }} Active</span>
-    <span class="badge warn text-[13px] px-3 py-1">{{ icon('stop', 'w-5 h-5') }} {{ services_stopped }} Inactive</span>
+    <span class="badge border text-[13px] px-3 py-1">{{ icon('stop', 'w-5 h-5') }} {{ services_stopped }} Unknown</span>
 </div>
 
 {# ── Stats Row ── #}
@@ -97,11 +97,11 @@
                         <div class="flex gap-1">
                             {% if s.installed and s.addon.systemd_unit %}
                             <button class="btn sm" title="Start"
-                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }} /start','Start {{ s.addon.name }} ',true)">{{ icon('play', 'w-5 h-5') }}</button>
+                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }}/start','Start ' + {{ s.addon.name | tojson }}, true)">{{ icon('play', 'w-5 h-5') }}</button>
                             <button class="btn sm" title="Stop"
-                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }} /stop','Stop {{ s.addon.name }} ',true)">{{ icon('stop', 'w-5 h-5') }}</button>
+                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }}/stop','Stop ' + {{ s.addon.name | tojson }}, true)">{{ icon('stop', 'w-5 h-5') }}</button>
                             <button class="btn sm" title="Restart"
-                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }} /restart','Restart {{ s.addon.name }} ',true)">{{ icon('arrow-path', 'w-5 h-5') }}</button>
+                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }}/restart','Restart ' + {{ s.addon.name | tojson }}, true)">{{ icon('arrow-path', 'w-5 h-5') }}</button>
                             {% endif %}
                             <a href="/addons/{{ s.addon.id }}" class="btn sm" title="Kelola">{{ icon('cog-6-tooth', 'w-5 h-5') }}</a>
                        </div>

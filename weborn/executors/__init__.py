@@ -51,13 +51,24 @@ class Executor:
         cmd = ("sudo", "-n", "-S", "bash", "-c",
                f"echo '{b64}' | base64 -d > {shlex.quote(path)}")
         cmdline = " ".join(shlex.quote(c) for c in cmd)
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        stdout, stderr = await proc.communicate(input=b"")
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    proc.communicate(input=b""),
+                    timeout=30,
+                )
+            except asyncio.TimeoutError:
+                proc.kill()
+                await proc.communicate()
+                return ExecResult(ok=False, returncode=-1, stdout="", stderr="timeout", cmd=cmdline)
+        except Exception as e:
+            return ExecResult(ok=False, returncode=-1, stdout="", stderr=str(e), cmd=cmdline)
         result = ExecResult(
             ok=proc.returncode == 0,
             returncode=proc.returncode,
@@ -161,6 +172,16 @@ class DryRunExecutor(Executor):
         result = ExecResult(ok=True, returncode=0, cmd=cmdline, stdout=f"[dry-run] {cmdline}")
         self._audit(cmdline, result)
         return result
+
+    async def write_file(self, path: str, content: str) -> ExecResult:
+        cmdline = f"[dry-run] write {path}"
+        self._audit(cmdline, ExecResult(ok=True, returncode=0, stdout="[dry-run] file disimpan", cmd=cmdline))
+        return ExecResult(ok=True, returncode=0, stdout="[dry-run] file disimpan", cmd=cmdline)
+
+    async def read_file(self, path: str) -> ExecResult:
+        cmdline = f"[dry-run] read {path}"
+        self._audit(cmdline, ExecResult(ok=True, returncode=0, stdout="[dry-run] file dibaca", cmd=cmdline))
+        return ExecResult(ok=True, returncode=0, stdout="[dry-run] file dibaca", cmd=cmdline)
 
 
 class WSLExecutor(Executor):

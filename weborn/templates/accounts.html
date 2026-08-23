@@ -88,13 +88,13 @@
             {% for a in accounts %}
                 <tr>
                     <td class="whitespace-nowrap">
-                        <form method="post" action="/accounts/{{ a.username }} /lock" style="display:inline">
+                        <form method="post" action="/accounts/{{ a.username }}/lock" style="display:inline">
                             <button class="btn sm" data-tip="Kunci {{ a.username }}" title="Kunci">{{ icon('lock-closed', 'w-5 h-5') }}</button>
                        </form>
-                        <form method="post" action="/accounts/{{ a.username }} /unlock" style="display:inline">
+                        <form method="post" action="/accounts/{{ a.username }}/unlock" style="display:inline">
                             <button class="btn sm" data-tip="Buka kunci {{ a.username }}" title="Unlock">{{ icon('lock-open', 'w-5 h-5') }}</button>
                        </form>
-                        <form method="post" action="/accounts/{{ a.username }} /delete" style="display:inline"
+                        <form method="post" action="/accounts/{{ a.username }}/delete" style="display:inline"
                               onsubmit="return confirm('Hapus {{ a.username }} ?')">
                             <button class="btn danger sm" data-tip="Hapus {{ a.username }}" title="Hapus">{{ icon('trash', 'w-5 h-5') }} ️</button>
                        </form>

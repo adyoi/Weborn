@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Features — Weborn</title>
+    <style>
+        :root{--bg-0:#0a0a0f;--bg-1:#111118;--bg-2:#1a1a24;--bg-3:#222233;--text-1:#e8e8f0;--text-2:#9494a8;--text-3:#606078;--accent-1:#6366f1;--accent-2:#a855f7;--accent-3:#f43f5e;--ok:#22c55e;--warn:#eab308;--err:#ef4444;--border:rgba(255,255,255,0.06)}
+        *{margin:0;padding:0;box-sizing:border-box}body{background:var(--bg-0);color:var(--text-1);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.7}a{color:var(--accent-1);text-decoration:none}a:hover{text-decoration:underline}
+        .nav{position:sticky;top:0;z-index:100;background:rgba(10,10,15,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem}.nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:56px}.nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;color:var(--text-1)}.nav-brand svg{width:22px;height:22px}.nav-links{display:flex;gap:6px}.nav-links a{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text-2);transition:all .2s}.nav-links a:hover,.nav-links a.active{background:var(--bg-2);color:var(--text-1);text-decoration:none}
+        .container{max-width:1000px;margin:0 auto;padding:3rem 2rem 5rem}h1{font-size:clamp(1.75rem,4vw,2.5rem);font-weight:800;letter-spacing:-1px;margin-bottom:.5rem}h1 .gradient{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}.subtitle{color:var(--text-2);font-size:16px;margin-bottom:3rem}h2{font-size:1.35rem;font-weight:700;margin:2.5rem 0 1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}h3{font-size:1rem;font-weight:700;margin:1rem 0 .5rem}p{margin-bottom:1rem;color:var(--text-2)}ul{padding-left:1.5rem;margin-bottom:1rem;color:var(--text-2)}li{margin:.3rem 0}strong{color:var(--text-1)}code{font-size:13px;background:var(--bg-3);padding:2px 7px;border-radius:5px;font-family:'JetBrains Mono','Fira Code',monospace;color:var(--accent-2)}
+        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem;margin:1.5rem 0}.card{background:var(--bg-1);border:1px solid var(--border);border-radius:14px;padding:1.5rem;transition:border-color .2s}.card:hover{border-color:rgba(99,102,241,0.25)}.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:.75rem}.card h3{font-size:15px;margin-bottom:.35rem}.card p{font-size:13px;line-height:1.5;margin-bottom:0}
+        table{width:100%;border-collapse:collapse;margin-bottom:1.25rem}th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);font-size:14px}th{color:var(--text-3);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:1px}td{color:var(--text-2)}
+        footer{text-align:center;padding:2rem;color:var(--text-3);font-size:13px;border-top:1px solid var(--border)}footer a{color:var(--text-2)}
+        @media(max-width:640px){.container{padding:2rem 1.25rem}.nav{padding:0 1rem}}
+    </style>
+</head>
+<body>
+<nav class="nav"><div class="nav-inner"><a href="index.html" class="nav-brand"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"/></svg>Weborn</a><div class="nav-links"><a href="index.html">Home</a><a href="getting-started.html">Getting Started</a><a href="features.html" class="active">Features</a><a href="architecture.html">Architecture</a></div></div></nav>
+
+<div class="container">
+<h1><span class="gradient">Features</span></h1>
+<p class="subtitle">Everything you need to manage a full-stack server</p>
+
+<h2>Core Capabilities</h2>
+<div class="grid">
+    <div class="card"><div class="card-icon" style="background:rgba(99,102,241,0.12);color:var(--accent-1)"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.841m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"/></svg></div><h3>App Deployment</h3><p>Python (WSGI/ASGI), PHP, Node.js apps with Gunicorn/Uvicorn process manager, auto-restart, resource limits.</p></div>
+    <div class="card"><div class="card-icon" style="background:rgba(34,197,94,0.12);color:var(--ok)"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582"/></svg></div><h3>Web Server</h3><p>Nginx, Apache, PHP-FPM management. Reverse proxy, SSL/TLS, page caching - all configured automatically.</p></div>
+    <div class="card"><div class="card-icon" style="background:rgba(234,179,8,0.12);color:var(--warn)"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375"/></svg></div><h3>Databases</h3><p>MariaDB, PostgreSQL, Redis, MongoDB, Memcached - install, manage users, create databases.</p></div>
+    <div class="card"><div class="card-icon" style="background:rgba(244,63,94,0.12);color:var(--accent-3)"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/></svg></div><h3>Email Stack</h3><p>Full mail server: Postfix, Dovecot, Rspamd, OpenDKIM, Roundcube webmail - setup wizard included.</p></div>
+    <div class="card"><div class="card-icon" style="background:rgba(168,85,247,0.12);color:var(--accent-2)"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/></svg></div><h3>Security</h3><p>UFW firewall, Fail2Ban, ClamAV antivirus, Let's Encrypt SSL, audit logging, CSRF protection.</p></div>
+    <div class="card"><div class="card-icon" style="background:rgba(99,102,241,0.12);color:var(--accent-1)"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5"/></svg></div><h3>Monitoring</h3><p>Real-time process monitor, log streaming, cron jobs, backup management, network stats.</p></div>
+    <div class="card"><div class="card-icon" style="background:rgba(234,179,8,0.12);color:var(--warn)"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959V6a2.25 2.25 0 0 0-2.25-2.25H3.75A2.25 2.25 0 0 0 1.5 6v4.883c0 .355.186.676.401.959.221.29.349.634.349 1.003 0 1.035 1.007 1.875 2.25 1.875s2.25-.84 2.25-1.875c0-.369-.128-.713-.349-1.003A1.014 1.014 0 0 1 5.383 11H6a2.25 2.25 0 0 0 2.25-2.25V6"/></svg></div><h3>Addon Store</h3><p>35+ built-in addons: Docker, Supervisor, Git, UFW, Logrotate, and more - one-click install.</p></div>
+    <div class="card"><div class="card-icon" style="background:rgba(34,197,94,0.12);color:var(--ok)"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 18V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v12a2.25 2.25 0 0 0 2.25 2.25z"/></svg></div><h3>Remote Terminal</h3><p>Full xterm.js terminal in browser. Run commands, manage files, all through the panel.</p></div>
+</div>
+
+<h2>Supported Frameworks</h2>
+<table>
+    <tr><th>Category</th><th>Frameworks</th></tr>
+    <tr><td><strong>Python WSGI</strong></td><td>Django, Flask, Pyramid, Bottle, Tornado</td></tr>
+    <tr><td><strong>Python ASGI</strong></td><td>FastAPI, Litestar, Sanic</td></tr>
+    <tr><td><strong>PHP</strong></td><td>Laravel, WordPress, Symfony, CodeIgniter, Slim</td></tr>
+    <tr><td><strong>Node.js</strong></td><td>Express, Next.js, Fastify, NestJS, Hono, SvelteKit, Astro</td></tr>
+    <tr><td><strong>Static</strong></td><td>HTML/CSS/JS sites (Nginx direct serve)</td></tr>
+</table>
+
+<h2>Process Management</h2>
+<div class="grid">
+    <div class="card"><h3>Worker Control</h3><p>Edit workers, timeout, worker class, max requests, graceful timeout, keep alive per app.</p></div>
+    <div class="card"><h3>Resource Limits</h3><p>MemoryMax, CPUQuota, Nice, OOMScoreAdjust via systemd integration.</p></div>
+    <div class="card"><h3>Graceful Reload</h3><p>SIGHUP reload without restart + real-time WebSocket monitoring.</p></div>
+    <div class="card"><h3>Orphan Detection</h3><p>Finds rogue gunicorn/uvicorn processes with kill APIs.</p></div>
+</div>
+
+<h2>Security Features</h2>
+<table>
+    <tr><th>Feature</th><th>Description</th></tr>
+    <tr><td><strong>CSRF Protection</strong></td><td>HMAC-based tokens on all POST forms + AJAX headers</td></tr>
+    <tr><td><strong>WebSocket Auth</strong></td><td>Session validation before accepting connections</td></tr>
+    <tr><td><strong>Rate Limiting</strong></td><td>5 login attempts per IP per 5 minutes</td></tr>
+    <tr><td><strong>Session Hardening</strong></td><td>httponly, max_age=24h, secure flag when SSL</td></tr>
+    <tr><td><strong>Session Idle Lock</strong></td><td>Per-user timeout, auto-locks inactive sessions</td></tr>
+    <tr><td><strong>Shell Injection</strong></td><td>shlex.quote() on all user input in bash commands</td></tr>
+    <tr><td><strong>Password Hashing</strong></td><td>PBKDF2-SHA256 (SQLite) + PAM shadow users</td></tr>
+    <tr><td><strong>Audit Trail</strong></td><td>Login logs with IP, timestamp, success/fail</td></tr>
+</table>
+
+<h2>Addon Store (39 Addons)</h2>
+<table>
+    <tr><th>Category</th><th>Addons</th></tr>
+    <tr><td><strong>Web Server</strong></td><td>Nginx, Apache, Caddy, Lighttpd</td></tr>
+    <tr><td><strong>Database</strong></td><td>MySQL/MariaDB, PostgreSQL, Redis, MongoDB, Memcached</td></tr>
+    <tr><td><strong>Mail</strong></td><td>Dovecot, Postfix, Exim, SpamAssassin, Roundcube</td></tr>
+    <tr><td><strong>Remote Access</strong></td><td>OpenSSH, OpenVPN, FTP</td></tr>
+    <tr><td><strong>Security</strong></td><td>Fail2Ban, ClamAV, Certbot, AIDE, Lynis, UFW</td></tr>
+    <tr><td><strong>Runtime</strong></td><td>Python 3, PHP, Node.js, Golang, Ruby, Git, Docker, Supervisor</td></tr>
+    <tr><td><strong>Monitoring</strong></td><td>Cockpit, Glances, Grafana, Netdata, Prometheus, Htop, Logrotate</td></tr>
+</table>
+<p>Each addon supports: <strong>Install - Config - Update - Start/Stop/Restart - Uninstall</strong></p>
+
+</div>
+<footer><p>Weborn &copy; 2026 - <a href="https://github.com/adyoi/Weborn">GitHub</a> - MIT License</p></footer>
+</body>
+</html>

@@ -9,7 +9,7 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
     <div class="card">
         <h3 class="text-sm mb-3.5">{{ icon('cog-6-tooth', 'w-5 h-5') }} Pengaturan Domain</h3>
-        <form method="post" action="/domains/{{ domain.id }} /edit">
+        <form method="post" action="/domains/{{ domain.id }}/edit">
             <div class="field">
                 <label>Nama Domain</label>
                 <input value="{{ domain.name }}" disabled>
@@ -54,7 +54,7 @@
             <td><span class="badge">{{ loc.type }}</span></td>
             <td class="mono text-[13px]">{{ loc.target }}</td>
             <td class="text-right">
-                <form method="post" action="/domains/{{ domain.id }} /locations/delete" style="display:inline">
+                <form method="post" action="/domains/{{ domain.id }}/locations/delete" style="display:inline">
                     <input type="hidden" name="index" value="{{ loop.index0 }}">
                     <button class="btn danger !py-0.5 !px-2 text-[13px]" onclick="return confirm('Hapus location ini?')">{{ icon('trash', 'w-5 h-5') }} ️</button>
                </form>
@@ -67,7 +67,7 @@
     <div class="text-t3 text-[14px] mb-3">Belum ada location — default semua traffic ke root.</div>
     {% endif %}
 
-    <form method="post" action="/domains/{{ domain.id }} /locations/add"
+    <form method="post" action="/domains/{{ domain.id }}/locations/add"
           class="flex flex-wrap gap-2 items-end">
         <div class="flex-1 min-w-[100px]">
             <label class="text-[13px] text-t3">Path</label>

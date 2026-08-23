@@ -2,6 +2,36 @@
 
 All notable changes to Weborn will be documented in this file.
 
+## [1.0.1] - 2026-08-23
+
+### Added
+- **GitHub Pages Documentation**: Landing page, Getting Started, Features, Architecture at `docs/`
+- **Unit Test Suite**: 52 tests covering CSRF, JWT, rate limiter, executors, path traversal, worker injection
+- **Integration Test**: HTTP-based app CRUD test with CSRF token handling (`test/test_apps_integration.py`)
+- **`update.sh`**: One-command sync script — tar sync, pip install, cache clear, service restart
+- **Password Policy**: Minimum 8 chars with uppercase, lowercase, digit, and symbol enforcement
+- **Apache Auto-Install**: `ApacheManager.start()` checks `installed()` and installs if missing
+- **Apache Port Auto-Increment**: `_resolve_ports()` finds free ports when 80/443 are taken
+- **DryRunExecutor `write_file`/`read_file`**: Proper dry-run output without disk side effects
+
+### Fixed
+- **`apps.py` NameError**: `re` → `_re` (import alias conflict with `re` variable in scope)
+- **Path Traversal**: PHP regex tightened + `..` rejection in `resolve_config_path()`
+- **Worker Class Injection**: Whitelist `{"", "sync", "gthread", "eventlet", "gevent", "uvicorn.workers.UvicornWorker"}`
+- **JSON Parse Errors**: 3 endpoints (`/apps/{id}/process-config`, `/apps/{id}/limits`, `/apps/{id}/reload`) handle malformed JSON
+- **Caddy/Lighttpd Routing**: Both use nginx config as fallback (not Caddy/Lighttpd-specific configs)
+- **Template Space-in-URL**: All 19 HTML templates fixed `{{ var }} /path` → `{{ var }}/path`
+- **Template JS Injection**: User names in onclick handlers now use `{{ name | tojson }}` instead of `{{ name }}`
+- **CSRF Token Trailing Space**: `var token = '{{ csrf_token }}';` fixed trailing space
+- **Addon Uninstall**: Removed trailing spaces in 6 URLs, added `apt-get autoremove -y`
+- **Server Route Conflict**: Stale `@app.get("/")` removed from server `main.py`
+
+### Security
+- **Path Traversal**: PHP config editor rejects `..` in paths, validates against strict regex
+- **Worker Class Injection**: Shell injection via `worker_class` parameter blocked by whitelist
+- **Template XSS**: All user-provided names in onclick/URL attributes use `tojson` filter
+- **CSRF Token**: Fixed trailing space that broke HMAC validation on some browsers
+
 ## [1.0.0] - 2026-08-21
 
 ### Added

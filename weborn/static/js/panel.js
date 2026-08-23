@@ -1,4 +1,6 @@
-// Weborn panel — progress modal, SSE streaming, navigation guard
+/* ==============================================================
+   Weborn panel — progress modal, SSE streaming, navigation guard
+   ============================================================== */
 (function () {
   const $ = (id) => document.getElementById(id);
 

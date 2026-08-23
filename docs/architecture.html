@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Architecture — Weborn</title>
+    <style>
+        :root{--bg-0:#0a0a0f;--bg-1:#111118;--bg-2:#1a1a24;--bg-3:#222233;--text-1:#e8e8f0;--text-2:#9494a8;--text-3:#606078;--accent-1:#6366f1;--accent-2:#a855f7;--accent-3:#f43f5e;--ok:#22c55e;--warn:#eab308;--err:#ef4444;--border:rgba(255,255,255,0.06)}
+        *{margin:0;padding:0;box-sizing:border-box}body{background:var(--bg-0);color:var(--text-1);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.7}a{color:var(--accent-1);text-decoration:none}a:hover{text-decoration:underline}
+        .nav{position:sticky;top:0;z-index:100;background:rgba(10,10,15,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem}.nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:56px}.nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;color:var(--text-1)}.nav-brand svg{width:22px;height:22px}.nav-links{display:flex;gap:6px}.nav-links a{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text-2);transition:all .2s}.nav-links a:hover,.nav-links a.active{background:var(--bg-2);color:var(--text-1);text-decoration:none}
+        .container{max-width:900px;margin:0 auto;padding:3rem 2rem 5rem}h1{font-size:clamp(1.75rem,4vw,2.5rem);font-weight:800;letter-spacing:-1px;margin-bottom:.5rem}h1 .gradient{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}.subtitle{color:var(--text-2);font-size:16px;margin-bottom:3rem}h2{font-size:1.35rem;font-weight:700;margin:2.5rem 0 1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}h3{font-size:1rem;font-weight:700;margin:1rem 0 .5rem}p{margin-bottom:1rem;color:var(--text-2)}ul{padding-left:1.5rem;margin-bottom:1rem;color:var(--text-2)}li{margin:.3rem 0}strong{color:var(--text-1)}code{font-size:13px;background:var(--bg-3);padding:2px 7px;border-radius:5px;font-family:'JetBrains Mono','Fira Code',monospace;color:var(--accent-2)}
+        pre{background:var(--bg-1);border:1px solid var(--border);border-radius:12px;padding:1.25rem;overflow-x:auto;margin-bottom:1.25rem}pre code{background:none;padding:0;color:var(--text-2);font-size:13px;line-height:1.8;white-space:pre}
+        .arch-box{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;text-align:center}.arch-box .label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-3);margin-bottom:.5rem}.arch-box .value{font-size:16px;font-weight:700}
+        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;margin:1.5rem 0}
+        .flow{display:flex;align-items:center;justify-content:center;gap:.75rem;flex-wrap:wrap;margin:1.5rem 0;padding:1.5rem;background:var(--bg-2);border-radius:16px;border:1px solid var(--border)}.flow .node{padding:8px 18px;border-radius:10px;font-size:13px;font-weight:600;white-space:nowrap}.flow .arrow{color:var(--text-3);font-size:18px}
+        table{width:100%;border-collapse:collapse;margin-bottom:1.25rem}th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);font-size:14px}th{color:var(--text-3);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:1px}td{color:var(--text-2)}
+        footer{text-align:center;padding:2rem;color:var(--text-3);font-size:13px;border-top:1px solid var(--border)}footer a{color:var(--text-2)}
+        @media(max-width:640px){.container{padding:2rem 1.25rem}.nav{padding:0 1rem}.flow{flex-direction:column}.flow .arrow{transform:rotate(90deg)}}
+    </style>
+</head>
+<body>
+<nav class="nav"><div class="nav-inner"><a href="index.html" class="nav-brand"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"/></svg>Weborn</a><div class="nav-links"><a href="index.html">Home</a><a href="getting-started.html">Getting Started</a><a href="features.html">Features</a><a href="architecture.html" class="active">Architecture</a></div></div></nav>
+
+<div class="container">
+<h1><span class="gradient">Architecture</span></h1>
+<p class="subtitle">How Weborn is built and how it works</p>
+
+<h2>Tech Stack</h2>
+<div class="grid">
+    <div class="arch-box"><div class="label">Backend</div><div class="value">Python 3.13</div></div>
+    <div class="arch-box"><div class="label">Framework</div><div class="value">FastAPI + Uvicorn</div></div>
+    <div class="arch-box"><div class="label">Frontend</div><div class="value">Tailwind CSS</div></div>
+    <div class="arch-box"><div class="label">Terminal</div><div class="value">xterm.js</div></div>
+    <div class="arch-box"><div class="label">Auth</div><div class="value">JWT + CSRF</div></div>
+    <div class="arch-box"><div class="label">Database</div><div class="value">SQLite</div></div>
+    <div class="arch-box"><div class="label">Process</div><div class="value">systemd</div></div>
+    <div class="arch-box"><div class="label">Platform</div><div class="value">Debian/Ubuntu</div></div>
+</div>
+
+<h2>Request Flow</h2>
+<p>Every request follows this path from browser to application:</p>
+<div class="flow">
+    <span class="node" style="background:rgba(99,102,241,0.15);color:var(--accent-1)">Browser</span>
+    <span class="arrow">&rarr;</span>
+    <span class="node" style="background:rgba(34,197,94,0.15);color:var(--ok)">Nginx :80/:443</span>
+    <span class="arrow">&rarr;</span>
+    <span class="node" style="background:rgba(168,85,247,0.15);color:var(--accent-2)">Gunicorn/Uvicorn</span>
+    <span class="arrow">&rarr;</span>
+    <span class="node" style="background:rgba(234,179,8,0.15);color:var(--warn)">App (Flask/FastAPI/Django)</span>
+</div>
+
+<h3>For the Panel Itself</h3>
+<div class="flow">
+    <span class="node" style="background:rgba(99,102,241,0.15);color:var(--accent-1)">Browser :2025</span>
+    <span class="arrow">&rarr;</span>
+    <span class="node" style="background:rgba(168,85,247,0.15);color:var(--accent-2)">Uvicorn</span>
+    <span class="arrow">&rarr;</span>
+    <span class="node" style="background:rgba(34,197,94,0.15);color:var(--ok)">FastAPI + Jinja2</span>
+    <span class="arrow">&rarr;</span>
+    <span class="node" style="background:rgba(234,179,8,0.15);color:var(--warn)">SQLite</span>
+</div>
+
+<h2>Directory Structure</h2>
+<pre><code>weborn/
+    main.py              # FastAPI app + lifespan + mounts
+    config.py            # Paths, VERSION, settings
+    db.py                # SQLite schema, queries, settings
+    auth.py              # JWT encode/decode, PAM, idle lock
+    csrf.py              # CSRF token middleware (ASGI)
+    ratelimit.py         # Token bucket rate limiter
+    icons.py             # 57+ Heroicons v2 outline icons
+    ui.py                # Jinja2 env, icon() global
+    weborn.py            # CLI entry point (argparse)
+    executors/
+        __init__.py      # LocalExecutor, DryRunExecutor, WSLExecutor
+    managers/
+        apps.py          # AppManager (create/delete/start/stop)
+        nginx.py         # NginxManager (sites, SSL, cache)
+        apache.py        # ApacheManager (ports, virtual hosts)
+        db.py            # DBManager (MariaDB, PostgreSQL)
+        email.py         # EmailManager (Postfix, Dovecot, Rspamd)
+        security.py      # SecurityManager (UFW, Fail2Ban, ClamAV)
+    routers/
+        dashboard.py     # Dashboard overview
+        apps.py          # App CRUD, monitor, process config
+        addons.py        # Addon store (39 addons)
+        domains.py       # Domain & DNS management
+        email.py         # Email stack management
+        security.py      # Firewall, Fail2Ban, ClamAV
+        ...              # 20+ route modules
+    templates/           # Jinja2 HTML templates
+    static/              # CSS, JS, icons
+    addons/              # 39 addon manifests (.json)</code></pre>
+
+<h2>Executor Modes</h2>
+<table>
+    <tr><th>Mode</th><th>Description</th><th>Used When</th></tr>
+    <tr><td><code>local</code></td><td>Direct subprocess execution with sudo</td><td>Running on Linux server (production)</td></tr>
+    <tr><td><code>wsl</code></td><td>Executes commands via WSL distro</td><td>Development on Windows</td></tr>
+    <tr><td><code>dry-run</code></td><td>Simulates commands, returns mock output</td><td>Windows dev without WSL</td></tr>
+</table>
+
+<h2>Authentication Flow</h2>
+<pre><code>Login Request
+    |
+    +--> Check panel DB (PBKDF2-SHA256 hash)
+    |       |
+    |       +--> Match? --> Create JWT --> Set cookie --> Redirect
+    |       |
+    |       +--> No match?
+    |               |
+    |               +--> PAM fallback (su -c "password" user)
+    |                       |
+    |                       +--> Success? --> Create shadow user --> JWT --> Redirect
+    |                       |
+    |                       +--> Fail --> "Username atau password salah"</code></pre>
+
+<h2>Security Layers</h2>
+<ul>
+    <li><strong>CSRF Middleware</strong> - HMAC tokens on all POST forms, auto-injected via JS</li>
+    <li><strong>JWT Auth</strong> - Stateless HS256 tokens in HTTP-only cookies, 24h expiry</li>
+    <li><strong>Rate Limiting</strong> - Token bucket per key (login: 5/5min, API endpoints vary)</li>
+    <li><strong>Session Idle Lock</strong> - Per-user configurable timeout, auto-locks inactive sessions</li>
+    <li><strong>Shell Injection</strong> - shlex.quote() on all user input in bash commands</li>
+    <li><strong>WebSocket Auth</strong> - JWT validation before accepting terminal/log connections</li>
+    <li><strong>Password Policy</strong> - Min 8 chars, uppercase + lowercase + digit + symbol</li>
+</ul>
+
+<h2>Database Schema</h2>
+<table>
+    <tr><th>Table</th><th>Purpose</th></tr>
+    <tr><td><code>users</code></td><td>Panel admin accounts (PBKDF2 hashes)</td></tr>
+    <tr><td><code>sessions</code></td><td>Active JWT sessions</td></tr>
+    <tr><td><code>apps</code></td><td>Deployed applications (type, command, status)</td></tr>
+    <tr><td><code>domains</code></td><td>Domain configurations + SSL status</td></tr>
+    <tr><td><code>proxies</code></td><td>Reverse proxy configurations</td></tr>
+    <tr><td><code>dns_records</code></td><td>DNS record configurations</td></tr>
+    <tr><td><code>crons</code></td><td>Scheduled tasks</td></tr>
+    <tr><td><code>settings</code></td><td>Panel settings + secret key</td></tr>
+    <tr><td><code>login_logs</code></td><td>Audit trail (IP, timestamp, success/fail)</td></tr>
+    <tr><td><code>login_attempts</code></td><td>Rate limiting counter per IP</td></tr>
+</table>
+
+</div>
+<footer><p>Weborn &copy; 2026 - <a href="https://github.com/adyoi/Weborn">GitHub</a> - MIT License</p></footer>
+</body>
+</html>

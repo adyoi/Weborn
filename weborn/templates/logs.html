@@ -44,7 +44,7 @@
     window.clearLog = function() {
         if (!confirm('Hapus semua log {{ source }} ?')) return;
         var csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
-        fetch('/logs/{{ source }} /clear', {
+        fetch('/logs/{{ source }}/clear', {
             method: 'POST',
             headers: {'X-CSRF-Token': csrfToken}
         }).then(function(r){ return r.json(); }).then(function(d){

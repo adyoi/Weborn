@@ -145,13 +145,15 @@ async def api_validate_module(dir: str = "", module: str = "", app_name: str = "
 import re as _re
 
 _NGINX_VERSION_RE = _re.compile(r"^/etc/nginx/[\w.\-]+$")
-_PHP_VERSION_RE = _re.compile(r"^/etc/php/\d+\.\d+/fpm/[\w.\-/]+$")
+_PHP_VERSION_RE = _re.compile(r"^/etc/php/\d+\.\d+/fpm/(pool\.d/[\w.\-]+|php\.ini)$")
 _APP_DIR_RE = _re.compile(r"^/var/www/[\w\-]+/[\w.\-]+$")
 
 
 def _is_config_path_allowed(path: str) -> bool:
     """Check if a config file path is whitelisted for editing."""
     p = path.strip()
+    if ".." in p:
+        return False
     if _NGINX_VERSION_RE.match(p):
         return True
     if _PHP_VERSION_RE.match(p):
@@ -209,9 +211,16 @@ async def api_config_file_save(request: Request,
                                user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
-    body = await request.json()
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"ok": False, "error": "JSON tidak valid"}, status_code=400)
+    if not isinstance(body, dict):
+        return JSONResponse({"ok": False, "error": "body harus JSON object"}, status_code=400)
     path = (body.get("path") or "").strip()
     content = body.get("content", "")
+    if not isinstance(content, str):
+        content = str(content) if content is not None else ""
     if not path or not _is_config_path_allowed(path):
         return JSONResponse({"ok": False, "error": "path tidak diizinkan"}, status_code=400)
     ex = get_executor()
@@ -296,12 +305,12 @@ async def apps_create(name: str = Form(...), language: str = Form(...),
             apache = ApacheManager(ex)
             apache.apply_domain(slug, home, upstream, port=ws_port or 80)
             await apache._deploy(slug)
-        elif webserver == "caddy":
+        elif webserver == "nginx":
             from ..managers.nginx import NginxManager
             nginx = NginxManager(ex)
-            nginx.apply_domain(slug, home, upstream, port=ws_port or 443)
+            nginx.apply_domain(slug, home, upstream)
             await nginx._deploy(slug)
-        elif webserver == "lighttpd":
+        elif webserver in ("caddy", "lighttpd"):
             from ..managers.nginx import NginxManager
             nginx = NginxManager(ex)
             nginx.apply_domain(slug, home, upstream, port=ws_port or 80)
@@ -375,15 +384,15 @@ async def apps_create_native(name: str = Form(...), app_type: str = Form("wsgi")
             apache = ApacheManager(ex)
             apache.apply_domain(slug, home, upstream, port=ws_port or 80)
             await apache._deploy(slug)
-        elif webserver in ("caddy", "lighttpd"):
-            from ..managers.nginx import NginxManager
-            nginx = NginxManager(ex)
-            nginx.apply_domain(slug, home, upstream, port=ws_port or (443 if webserver == "caddy" else 80))
-            await nginx._deploy(slug)
-        else:
+        elif webserver == "nginx":
             from ..managers.nginx import NginxManager
             nginx = NginxManager(ex)
             nginx.apply_domain(slug, home, upstream)
+            await nginx._deploy(slug)
+        elif webserver in ("caddy", "lighttpd"):
+            from ..managers.nginx import NginxManager
+            nginx = NginxManager(ex)
+            nginx.apply_domain(slug, home, upstream, port=ws_port or 80)
             await nginx._deploy(slug)
 
     return RedirectResponse(f"/apps?created=1&port={port_int}", status_code=303)
@@ -400,21 +409,35 @@ async def apps_get_process_config(app_id: int, user: dict = Depends(require_admi
     return JSONResponse({"ok": True, "config": config})
 
 
+WORKER_CLASSES = {"", "sync", "gthread", "eventlet", "gevent", "uvicorn.workers.UvicornWorker"}
+
+
 @router.post("/apps/{app_id}/process-config")
 async def apps_process_config(app_id: int, request: Request,
                               user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
-    body = await request.json()
-    config = {
-        "workers": int(body.get("workers", 4)),
-        "timeout": int(body.get("timeout", 120)),
-        "worker_class": body.get("worker_class", ""),
-        "access_log": bool(body.get("access_log", False)),
-        "max_requests": int(body.get("max_requests", 0)),
-        "graceful_timeout": int(body.get("graceful_timeout", 30)),
-        "keepalive": int(body.get("keepalive", 5)),
-    }
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"ok": False, "error": "JSON tidak valid"}, status_code=400)
+    if not isinstance(body, dict):
+        return JSONResponse({"ok": False, "error": "body harus JSON object"}, status_code=400)
+    try:
+        wc = body.get("worker_class", "")
+        if wc not in WORKER_CLASSES:
+            return JSONResponse({"ok": False, "error": f"worker_class tidak valid: {wc}"}, status_code=400)
+        config = {
+            "workers": int(body.get("workers", 4)),
+            "timeout": int(body.get("timeout", 120)),
+            "worker_class": wc,
+            "access_log": bool(body.get("access_log", False)),
+            "max_requests": int(body.get("max_requests", 0)),
+            "graceful_timeout": int(body.get("graceful_timeout", 30)),
+            "keepalive": int(body.get("keepalive", 5)),
+        }
+    except (TypeError, ValueError) as e:
+        return JSONResponse({"ok": False, "error": f"parameter tidak valid: {e}"}, status_code=400)
     config["workers"] = max(1, min(config["workers"], 32))
     config["timeout"] = max(10, min(config["timeout"], 600))
     config["max_requests"] = max(0, min(config["max_requests"], 100000))
@@ -427,12 +450,17 @@ async def apps_limits(app_id: int, request: Request,
                       user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
-    body = await request.json()
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"ok": False, "error": "JSON tidak valid"}, status_code=400)
+    if not isinstance(body, dict):
+        return JSONResponse({"ok": False, "error": "body harus JSON object"}, status_code=400)
     import re as _re
-    _MEM_RE = re.compile(r'^\d+[KMG]?$')
-    _CPU_RE = re.compile(r'^\d+(\.\d+)?%?$')
-    _NICE_RE = re.compile(r'^-?\d{1,2}$')
-    _OOM_RE = re.compile(r'^-?\d{1,4}$')
+    _MEM_RE = _re.compile(r'^\d+[KMG]?$')
+    _CPU_RE = _re.compile(r'^\d+(\.\d+)?%?$')
+    _NICE_RE = _re.compile(r'^-?\d{1,2}$')
+    _OOM_RE = _re.compile(r'^-?\d{1,4}$')
 
     ml = body.get("memory_limit", "")
     cq = body.get("cpu_quota", "")

@@ -107,7 +107,7 @@
             {# ── Row 1: Name + Status + Controls ── #}
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-3">
-                    <a href="/apps/{{ app.id }} /monitor" class="font-bold text-sm hover:underline">{{ app.name }}</a>
+                    <a href="/apps/{{ app.id }}/monitor" class="font-bold text-sm hover:underline">{{ app.name }}</a>
                     <span class="text-t3 text-xs font-mono">{{ app.app_type }}</span>
                     <span class="text-t3 text-xs">({{ app.process_manager }} )</span>
                </div>
@@ -122,17 +122,17 @@
                     {% endif %}
 
                     {# ── Control buttons: Start | Stop | Restart ── #}
-                    <button onclick="weborn.simplePost('/apps/{{ app.id }} /start','Start {{ app.name }} ',true)"
+                    <button onclick="weborn.simplePost('/apps/{{ app.id }}/start','Start ' + {{ app.name | tojson }}, true)"
                             class="btn sm"
                             {% if app.gunicorn_status == 'active' %}disabled{% endif %}>{{ icon('play', 'w-5 h-5') }} Start</button>
-                    <button onclick="weborn.simplePost('/apps/{{ app.id }} /stop','Stop {{ app.name }} ',true)"
+                    <button onclick="weborn.simplePost('/apps/{{ app.id }}/stop','Stop ' + {{ app.name | tojson }}, true)"
                             class="btn sm"
                             {% if app.gunicorn_status != 'active' %}disabled{% endif %}>{{ icon('stop', 'w-5 h-5') }} Stop</button>
-                    <button onclick="weborn.simplePost('/apps/{{ app.id }} /restart','Restart {{ app.name }} ',true)"
+                    <button onclick="weborn.simplePost('/apps/{{ app.id }}/restart','Restart ' + {{ app.name | tojson }}, true)"
                             class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
 
                     {# ── Trace log button — opens xterm.js modal ── #}
-                    <button onclick="openTrace({{ app.id }} , '{{ app.name }} ')"
+                    <button onclick="openTrace({{ app.id }}, {{ app.name | tojson }})"
                             class="btn sm accent">{{ icon('document-text', 'w-5 h-5') }} Trace</button>
                </div>
            </div>

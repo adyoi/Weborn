@@ -21,13 +21,13 @@
         {% endif %}
    </div>
     <div class="flex gap-2">
-        <button onclick="weborn.simplePost('/apps/{{ app.id }} /start','Start {{ app.name }} ',true)"
+        <button onclick="weborn.simplePost('/apps/{{ app.id }}/start','Start ' + {{ app.name | tojson }}, true)"
                 class="btn sm"
                 {% if gstatus.status == 'active' %}disabled{% endif %}>{{ icon('play', 'w-5 h-5') }} Start</button>
-        <button onclick="weborn.simplePost('/apps/{{ app.id }} /stop','Stop {{ app.name }} ',true)"
+        <button onclick="weborn.simplePost('/apps/{{ app.id }}/stop','Stop ' + {{ app.name | tojson }}, true)"
                 class="btn sm"
                 {% if gstatus.status != 'active' %}disabled{% endif %}>{{ icon('stop', 'w-5 h-5') }} Stop</button>
-        <button onclick="weborn.simplePost('/apps/{{ app.id }} /restart','Restart {{ app.name }} ',true)"
+        <button onclick="weborn.simplePost('/apps/{{ app.id }}/restart','Restart ' + {{ app.name | tojson }}, true)"
                 class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
         <button onclick="location.reload()" class="btn sm">{{ icon('square-3-stack-3d', 'w-5 h-5') }} Refresh</button>
    </div>
@@ -131,8 +131,8 @@
 <div class="card p-4 mt-4">
     <h3 class="font-bold text-sm mb-2">Quick Actions</h3>
     <div class="flex gap-2 flex-wrap">
-        <a href="/apps/{{ app.id }} /logs" class="btn sm">{{ icon('document-text', 'w-5 h-5') }} Full Logs</a>
-        <a href="/apps/{{ app.id }} /edit" class="btn sm">{{ icon('pencil', 'w-5 h-5') }} Edit</a>
+        <a href="/apps/{{ app.id }}/logs" class="btn sm">{{ icon('document-text', 'w-5 h-5') }} Full Logs</a>
+        <a href="/apps/{{ app.id }}/edit" class="btn sm">{{ icon('pencil', 'w-5 h-5') }} Edit</a>
    </div>
 </div>
 
@@ -157,7 +157,7 @@
     fitAddon.fit();
 
     var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    var ws = new WebSocket(proto + '//' + location.host + '/ws/apps/{{ app.id }} /logs');
+    var ws = new WebSocket(proto + '//' + location.host + '/ws/apps/{{ app.id }}/logs');
     var statusEl = document.getElementById('trace-status');
 
     ws.onopen = function() {

@@ -44,10 +44,10 @@
                         <td class="mono text-[13px] max-w-[220px] truncate">{{ c.command }}</td>
                         <td><span class="badge {{ 'ok' if c.enabled else 'err' }}">{{ 'AKTIF' if c.enabled else 'NONAKTIF' }}</span></td>
                         <td class="whitespace-nowrap">
-                            <form method="post" action="/cron/{{ c.id }} /toggle" style="display:inline">
+                            <form method="post" action="/cron/{{ c.id }}/toggle" style="display:inline">
                                 <button class="btn !py-1 !px-2">{{ icon('pause', 'w-5 h-5') if c.enabled else icon('play', 'w-5 h-5') }}</button>
                            </form>
-                            <form method="post" action="/cron/{{ c.id }} /delete" style="display:inline"
+                            <form method="post" action="/cron/{{ c.id }}/delete" style="display:inline"
                                   onsubmit="return confirm('Hapus cron?')">
                                 <button class="btn danger !py-1 !px-2" data-tip="Hapus cron">{{ icon('trash', 'w-5 h-5') }} ️</button>
                            </form>

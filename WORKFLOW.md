@@ -9,6 +9,24 @@
 6. Login dengan akun yang baru dibuat
 7. Setelah setup, semua Linux user bisa login dengan password OS mereka (PAM fallback)
 
+## Update
+```bash
+# Sync code, install deps, restart service
+sudo bash update.sh
+
+# Without restarting
+sudo bash update.sh --no-restart
+```
+
+## Testing
+```bash
+# Unit tests (no deps needed, stdlib only)
+.venv/bin/python test/run_tests.py
+
+# Integration test (requires running panel)
+WEBORN_PASS=yourpassword sudo -E .venv/bin/python test/test_apps_integration.py
+```
+
 ## Menu & Fitur
 
 ### 🏠 Dashboard (`/`)
@@ -180,10 +198,13 @@
 | **CSRF** | HMAC-based tokens pada semua form POST + AJAX header |
 | **JWT Auth** | Stateless HS256 tokens di HTTP-only cookies, 24h expiry |
 | **WebSocket Auth** | JWT validation sebelum menerima koneksi |
-| **Rate Limiting** | 5 percobaan login per IP per 5 menit |
+| **Rate Limiting** | Token bucket per key (login: 5/5min, API berbeda) |
 | **Session Hardening** | `httponly`, `max_age=24h`, `secure` saat SSL |
 | **Session Idle Lock** | Timeout per-user, auto-lock sesi tidak aktif |
 | **Shell Injection** | `shlex.quote()` pada semua user input di bash commands |
+| **Path Traversal** | PHP regex validation + penolakan `..` di config editor |
+| **Worker Injection** | Whitelist untuk parameter worker_class |
+| **Password Policy** | Min 8 char, uppercase + lowercase + digit + symbol |
 | **Password Hashing** | PBKDF2-SHA256 (SQLite) + PAM shadow users |
 | **Audit Trail** | Login logs dengan IP, timestamp, success/fail |
 

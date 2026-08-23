@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Getting Started — Weborn</title>
+    <style>
+        :root {
+            --bg-0: #0a0a0f; --bg-1: #111118; --bg-2: #1a1a24; --bg-3: #222233;
+            --text-1: #e8e8f0; --text-2: #9494a8; --text-3: #606078;
+            --accent-1: #6366f1; --accent-2: #a855f7; --accent-3: #f43f5e;
+            --ok: #22c55e; --warn: #eab308; --err: #ef4444;
+            --border: rgba(255,255,255,0.06);
+            --glow-1: rgba(99,102,241,0.15);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:var(--bg-0); color:var(--text-1); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; line-height:1.7; }
+        a { color:var(--accent-1); text-decoration:none; }
+        a:hover { text-decoration:underline; }
+
+        .nav { position:sticky; top:0; z-index:100; background:rgba(10,10,15,0.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); padding:0 2rem; }
+        .nav-inner { max-width:1100px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; height:56px; }
+        .nav-brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:16px; color:var(--text-1); }
+        .nav-brand svg { width:22px; height:22px; }
+        .nav-links { display:flex; gap:6px; }
+        .nav-links a { padding:6px 14px; border-radius:8px; font-size:13px; font-weight:500; color:var(--text-2); transition:all .2s; }
+        .nav-links a:hover, .nav-links a.active { background:var(--bg-2); color:var(--text-1); text-decoration:none; }
+
+        .container { max-width:800px; margin:0 auto; padding:3rem 2rem 5rem; }
+        h1 { font-size:clamp(1.75rem,4vw,2.5rem); font-weight:800; letter-spacing:-1px; margin-bottom:.5rem; }
+        h1 .gradient { background:linear-gradient(135deg, var(--accent-1), var(--accent-2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .subtitle { color:var(--text-2); font-size:16px; margin-bottom:3rem; }
+        h2 { font-size:1.35rem; font-weight:700; margin:2.5rem 0 1rem; padding-bottom:.5rem; border-bottom:1px solid var(--border); }
+        h3 { font-size:1.1rem; font-weight:700; margin:1.5rem 0 .75rem; color:var(--text-1); }
+        p { margin-bottom:1rem; color:var(--text-2); }
+        ul, ol { padding-left:1.5rem; margin-bottom:1rem; color:var(--text-2); }
+        li { margin:.35rem 0; }
+        strong { color:var(--text-1); }
+        code { font-size:13px; background:var(--bg-3); padding:2px 7px; border-radius:5px; font-family:'JetBrains Mono','Fira Code',monospace; color:var(--accent-2); }
+        pre { background:var(--bg-1); border:1px solid var(--border); border-radius:12px; padding:1.25rem; overflow-x:auto; margin-bottom:1.25rem; }
+        pre code { background:none; padding:0; color:var(--text-2); font-size:13px; line-height:1.8; }
+        .step-num { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; font-weight:800; font-size:13px; margin-right:8px; }
+        .note { background:var(--bg-2); border:1px solid var(--border); border-left:3px solid var(--accent-1); border-radius:10px; padding:1rem 1.25rem; margin:1.25rem 0; font-size:14px; color:var(--text-2); }
+        .note strong { color:var(--accent-1); }
+        .warn { border-left-color:var(--warn); }
+        .warn strong { color:var(--warn); }
+        table { width:100%; border-collapse:collapse; margin-bottom:1.25rem; }
+        th, td { text-align:left; padding:10px 14px; border-bottom:1px solid var(--border); font-size:14px; }
+        th { color:var(--text-3); font-weight:600; text-transform:uppercase; font-size:11px; letter-spacing:1px; }
+        td { color:var(--text-2); }
+        .tag { display:inline-block; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600; }
+        .tag-ok { background:rgba(34,197,94,0.12); color:var(--ok); }
+        .tag-warn { background:rgba(234,179,8,0.12); color:var(--warn); }
+        .tag-err { background:rgba(239,68,68,0.12); color:var(--err); }
+        footer { text-align:center; padding:2rem; color:var(--text-3); font-size:13px; border-top:1px solid var(--border); }
+        footer a { color:var(--text-2); }
+        @media (max-width:640px) { .container { padding:2rem 1.25rem; } .nav { padding:0 1rem; } }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <div class="nav-inner">
+        <a href="index.html" class="nav-brand">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"/></svg>
+            Weborn
+        </a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="getting-started.html" class="active">Getting Started</a>
+            <a href="features.html">Features</a>
+            <a href="architecture.html">Architecture</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+
+<h1><span class="gradient">Getting Started</span></h1>
+<p class="subtitle">From zero to deployed in minutes</p>
+
+<h2>Requirements</h2>
+<table>
+    <tr><th>Component</th><th>Minimum</th><th>Recommended</th></tr>
+    <tr><td>OS</td><td>Debian 11 / Ubuntu 20.04</td><td>Debian 12 / Ubuntu 22.04+</td></tr>
+    <tr><td>Python</td><td>3.10</td><td>3.13</td></tr>
+    <tr><td>RAM</td><td>512 MB</td><td>1 GB+</td></tr>
+    <tr><td>Disk</td><td>1 GB</td><td>5 GB+</td></tr>
+    <tr><td>Access</td><td>Non-root user with sudo</td><td>Root or sudo user</td></tr>
+</table>
+
+<h2>Installation</h2>
+
+<h3>Option 1: Quick Install (Recommended)</h3>
+<pre><code>git clone https://github.com/adyoi/Weborn.git
+cd Weborn
+sudo bash install.sh</code></pre>
+<p>This installs Weborn to <code>/opt/weborn</code>, creates a systemd service, and starts the panel.</p>
+
+<h3>Option 2: Manual Install</h3>
+<pre><code>git clone https://github.com/adyoi/Weborn.git
+cd Weborn
+
+# Create virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Build CSS (optional, pre-built CSS included)
+npm install && npm run css:build
+
+# Run in development mode (dry-run, no system changes)
+python weborn.py --reload --host 127.0.0.1 --port 2025
+
+# Or run in production mode (requires root)
+sudo python weborn.py --local --host 0.0.0.0 --port 2025</code></pre>
+
+<h2>First-Time Setup</h2>
+
+<ol>
+    <li><span class="step-num" style="background:rgba(99,102,241,0.15);color:var(--accent-1);">1</span> Open the panel in your browser: <code>http://your-server-ip:2025</code></li>
+    <li><span class="step-num" style="background:rgba(168,85,247,0.15);color:var(--accent-2);">2</span> You'll be redirected to <code>/setup</code> (first-time wizard)</li>
+    <li><span class="step-num" style="background:rgba(234,179,8,0.15);color:var(--warn);">3</span> Enter username and password (min 8 chars with uppercase, lowercase, digit, symbol)</li>
+    <li><span class="step-num" style="background:rgba(34,197,94,0.15);color:var(--ok);">4</span> Panel creates: panel admin account (SQLite) + Linux OS user with sudo/SSH access</li>
+    <li>Login with your new credentials</li>
+</ol>
+
+<div class="note">
+    <strong>Note:</strong> After setup, any Linux user can login with their OS password (PAM fallback). Root can only login after an admin panel user exists.
+</div>
+
+<h2>Executor Modes</h2>
+<p>Weborn supports three executor modes for running system commands:</p>
+<table>
+    <tr><th>Mode</th><th>Description</th><th>Use Case</th></tr>
+    <tr><td><code>local</code></td><td>Direct execution on Linux (requires root)</td><td>Production server</td></tr>
+    <tr><td><code>wsl</code></td><td>Execute via WSL distro (Debian default)</td><td>Windows development</td></tr>
+    <tr><td><code>dry-run</code></td><td>Simulate commands without execution</td><td>Windows dev / testing</td></tr>
+</table>
+
+<p>Auto-detection: Linux → <code>local</code>, Windows → <code>dry-run</code></p>
+
+<pre><code># Set via environment variable
+export WEBORN_EXECUTOR_MODE=local
+export WEBORN_EXECUTOR_MODE=wsl
+export WEBORN_WSL_DISTRO=Debian</code></pre>
+
+<h2>SSL Support</h2>
+
+<h3>Self-Signed (Development)</h3>
+<pre><code>python weborn.py --local \
+  --ssl-cert /path/to/cert.pem \
+  --ssl-key /path/to/key.pem</code></pre>
+
+<h3>Let's Encrypt (Production)</h3>
+<pre><code># Generate certificate
+certbot certonly --standalone -d yourdomain.com
+
+# Run with SSL
+sudo python weborn.py --local \
+  --ssl-cert /etc/letsencrypt/live/yourdomain.com/fullchain.pem \
+  --ssl-key /etc/letsencrypt/live/yourdomain.com/privkey.pem</code></pre>
+
+<div class="note">
+    <strong>Note:</strong> When SSL is active, session cookies automatically get the <code>secure</code> flag.
+</div>
+
+<h2>Updating</h2>
+
+<pre><code>cd /opt/weborn
+sudo bash update.sh</code></pre>
+
+<p>This syncs code, installs new dependencies, clears cache, and restarts the service.</p>
+
+<h2>Uninstalling</h2>
+
+<pre><code>sudo bash uninstall.sh</code></pre>
+
+</div>
+
+<footer>
+    <p>Weborn &copy; 2026 &middot; <a href="https://github.com/adyoi/Weborn">GitHub</a> &middot; MIT License</p>
+</footer>
+
+</body>
+</html>

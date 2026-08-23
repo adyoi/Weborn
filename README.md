@@ -37,6 +37,10 @@ Client (Browser)
       └─ Real-time monitoring via WebSocket (xterm.js)
 ```
 
+## Documentation
+
+Full documentation is available at **[https://adyoi.github.io/Weborn](https://adyoi.github.io/Weborn)** — Getting Started, Features, Architecture, and Changelog.
+
 ## What's New (v1.0.0)
 
 - **Process Manager Config** — Edit workers, timeout, worker class, resource limits per app (MemoryMax, CPUQuota, Nice, OOMScoreAdjust)
@@ -227,7 +231,7 @@ https://127.0.0.1:2025
 
 1. Open the panel in your browser
 2. You'll be redirected to `/setup` (first-time wizard)
-3. Enter username and password (min 6 characters)
+3. Enter username and password (min 8 chars, requires uppercase + lowercase + digit + symbol)
 4. Panel creates:
    - Panel admin account (SQLite)
    - Linux OS user with sudo/SSH access
@@ -300,10 +304,13 @@ When SSL is active, session cookies automatically get the `secure` flag.
 |---------|-------------|
 | **CSRF** | HMAC-based tokens on all POST forms + AJAX headers |
 | **WebSocket Auth** | Session cookie validation before accepting connections |
-| **Rate Limiting** | 5 login attempts per IP per 5 minutes |
+| **Rate Limiting** | Token bucket per key (login: 5/5min, API endpoints vary) |
 | **Session Hardening** | `httponly`, `max_age=24h`, `secure` when SSL |
 | **Session Idle Lock** | Per-user timeout, auto-locks inactive sessions |
 | **Shell Injection** | `shlex.quote()` on all user input in bash commands |
+| **Path Traversal** | PHP regex validation + `..` rejection in config editor |
+| **Worker Injection** | Whitelist for worker_class parameter |
+| **Password Policy** | Min 8 chars, uppercase + lowercase + digit + symbol |
 | **Password Hashing** | PBKDF2-SHA256 (SQLite) + PAM shadow users |
 | **Audit Trail** | Login logs with IP, timestamp, success/fail |
 
@@ -336,11 +343,40 @@ sudo bash install.sh
 - Creates the required `data/backups` directory
 - Adds a systemd unit (`weborn.service`) and reloads the daemon
 
+To update an existing installation:
+
+```bash
+sudo bash update.sh
+# or without restarting:
+sudo bash update.sh --no-restart
+```
+
 To remove:
 
 ```bash
 sudo bash uninstall.sh
 ```
+
+## Testing
+
+Weborn includes a test suite covering CSRF, JWT auth, rate limiting, executor modes, and security hardening.
+
+```bash
+# Run all unit tests (no pytest required, stdlib only)
+.venv/bin/python test/run_tests.py
+
+# Integration test (requires running panel)
+WEBORN_PASS=yourpassword sudo -E .venv/bin/python test/test_apps_integration.py
+```
+
+| Test File | Coverage |
+|-----------|----------|
+| `test_csrf.py` | Token generation, validation, session binding, determinism |
+| `test_auth.py` | JWT encode/decode, tampered tokens, idle lock |
+| `test_executors.py` | DryRunExecutor mode, run, write/read file |
+| `test_apps_security.py` | Path traversal, PHP regex, config whitelist, worker class injection |
+| `test_ratelimit.py` | Token bucket, limit exceeded, independent keys |
+| `test_apps_integration.py` | Login, CSRF, app CRUD via HTTP (requires panel) |
 
 ## Security Note
 

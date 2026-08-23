@@ -27,7 +27,7 @@
             <tr>
                 <td class="mono text-[13px]">{{ db }}</td>
                 <td class="text-right">
-                    <form method="post" action="/database/{{ db }} /drop" style="display:inline"
+                    <form method="post" action="/database/{{ db }}/drop" style="display:inline"
                           onsubmit="return confirm('Hapus {{ db }} ?')">
                         <button class="btn danger !py-0.5 !px-2 text-[13px]">{{ icon('trash', 'w-5 h-5') }} ️</button>
                    </form>
@@ -64,7 +64,7 @@
                 <td class="text-[13px] text-t3">{{ u.host }}</td>
                 <td class="text-[13px]">{{ user_dbs_map.get(u.user, [])|join(', ') or '—' }}</td>
                 <td class="text-right">
-                    <form method="post" action="/database/user/{{ u.user }} /delete" style="display:inline"
+                    <form method="post" action="/database/user/{{ u.user }}/delete" style="display:inline"
                           onsubmit="return confirm('Hapus user {{ u.user }} ?')">
                         <button class="btn danger !py-0.5 !px-2 text-[13px]">{{ icon('trash', 'w-5 h-5') }} ️</button>
                    </form>

@@ -61,17 +61,17 @@
                         {% else %}<span class="badge err">DISABLED</span>{% endif %}
                    </td>
                     <td class="whitespace-nowrap">
-                        <a href="/domains/{{ d.id }} /edit" class="btn !py-1 !px-2.5" data-tip="Edit {{ d.name }}">{{ icon('pencil', 'w-5 h-5') }} ️</a>
+                        <a href="/domains/{{ d.id }}/edit" class="btn !py-1 !px-2.5" data-tip="Edit {{ d.name }}">{{ icon('pencil', 'w-5 h-5') }} ️</a>
                         {% if not d.ssl %}
-                        <form method="post" action="/domains/{{ d.id }} /ssl" style="display:inline"
+                        <form method="post" action="/domains/{{ d.id }}/ssl" style="display:inline"
                               onsubmit="return confirm('Terbitkan SSL Let\'s Encrypt untuk {{ d.name }} ?')">
                             <button class="btn !py-1 !px-2.5" data-tip="Pasang SSL">{{ icon('lock-closed', 'w-5 h-5') }}</button>
                        </form>
                         {% endif %}
-                        <form method="post" action="/domains/{{ d.id }} /toggle" style="display:inline">
+                        <form method="post" action="/domains/{{ d.id }}/toggle" style="display:inline">
                             <button class="btn !py-1 !px-2.5">{{ icon('pause', 'w-5 h-5') if d.enabled else icon('play', 'w-5 h-5') }}</button>
                        </form>
-                        <form method="post" action="/domains/{{ d.id }} /delete" style="display:inline"
+                        <form method="post" action="/domains/{{ d.id }}/delete" style="display:inline"
                               onsubmit="return confirm('Hapus {{ d.name }} ?')">
                             <button class="btn danger !py-1 !px-2.5">{{ icon('trash', 'w-5 h-5') }} ️</button>
                        </form>

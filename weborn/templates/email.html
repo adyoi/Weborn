@@ -54,11 +54,11 @@
         {% if stack[svc_key].installed %}
         <div class="flex gap-1.5">
             {% if not stack[svc_key].active %}
-            <button onclick="weborn.simplePost('/email/service/{{ svc_key }} /start','Start {{ svc_name }} ',false)" class="btn primary sm">{{ icon('play', 'w-5 h-5') }} Start</button>
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/start','Start ' + {{ svc_name | tojson }},false)" class="btn primary sm">{{ icon('play', 'w-5 h-5') }} Start</button>
             {% else %}
-            <button onclick="weborn.simplePost('/email/service/{{ svc_key }} /stop','Stop {{ svc_name }} ',false)" class="btn danger sm">{{ icon('stop', 'w-5 h-5') }} Stop</button>
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/stop','Stop ' + {{ svc_name | tojson }},false)" class="btn danger sm">{{ icon('stop', 'w-5 h-5') }} Stop</button>
             {% endif %}
-            <button onclick="weborn.simplePost('/email/service/{{ svc_key }} /restart','Restart {{ svc_name }} ',false)" class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }}</button>
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/restart','Restart ' + {{ svc_name | tojson }},false)" class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }}</button>
        </div>
         {% endif %}
    </div>
@@ -80,11 +80,11 @@
         {% if stack[svc_key].installed %}
         <div class="flex gap-1.5">
             {% if not stack[svc_key].active %}
-            <button onclick="weborn.simplePost('/email/service/{{ svc_key }} /start','Start {{ svc_name }} ',false)" class="btn primary sm">{{ icon('play', 'w-5 h-5') }} Start</button>
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/start','Start ' + {{ svc_name | tojson }},false)" class="btn primary sm">{{ icon('play', 'w-5 h-5') }} Start</button>
             {% else %}
-            <button onclick="weborn.simplePost('/email/service/{{ svc_key }} /stop','Stop {{ svc_name }} ',false)" class="btn danger sm">{{ icon('stop', 'w-5 h-5') }} Stop</button>
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/stop','Stop ' + {{ svc_name | tojson }},false)" class="btn danger sm">{{ icon('stop', 'w-5 h-5') }} Stop</button>
             {% endif %}
-            <button onclick="weborn.simplePost('/email/service/{{ svc_key }} /restart','Restart {{ svc_name }} ',false)" class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }}</button>
+            <button onclick="weborn.simplePost('/email/service/{{ svc_key }}/restart','Restart ' + {{ svc_name | tojson }},false)" class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }}</button>
        </div>
         {% endif %}
    </div>

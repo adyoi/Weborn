@@ -131,7 +131,7 @@
 <script>
 /* Auto-inject CSRF token into all forms */
 (function() {
-    var token = '{{ csrf_token }} ';
+    var token = '{{ csrf_token }}';
     if (!token) return;
     document.querySelectorAll('form[method="post"]').forEach(function(form) {
         if (!form.querySelector('input[name="_csrf_token"]')) {

@@ -12,15 +12,15 @@
         <span class="badge info">unit: {{ addon.unit }}</span>
         {% if addon.ports %}<span class="badge info">ports: {{ addon.ports|join(', ') }}</span>{% endif %}
         {% if status.installed and addon.type != 'builtin' %}
-            <button class="btn" data-tip="Jalankan layanan {{ addon.name }}" onclick="weborn.simplePost('/addons/{{ addon.id }} /start','Menjalankan {{ addon.name }} ',true)">{{ icon('play', 'w-5 h-5') }} Start</button>
-            <button class="btn" data-tip="Restart layanan {{ addon.name }}" onclick="weborn.simplePost('/addons/{{ addon.id }} /restart','Merestart {{ addon.name }} ',true)">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
-            <button class="btn" data-tip="Hentikan layanan {{ addon.name }}" onclick="weborn.simplePost('/addons/{{ addon.id }} /stop','Menghentikan {{ addon.name }} ',true)">{{ icon('stop', 'w-5 h-5') }} Stop</button>
-            <button class="btn" data-tip="Perbarui {{ addon.name }} ke versi terbaru" onclick="weborn.streamPost('/addons/{{ addon.id }} /update/stream','Mengupdate {{ addon.name }} ',true)">{{ icon('arrow-up', 'w-4 h-4') }} Update</button>
+            <button class="btn" data-tip="Jalankan layanan {{ addon.name }}" onclick="weborn.simplePost('/addons/{{ addon.id }}/start','Menjalankan ' + {{ addon.name | tojson }}, true)">{{ icon('play', 'w-5 h-5') }} Start</button>
+            <button class="btn" data-tip="Restart layanan {{ addon.name }}" onclick="weborn.simplePost('/addons/{{ addon.id }}/restart','Merestart ' + {{ addon.name | tojson }}, true)">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
+            <button class="btn" data-tip="Hentikan layanan {{ addon.name }}" onclick="weborn.simplePost('/addons/{{ addon.id }}/stop','Menghentikan ' + {{ addon.name | tojson }}, true)">{{ icon('stop', 'w-5 h-5') }} Stop</button>
+            <button class="btn" data-tip="Perbarui {{ addon.name }} ke versi terbaru" onclick="weborn.streamPost('/addons/{{ addon.id }}/update/stream','Mengupdate ' + {{ addon.name | tojson }}, true)">{{ icon('arrow-up', 'w-4 h-4') }} Update</button>
             <button class="btn danger" data-tip="Hapus {{ addon.name }} dari server"
-                    onclick="if(confirm('Uninstall {{ addon.name }} ?'))weborn.streamPost('/addons/{{ addon.id }} /uninstall/stream','Menghapus {{ addon.name }} ',true)">{{ icon('trash', 'w-5 h-5') }} Uninstall</button>
+                    onclick="if(confirm('Uninstall ' + {{ addon.name | tojson }} + ' ?'))weborn.streamPost('/addons/{{ addon.id }}/uninstall/stream','Menghapus ' + {{ addon.name | tojson }}, true)">{{ icon('trash', 'w-5 h-5') }} Uninstall</button>
         {% elif not status.installed %}
             <button class="btn primary" data-tip="Install {{ addon.name }} ke server"
-                    onclick="weborn.streamPost('/addons/{{ addon.id }} /install/stream','Menginstall {{ addon.name }} ',true)">{{ icon('arrow-down-tray', 'w-5 h-5') }} Install</button>
+                    onclick="weborn.streamPost('/addons/{{ addon.id }}/install/stream','Menginstall ' + {{ addon.name | tojson }}, true)">{{ icon('arrow-down-tray', 'w-5 h-5') }} Install</button>
         {% endif %}
    </div>
 </div>
@@ -29,8 +29,8 @@
     <div class="card">
         <h3 class="text-sm mb-3.5">{{ icon('cog-6-tooth', 'w-5 h-5') }} Konfigurasi</h3>
         {% if addon.fields %}
-        <form method="post" action="/addons/{{ addon.id }} /config"
-              onsubmit="event.preventDefault(); weborn.formPost(this.action, this, 'Menyimpan konfigurasi {{ addon.name }} ', true)">
+        <form method="post" action="/addons/{{ addon.id }}/config"
+              onsubmit="event.preventDefault(); weborn.formPost(this.action, this, 'Menyimpan konfigurasi ' + {{ addon.name | tojson }}, true)">
             {% for f in addon.fields %}
             <div class="field">
                 <label>{{ f.label }}</label>

@@ -9,7 +9,7 @@
     <div class="space-y-4">
         <div class="card">
             <h3 class="text-sm mb-3.5">{{ icon('cog-6-tooth', 'w-5 h-5') }} Pengaturan Aplikasi</h3>
-            <form method="post" action="/apps/{{ app.id }} /edit">
+            <form method="post" action="/apps/{{ app.id }}/edit">
                 <div class="field">
                     <label>Nama</label>
                     <input value="{{ app.name }}" disabled>
@@ -174,7 +174,7 @@ async function appAction(action) {
     el.className = 'text-[13px] mt-2';
     el.innerHTML = `<span class="text-t3">⏳ ${action}...</span>`;
     try {
-        const r = await weborn.streamPost(`/apps/{{ app.id }} /${action}`, `${action} app`, false);
+        const r = await weborn.streamPost(`/apps/{{ app.id }}/${action}`, `${action} app`, false);
         el.innerHTML = `<span class="${r.ok ? 'text-green-400' : 'text-red-400'}">${r.ok ? '✓ OK' : '✗ ' + (r.error || 'gagal')}</span>`;
     } catch(e) {
         el.innerHTML = `<span class="text-red-400">✗ ${e.message}</span>`;
@@ -196,7 +196,7 @@ async function saveProcessConfig() {
         access_log: document.getElementById('pcfg-access-log').checked,
     };
     try {
-        const resp = await fetch(`/apps/{{ app.id }} /process-config`, {
+        const resp = await fetch(`/apps/{{ app.id }}/process-config`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -231,7 +231,7 @@ async function saveLimits() {
         oom_score_adjust: document.getElementById('limits-oom').value.trim(),
     };
     try {
-        const resp = await fetch(`/apps/{{ app.id }} /limits`, {
+        const resp = await fetch(`/apps/{{ app.id }}/limits`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -34,13 +34,13 @@
                     <td>{{ '%.1f MB'|format(b.size / 1024 / 1024) }}</td>
                     <td>{{ b.created }}</td>
                     <td class="whitespace-nowrap text-right">
-                        <form method="post" action="/backup/{{ b.name }} /restore" style="display:inline">
+                        <form method="post" action="/backup/{{ b.name }}/restore" style="display:inline">
                             <input type="hidden" name="restore_www" value="1">
                             <input type="hidden" name="restore_db" value="1">
                             <button class="btn !py-1 !px-2.5" data-tip="Restore /var/www + DB">↩ Restore</button>
                        </form>
                         <a class="btn !py-1 !px-2.5" href="/backup/download/{{ b.name }}">⬇</a>
-                        <form method="post" action="/backup/{{ b.name }} /delete" style="display:inline"
+                        <form method="post" action="/backup/{{ b.name }}/delete" style="display:inline"
                               onsubmit="return confirm('Hapus backup {{ b.name }} ?')">
                             <button class="btn danger !py-1 !px-2.5" data-tip="Hapus backup">{{ icon('trash', 'w-5 h-5') }} ️</button>
                        </form>

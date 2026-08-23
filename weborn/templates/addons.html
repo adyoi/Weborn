@@ -66,16 +66,16 @@
             {% if st.installed %}
                 <a class="btn sm" href="/addons/{{ a.id }}">{{ icon('cog-6-tooth', 'w-5 h-5') }} Kelola</a>
                 {% if a.systemd_unit %}
-                <button class="btn sm" title="Start" onclick="weborn.simplePost('/addons/{{ a.id }}/start','Start {{ a.name }} ',true)">{{ icon('play', 'w-5 h-5') }} ️</button>
-                <button class="btn sm" title="Stop" onclick="weborn.simplePost('/addons/{{ a.id }}/stop','Stop {{ a.name }} ',true)">{{ icon('stop', 'w-5 h-5') }} ️</button>
-                <button class="btn sm" title="Restart" onclick="weborn.simplePost('/addons/{{ a.id }}/restart','Restart {{ a.name }} ',true)">{{ icon('arrow-path', 'w-5 h-5') }}</button>
+                <button class="btn sm" title="Start" onclick="weborn.simplePost('/addons/{{ a.id }}/start','Start ' + {{ a.name | tojson }}, true)">{{ icon('play', 'w-5 h-5') }} ️</button>
+                <button class="btn sm" title="Stop" onclick="weborn.simplePost('/addons/{{ a.id }}/stop','Stop ' + {{ a.name | tojson }}, true)">{{ icon('stop', 'w-5 h-5') }} ️</button>
+                <button class="btn sm" title="Restart" onclick="weborn.simplePost('/addons/{{ a.id }}/restart','Restart ' + {{ a.name | tojson }}, true)">{{ icon('arrow-path', 'w-5 h-5') }}</button>
                 {% endif %}
-                <button class="btn sm" title="Update" onclick="weborn.streamPost('/addons/{{ a.id }}/update/stream','Update {{ a.name }} ',true)">{{ icon('arrow-up', 'w-4 h-4') }}</button>
+                <button class="btn sm" title="Update" onclick="weborn.streamPost('/addons/{{ a.id }}/update/stream','Update ' + {{ a.name | tojson }}, true)">{{ icon('arrow-up', 'w-4 h-4') }}</button>
                 <button class="btn danger sm" title="Uninstall"
-                        onclick="if(confirm('Hapus {{ a.name }} ?'))weborn.streamPost('/addons/{{ a.id }}/uninstall/stream','Hapus {{ a.name }} ',true)">{{ icon('trash', 'w-5 h-5') }} ️</button>
+                        onclick="if(confirm('Hapus ' + {{ a.name | tojson }} + ' ?'))weborn.streamPost('/addons/{{ a.id }}/uninstall/stream','Hapus ' + {{ a.name | tojson }}, true)">{{ icon('trash', 'w-5 h-5') }} ️</button>
             {% else %}
                 <button class="btn primary sm w-full justify-center" title="Install {{ a.name }}"
-                        onclick="weborn.streamPost('/addons/{{ a.id }}/install/stream','Install {{ a.name }} ',true)">{{ icon('arrow-down-tray', 'w-5 h-5') }} Install {{ a.name }}</button>
+                        onclick="weborn.streamPost('/addons/{{ a.id }}/install/stream','Install ' + {{ a.name | tojson }}, true)">{{ icon('arrow-down-tray', 'w-5 h-5') }} Install {{ a.name }}</button>
             {% endif %}
        </div>
    </div>

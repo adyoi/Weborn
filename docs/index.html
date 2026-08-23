@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Weborn — Server Control Panel</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked@14/marked.min.js"></script>
+    <style>
+        :root {
+            --bg-0: #0a0a0f; --bg-1: #111118; --bg-2: #1a1a24; --bg-3: #222233;
+            --text-1: #e8e8f0; --text-2: #9494a8; --text-3: #606078;
+            --accent-1: #6366f1; --accent-2: #a855f7; --accent-3: #f43f5e;
+            --ok: #22c55e; --warn: #eab308; --err: #ef4444;
+            --grid-line: rgba(100,100,140,0.08);
+            --glow-1: rgba(99,102,241,0.15); --glow-2: rgba(168,85,247,0.15); --glow-3: rgba(229,77,94,0.12);
+            --border: rgba(255,255,255,0.06);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:var(--bg-0); color:var(--text-1); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; overflow-x:hidden; line-height:1.6; }
+        a { color:var(--accent-1); text-decoration:none; }
+
+        /* ── Hero ── */
+        .hero { position:relative; min-height:100vh; display:flex; align-items:center; justify-content:center; text-align:center; overflow:hidden; padding-top:52px; }
+        .hero::before { content:''; position:absolute; inset:0; background:
+            radial-gradient(ellipse 80% 60% at 50% 0%, var(--glow-1) 0%, transparent 70%),
+            radial-gradient(ellipse 60% 50% at 20% 80%, var(--glow-2) 0%, transparent 60%),
+            radial-gradient(ellipse 50% 40% at 80% 60%, var(--glow-3) 0%, transparent 50%);
+            pointer-events:none; }
+        .hero-grid { position:absolute; inset:0; background-image:
+            linear-gradient(var(--grid-line) 1px, transparent 1px),
+            linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size:60px 60px; mask-image:radial-gradient(ellipse 70% 60% at 50% 40%, black, transparent); pointer-events:none; }
+        .hero-content { position:relative; z-index:2; max-width:720px; padding:2rem; }
+        .hero-hex { width:80px; height:80px; margin:0 auto 2rem; background:linear-gradient(135deg, var(--accent-2), var(--accent-3)); border-radius:20px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 40px rgba(99,102,241,0.35), 0 0 80px rgba(168,85,247,0.15); transform:rotate(45deg); }
+        .hero-hex svg { transform:rotate(-45deg); }
+        .hero h1 { font-size:clamp(2.5rem,6vw,4.5rem); font-weight:800; letter-spacing:-2px; line-height:1.1; background:linear-gradient(135deg, var(--text-1) 0%, var(--accent-2) 50%, var(--accent-3) 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .hero .tagline { font-size:clamp(1rem,2.5vw,1.25rem); color:var(--text-2); margin-top:1rem; line-height:1.6; }
+        .hero .badge { display:inline-flex; align-items:center; gap:6px; background:var(--bg-2); border:1px solid var(--border); border-radius:99px; padding:6px 16px; font-size:13px; color:var(--text-2); margin-top:1.5rem; }
+        .hero .badge .dot { width:6px; height:6px; border-radius:50%; background:var(--ok); box-shadow:0 0 6px var(--ok); }
+        .hero-actions { display:flex; gap:12px; justify-content:center; margin-top:2rem; flex-wrap:wrap; }
+        .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 24px; border-radius:12px; font-size:14px; font-weight:600; border:none; cursor:pointer; transition:all .2s; }
+        .btn-primary { background:linear-gradient(135deg, var(--accent-1), var(--accent-2)); color:#fff; box-shadow:0 0 20px rgba(99,102,241,0.3); }
+        .btn-primary:hover { box-shadow:0 0 30px rgba(99,102,241,0.5); transform:translateY(-1px); }
+        .btn-ghost { background:var(--bg-2); color:var(--text-1); border:1px solid var(--border); }
+        .btn-ghost:hover { border-color:var(--accent-1); }
+
+        /* ── Sections ── */
+        .section { max-width:1100px; margin:0 auto; padding:5rem 2rem; }
+        .section-title { font-size:clamp(1.75rem,4vw,2.5rem); font-weight:700; letter-spacing:-1px; color:var(--text-1); }
+        .section-sub { color:var(--text-2); margin-top:.5rem; font-size:15px; }
+        .section-header { text-align:center; margin-bottom:3rem; }
+
+        /* ── Cards ── */
+        .card { background:var(--bg-1); border:1px solid var(--border); border-radius:16px; padding:1.5rem; transition:border-color .2s, box-shadow .3s; }
+        .card:hover { border-color:rgba(99,102,241,0.3); box-shadow:0 0 30px rgba(99,102,241,0.08); }
+        .card-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:1rem; font-size:22px; }
+        .card h3 { font-size:16px; font-weight:700; margin-bottom:.4rem; }
+        .card p { font-size:14px; color:var(--text-2); line-height:1.5; }
+
+        /* ── Grids ── */
+        .features-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:1.25rem; }
+        .arch-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:1rem; }
+
+        /* ── Architecture ── */
+        .arch-box { background:var(--bg-2); border:1px solid var(--border); border-radius:12px; padding:1.25rem; text-align:center; }
+        .arch-box .label { font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--text-3); margin-bottom:.5rem; }
+        .arch-box .value { font-size:16px; font-weight:700; }
+        .arch-flow { display:flex; align-items:center; justify-content:center; gap:.75rem; flex-wrap:wrap; margin:2rem 0; padding:1.5rem; background:var(--bg-2); border-radius:16px; border:1px solid var(--border); }
+        .arch-flow .node { padding:8px 18px; border-radius:10px; font-size:13px; font-weight:600; white-space:nowrap; }
+        .arch-flow .arrow { color:var(--text-3); font-size:18px; }
+
+        /* ── Workflow ── */
+        .workflow-steps { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:1.25rem; margin-bottom:3rem; }
+        .step { text-align:center; }
+        .step-num { width:36px; height:36px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; margin-bottom:.75rem; }
+        .step h4 { font-size:14px; font-weight:700; margin-bottom:.25rem; }
+        .step p { font-size:13px; color:var(--text-2); }
+        .flow-cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:1.25rem; }
+        .flow-card { background:var(--bg-2); border:1px solid var(--border); border-radius:12px; padding:1.25rem; }
+        .flow-card h4 { font-size:14px; font-weight:700; margin-bottom:.5rem; }
+        .flow-card .path { font-size:12px; font-family:monospace; color:var(--accent-1); background:var(--bg-0); border:1px solid var(--border); border-radius:8px; padding:8px 12px; line-height:1.8; word-break:break-all; }
+        .flow-card .path .arrow-sm { color:var(--text-3); margin:0 4px; }
+
+        /* ── Changelog ── */
+        .changelog-wrap { background:var(--bg-1); border:1px solid var(--border); border-radius:16px; padding:2rem; overflow:hidden; }
+        .version-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:1.5rem; }
+        .version-tab { padding:6px 16px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:1px solid var(--border); background:var(--bg-2); color:var(--text-2); transition:all .2s; }
+        .version-tab.active { background:var(--accent-1); color:#fff; border-color:var(--accent-1); box-shadow:0 0 12px rgba(99,102,241,0.3); }
+        .version-tab:hover:not(.active) { border-color:var(--accent-1); }
+        .changelog-content { font-size:14px; line-height:1.7; color:var(--text-2); max-height:500px; overflow-y:auto; }
+        .changelog-content h2 { font-size:20px; font-weight:700; color:var(--text-1); margin:1.5rem 0 .75rem; padding-bottom:.5rem; border-bottom:1px solid var(--border); }
+        .changelog-content h3 { font-size:15px; font-weight:700; color:var(--text-1); margin:1rem 0 .5rem; }
+        .changelog-content ul { padding-left:1.5rem; }
+        .changelog-content li { margin:.3rem 0; }
+        .changelog-content strong { color:var(--text-1); }
+        .changelog-content code { font-size:12px; background:var(--bg-3); padding:2px 6px; border-radius:4px; font-family:monospace; }
+        .changelog-content a { color:var(--accent-1); }
+
+        /* ── Footer ── */
+        footer { text-align:center; padding:3rem 2rem; color:var(--text-3); font-size:13px; border-top:1px solid var(--border); margin-top:2rem; }
+        footer a { color:var(--text-2); }
+
+        /* ── Nav ── */
+        .nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(10,10,15,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem}.nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:52px}.nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;color:var(--text-1)}.nav-brand svg{width:20px;height:20px}.nav-links{display:flex;gap:4px}.nav-links a{padding:5px 12px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text-2);transition:all .2s}.nav-links a:hover{background:var(--bg-2);color:var(--text-1);text-decoration:none}
+
+        /* ── Responsive ── */
+        @media (max-width:640px) {
+            .section { padding:3rem 1.25rem; }
+            .hero-content { padding:1.5rem; }
+            .arch-flow { flex-direction:column; }
+            .arch-flow .arrow { transform:rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav"><div class="nav-inner"><a href="index.html" class="nav-brand"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"/></svg>Weborn</a><div class="nav-links"><a href="getting-started.html">Getting Started</a><a href="features.html">Features</a><a href="architecture.html">Architecture</a><a href="https://github.com/adyoi/Weborn">GitHub</a></div></div></nav>
+
+<!-- ── Hero ── -->
+<section class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-content">
+        <div class="hero-hex">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="white" class="w-9 h-9">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"/>
+            </svg>
+        </div>
+        <h1>Weborn</h1>
+        <p class="tagline">
+            Full-stack server control panel for VPS &amp; dedicated servers.<br>
+            Domains, apps, databases, email, security, monitoring — all in one place.
+        </p>
+        <div class="badge"><span class="dot"></span> v1.0.0 &middot; Python + FastAPI + Tailwind CSS</div>
+        <div class="hero-actions">
+            <a href="getting-started.html" class="btn btn-primary">Get Started</a>
+            <a href="#workflow" class="btn btn-ghost">How It Works</a>
+        </div>
+    </div>
+</section>
+
+<!-- ── Features ── -->
+<section class="section" id="features">
+    <div class="section-header">
+        <div class="section-title">Everything You Need</div>
+        <p class="section-sub">Complete server management from a single dashboard</p>
+    </div>
+    <div class="features-grid">
+        <div class="card">
+            <div class="card-icon" style="background:rgba(99,102,241,0.12);color:var(--accent-1);">
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.841m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"/></svg>
+            </div>
+            <h3>App Deployment</h3>
+            <p>Python, Node.js, PHP apps with Gunicorn/Uvicorn process manager, auto-restart, resource limits.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon" style="background:rgba(34,197,94,0.12);color:var(--ok);">
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582"/></svg>
+            </div>
+            <h3>Web Server</h3>
+            <p>Nginx, Apache, PHP-FPM management. Reverse proxy, SSL/TLS, page caching — all configured automatically.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon" style="background:rgba(234,179,8,0.12);color:var(--warn);">
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375"/></svg>
+            </div>
+            <h3>Databases</h3>
+            <p>MariaDB, PostgreSQL, Redis, MongoDB, Memcached — install, manage users, create databases.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon" style="background:rgba(244,63,94,0.12);color:var(--accent-3);">
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/></svg>
+            </div>
+            <h3>Email Stack</h3>
+            <p>Full mail server: Postfix, Dovecot, Rspamd, OpenDKIM, Roundcube webmail — setup wizard included.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon" style="background:rgba(168,85,247,0.12);color:var(--accent-2);">
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/></svg>
+            </div>
+            <h3>Security</h3>
+            <p>UFW firewall, Fail2Ban, ClamAV antivirus, Let's Encrypt SSL, audit logging, CSRF protection.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon" style="background:rgba(99,102,241,0.12);color:var(--accent-1);">
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5"/></svg>
+            </div>
+            <h3>Monitoring</h3>
+            <p>Real-time process monitor, log streaming, cron jobs, backup management, network stats.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon" style="background:rgba(234,179,8,0.12);color:var(--warn);">
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959V6a2.25 2.25 0 0 0-2.25-2.25H3.75A2.25 2.25 0 0 0 1.5 6v4.883c0 .355.186.676.401.959.221.29.349.634.349 1.003 0 1.035 1.007 1.875 2.25 1.875s2.25-.84 2.25-1.875c0-.369-.128-.713-.349-1.003A1.014 1.014 0 0 1 5.383 11H6a2.25 2.25 0 0 0 2.25-2.25V6"/></svg>
+            </div>
+            <h3>Addon Store</h3>
+            <p>35+ built-in addons: Docker, Supervisor, Git, UFW, Logrotate, and more — one-click install.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon" style="background:rgba(34,197,94,0.12);color:var(--ok);">
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 18V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v12a2.25 2.25 0 0 0 2.25 2.25z"/></svg>
+            </div>
+            <h3>Remote Terminal</h3>
+            <p>Full xterm.js terminal in browser. Run commands, manage files, all through the panel.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ── Workflow ── -->
+<section class="section" id="workflow">
+    <div class="section-header">
+        <div class="section-title">How Weborn Works</div>
+        <p class="section-sub">From zero to deployed in minutes</p>
+    </div>
+
+    <div class="workflow-steps">
+        <div class="step">
+            <div class="step-num" style="background:rgba(99,102,241,0.15);color:var(--accent-1);">1</div>
+            <h4>Install</h4>
+            <p>One command on a fresh Debian server</p>
+        </div>
+        <div class="step">
+            <div class="step-num" style="background:rgba(168,85,247,0.15);color:var(--accent-2);">2</div>
+            <h4>Configure</h4>
+            <p>Setup wizard creates admin + OS user</p>
+        </div>
+        <div class="step">
+            <div class="step-num" style="background:rgba(234,179,8,0.15);color:var(--warn);">3</div>
+            <h4>Deploy</h4>
+            <p>Add apps, databases, email — all from the UI</p>
+        </div>
+        <div class="step">
+            <div class="step-num" style="background:rgba(34,197,94,0.15);color:var(--ok);">4</div>
+            <h4>Manage</h4>
+            <p>Monitor, scale, backup — everything in one place</p>
+        </div>
+    </div>
+
+    <div class="flow-cards">
+        <div class="flow-card">
+            <h4>App Deployment Flow</h4>
+            <div class="path">
+                Browser <span class="arrow-sm">&rarr;</span> Nginx <span class="arrow-sm">&rarr;</span> Gunicorn <span class="arrow-sm">&rarr;</span> UvicornWorker <span class="arrow-sm">&rarr;</span> FastAPI/Flask/Django
+            </div>
+        </div>
+        <div class="flow-card">
+            <h4>Email Flow</h4>
+            <div class="path">
+                Postfix (SMTP) <span class="arrow-sm">&rarr;</span> Dovecot (IMAP) <span class="arrow-sm">&rarr;</span> Rspamd (filter) <span class="arrow-sm">&rarr;</span> OpenDKIM (sign)
+            </div>
+        </div>
+        <div class="flow-card">
+            <h4>Security Flow</h4>
+            <div class="path">
+                UFW (firewall) <span class="arrow-sm">&rarr;</span> Fail2Ban (brute-force) <span class="arrow-sm">&rarr;</span> ClamAV (malware) <span class="arrow-sm">&rarr;</span> Certbot (SSL)
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Architecture ── -->
+<section class="section" id="architecture">
+    <div class="section-header">
+        <div class="section-title">Built With</div>
+        <p class="section-sub">Modern stack, battle-tested components</p>
+    </div>
+    <div class="arch-grid">
+        <div class="arch-box">
+            <div class="label">Backend</div>
+            <div class="value">Python 3.13</div>
+        </div>
+        <div class="arch-box">
+            <div class="label">Framework</div>
+            <div class="value">FastAPI + Uvicorn</div>
+        </div>
+        <div class="arch-box">
+            <div class="label">Frontend</div>
+            <div class="value">Tailwind CSS</div>
+        </div>
+        <div class="arch-box">
+            <div class="label">Terminal</div>
+            <div class="value">xterm.js</div>
+        </div>
+        <div class="arch-box">
+            <div class="label">Auth</div>
+            <div class="value">JWT + CSRF</div>
+        </div>
+        <div class="arch-box">
+            <div class="label">Database</div>
+            <div class="value">SQLite</div>
+        </div>
+        <div class="arch-box">
+            <div class="label">Process</div>
+            <div class="value">systemd</div>
+        </div>
+        <div class="arch-box">
+            <div class="label">Platform</div>
+            <div class="value">Debian/Ubuntu</div>
+        </div>
+    </div>
+
+    <div class="arch-flow" style="margin-top:2rem;">
+        <span class="node" style="background:rgba(99,102,241,0.15);color:var(--accent-1);">Nginx / Apache</span>
+        <span class="arrow">&rarr;</span>
+        <span class="node" style="background:rgba(168,85,247,0.15);color:var(--accent-2);">Gunicorn / Uvicorn</span>
+        <span class="arrow">&rarr;</span>
+        <span class="node" style="background:rgba(34,197,94,0.15);color:var(--ok);">App (Flask/FastAPI/Django)</span>
+    </div>
+</section>
+
+<!-- ── Changelog ── -->
+<section class="section" id="changelog">
+    <div class="section-header">
+        <div class="section-title">Release History</div>
+        <p class="section-sub">What's new in each version</p>
+    </div>
+    <div class="changelog-wrap">
+        <div class="version-tabs" id="version-tabs"></div>
+        <div class="changelog-content" id="changelog-content">
+            <p style="color:var(--text-3);">Loading changelog...</p>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <p>Weborn &copy; 2026 &middot; <a href="https://github.com/adyoi/Weborn">GitHub</a> &middot; MIT License</p>
+</footer>
+
+<script>
+(function() {
+    var tabs = document.getElementById('version-tabs');
+    var content = document.getElementById('changelog-content');
+    var versions = {};
+    var activeVersion = null;
+
+    fetch('https://raw.githubusercontent.com/adyoi/Weborn/main/CHANGELOG.md')
+        .then(function(r) { return r.text(); })
+        .then(function(md) {
+            var sections = md.split(/^## /m).slice(1);
+            sections.forEach(function(sec) {
+                var lines = sec.split('\n');
+                var header = lines[0].trim();
+                var match = header.match(/\[(.+?)\]/);
+                if (!match) return;
+                var ver = match[1];
+                var body = lines.slice(1).join('\n');
+                versions[ver] = body;
+                var tab = document.createElement('span');
+                tab.className = 'version-tab';
+                tab.textContent = 'v' + ver;
+                tab.dataset.ver = ver;
+                tab.addEventListener('click', function() {
+                    showVersion(ver);
+                });
+                tabs.appendChild(tab);
+            });
+            var keys = Object.keys(versions);
+            if (keys.length) showVersion(keys[0]);
+        })
+        .catch(function() {
+            content.innerHTML = '<p style="color:var(--text-3);">CHANGELOG.md not found.</p>';
+        });
+
+    function showVersion(ver) {
+        activeVersion = ver;
+        document.querySelectorAll('.version-tab').forEach(function(t) {
+            t.classList.toggle('active', t.dataset.ver === ver);
+        });
+        content.innerHTML = marked.parse(versions[ver] || '');
+    }
+})();
+</script>
+</body>
+</html>

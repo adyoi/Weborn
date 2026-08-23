@@ -41,7 +41,7 @@
                     <td class="mono text-[13px]">{{ p.target }}</td>
                     <td>{{ icon('check', 'w-5 h-5') if p.cache else '—' }}</td>
                     <td>
-                        <form method="post" action="/proxies/{{ p.id }} /delete" style="display:inline"
+                        <form method="post" action="/proxies/{{ p.id }}/delete" style="display:inline"
                               onsubmit="return confirm('Hapus {{ p.name }} ?')">
                             <button class="btn danger !py-1 !px-2.5" data-tip="Hapus {{ p.name }}">{{ icon('trash', 'w-5 h-5') }} ️</button>
                        </form>
