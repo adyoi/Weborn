@@ -35,16 +35,16 @@
 
     window.changeLines = function() {
         var v = document.getElementById('log-lines').value;
-        window.location.href = '/logs?source={{ source }}&lines=' + v;
+        window.location.href = '/logs?source={{ source|urlencode }}&lines=' + v;
     };
     window.scrollBottom = function() {
         var el = document.getElementById('log-output');
         if (el) el.scrollTop = el.scrollHeight;
     };
     window.clearLog = function() {
-        if (!confirm('Hapus semua log {{ source }} ?')) return;
+        if (!confirm('Hapus semua log ' + {{ source|tojson }} + ' ?')) return;
         var csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
-        fetch('/logs/{{ source }}/clear', {
+        fetch('/logs/' + {{ source|tojson }} + '/clear', {
             method: 'POST',
             headers: {'X-CSRF-Token': csrfToken}
         }).then(function(r){ return r.json(); }).then(function(d){

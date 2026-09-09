@@ -1,7 +1,7 @@
 # Weborn
 
 <p align="center">
-  <img src="assets/weborn-logo.png" alt="Weborn logo" width="620" />
+  <img src="assets/weborn-logo.svg" alt="Weborn logo" width="300" />
 </p>
 
 <p align="center">
@@ -13,6 +13,19 @@
 </p>
 
 Weborn is a self-hosted control panel for running, securing, and managing server-side services from one clean dashboard. It provides a unified interface for application deployment, domain management, database administration, monitoring, security hardening, and system operations.
+
+## Screenshots
+
+<p align="center">
+  <img src="assets/weborn-shots/dashboard.png" alt="Weborn Dashboard" width="380" />
+  <img src="assets/weborn-shots/apps.png" alt="Weborn Apps" width="380" />
+  <br/>
+  <img src="assets/weborn-shots/settings.png" alt="Weborn Settings" width="380" />
+  <img src="assets/weborn-shots/accounts.png" alt="Weborn Panel Accounts" width="380" />
+  <br/>
+  <img src="assets/weborn-shots/logs.png" alt="Weborn Logs" width="380" />
+  <img src="assets/weborn-shots/monitor.png" alt="Weborn Apps Monitor" width="380" />
+</p>
 
 ## Architecture
 

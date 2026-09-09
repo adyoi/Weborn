@@ -19,7 +19,7 @@
                 <td>
                     {% if p.pid not in (1, 2) %}
                     <button class="btn danger !py-1 !px-2" data-tip="Kill PID {{ p.pid }}"
-                            onclick="if(confirm('Kill ' + {{ p.name | tojson }} + ' ({{ p.pid }})?'))weborn.simplePost('/processes/{{ p.pid }}/kill','Menghentikan ' + {{ p.name | tojson }}, true)">{{ icon('x-mark', 'w-5 h-5') }}</button>
+                            onclick="if(confirm('Kill ' + {{ p.name|tojson }} + ' ({{ p.pid }})?'))weborn.simplePost('/processes/{{ p.pid }}/kill','Menghentikan ' + {{ p.name|tojson }}, true)">{{ icon('x-mark', 'w-5 h-5') }}</button>
                     {% endif %}
                </td>
            </tr>

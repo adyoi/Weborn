@@ -108,6 +108,9 @@ async def nginx_site_read(site_name: str, user: dict = Depends(require_admin)):
 async def nginx_site_delete(site_name: str, user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    import re as _re
+    if not _re.match(r'^[A-Za-z0-9._-]+$', site_name):
+        return JSONResponse({"ok": False, "error": "nama site tidak valid"}, status_code=400)
     import shlex as _shlex
     ex = get_executor()
     if ex.mode not in ("local", "wsl"):

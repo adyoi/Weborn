@@ -29,7 +29,6 @@
     var fitAddon = new FitAddon.FitAddon();
     term.loadAddon(fitAddon);
     term.open(document.getElementById('terminal'));
-    fitAddon.fit();
 
     var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     var ws = new WebSocket(proto + '//' + location.host + '/ws/terminal');
@@ -44,6 +43,8 @@
         if (ws.readyState === 1) ws.send('\x1b[' + size.rows + ';' + size.cols + 'R');
     });
     window.addEventListener('resize', function() { fitAddon.fit(); });
+    /* fit setelah onResize terdaftar agar ukuran awal langsung terkirim ke server */
+    fitAddon.fit();
 })();
 </script>
 {% endblock %}

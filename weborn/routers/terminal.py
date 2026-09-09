@@ -2,6 +2,7 @@
 import asyncio
 import os
 import re
+import signal
 
 _pty = _fcntl = _struct = _termios = None
 if os.name == "posix":
@@ -57,6 +58,9 @@ async def terminal_ws(websocket: WebSocket):
         await websocket.send_text("[error] Terminal WebSocket hanya tersedia di mode local/WSL\r\n")
         await websocket.close()
         return
+    master_fd = None
+    slave_fd = None
+    child_pid = None
     try:
         if not _pty or not _fcntl or not _struct or not _termios:
             await websocket.send_text("[error] Terminal tidak tersedia di platform ini\r\n")
@@ -65,8 +69,8 @@ async def terminal_ws(websocket: WebSocket):
         master_fd, slave_fd = _pty.openpty()
         flags = _fcntl.fcntl(master_fd, _fcntl.F_GETFL)
         _fcntl.fcntl(master_fd, _fcntl.F_SETFL, flags | os.O_NONBLOCK)
-        pid = os.fork()
-        if pid == 0:
+        child_pid = os.fork()
+        if child_pid == 0:
             os.close(master_fd)
             os.setsid()
             _fcntl.ioctl(slave_fd, _termios.TIOCSCTTY, 0)
@@ -83,41 +87,81 @@ async def terminal_ws(websocket: WebSocket):
                 else:
                     os.execvp("/bin/bash", ["/bin/bash", "--login"])
             except Exception:
+                pass
+            # Semua execvp gagal: hentikan child dan JANGAN pernah melanjutkan
+            # ke kode asyncio parent (akibat loop event rusak di dalam fork).
+            try:
                 os.execvp("/bin/bash", ["/bin/bash", "--login"])
+            except Exception:
+                os._exit(127)
         os.close(slave_fd)
+        slave_fd = None
         await websocket.send_text("\033[1;32m[Terminal Weborn]\033[0m Siap.\r\n")
         async def read_pty():
             while True:
                 try:
                     data = os.read(master_fd, 4096)
-                    if data:
-                        await websocket.send_text(data.decode("utf-8", errors="replace"))
-                except (OSError, BlockingIOError):
+                    if not data:
+                        break  # child shell keluar → EOF
+                    await websocket.send_text(data.decode("utf-8", errors="replace"))
+                except BlockingIOError:
                     await asyncio.sleep(0.01)
+                except (OSError, RuntimeError):
+                    break  # socket tertutup / fd invalid
         async def read_ws():
             while True:
-                data = await websocket.receive_text()
+                try:
+                    data = await websocket.receive_text()
+                except Exception:
+                    break  # client disconnect → stop task
                 if data.startswith("\x1b["):
                     m = re.match(r"\x1b\[(\d+);(\d+)R", data)
                     if m:
                         rows, cols = int(m.group(1)), int(m.group(2))
                         winsize = _struct.pack("HHHH", rows, cols, 0, 0)
-                        _fcntl.ioctl(slave_fd, _termios.TIOCSWINSZ, winsize)
+                        # TIOCSWINSZ harus di master_fd (slave_fd sudah ditutup di parent)
+                        _fcntl.ioctl(master_fd, _termios.TIOCSWINSZ, winsize)
                         continue
-                os.write(master_fd, data.encode("utf-8"))
-        done, pending = await asyncio.wait(
-            [asyncio.create_task(read_pty()), asyncio.create_task(read_ws())],
-            return_when=asyncio.FIRST_COMPLETED
-        )
+                try:
+                    os.write(master_fd, data.encode("utf-8"))
+                except (BlockingIOError, OSError):
+                    await asyncio.sleep(0.01)
+        tasks = [asyncio.create_task(read_pty()), asyncio.create_task(read_ws())]
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for t in pending:
             t.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
     except Exception as e:
         try:
             await websocket.send_text(f"\r\n[error] {e}\r\n")
         except Exception:
             pass
     finally:
+        # Bersihkan proses child (juga grup prosesnya agar tidak jadi orphan)
+        if child_pid and child_pid > 0:
+            for sig in (signal.SIGTERM, signal.SIGKILL):
+                try:
+                    os.killpg(child_pid, sig)
+                except Exception:
+                    try:
+                        os.kill(child_pid, sig)
+                    except Exception:
+                        pass
+            try:
+                os.waitpid(child_pid, os.WNOHANG)
+            except Exception:
+                pass
+        if master_fd is not None:
+            try:
+                os.close(master_fd)
+            except Exception:
+                pass
+        if slave_fd is not None:
+            try:
+                os.close(slave_fd)
+            except Exception:
+                pass
         try:
-            os.close(master_fd)
+            await websocket.close()
         except Exception:
             pass

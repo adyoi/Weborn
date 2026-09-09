@@ -197,8 +197,13 @@ class AccountManager:
     async def bootstrap(self) -> dict:
         """Cek apakah www-data ada (untuk service web). Admin dibuat via setup wizard."""
         results = []
-        www = self.find("www-data")
-        if www is None:
+        if self.executor.mode in ("local", "wsl"):
+            r = await self.executor.run("getent", "passwd", "www-data")
+            exists = r.ok and any(
+                line.strip().startswith("www-data:") for line in r.stdout.splitlines())
+        else:
+            exists = self.find("www-data") is not None
+        if not exists:
             # Buat www-data tanpa password (service account, nologin)
             if self.executor.mode in ("local", "wsl"):
                 r = await self.executor.run("useradd", "-r", "-s", "/usr/sbin/nologin", "www-data")

@@ -1,8 +1,10 @@
 """File explorer: browse, edit, chown, chmod, create, delete."""
+import base64
 import os
 import re
 import shlex
 import stat
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -35,6 +37,13 @@ def _resolve_fs_path(raw: str) -> Path | None:
             if str(p) == root or str(p).startswith(root + os.sep):
                 return p
     return None
+
+
+def _remove_file(path: str):
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
 
 
 def _owner_of(st: os.stat_result) -> tuple:
@@ -204,11 +213,13 @@ async def files_compress(path: str, user: dict = Depends(require_admin)):
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
         tar_name = resolved.name + ".tar.gz"
-        tar_path = f"/tmp/weborn-{tar_name}"
+        tar_path = f"/tmp/weborn-{os.getpid()}-{int(time.time() * 1000)}.tar.gz"
         r = await ex.run("bash", "-c",
                          f"sudo tar -czf {shlex.quote(str(tar_path))} -C {shlex.quote(str(resolved.parent))} {shlex.quote(resolved.name)} 2>/dev/null")
         if r.ok:
-            return FileResponse(tar_path, filename=tar_name, media_type="application/gzip")
+            from starlette.background import BackgroundTask
+            return FileResponse(tar_path, filename=tar_name, media_type="application/gzip",
+                                background=BackgroundTask(_remove_file, tar_path))
     return JSONResponse({"error": "gagal compress"}, status_code=500)
 
 
@@ -226,10 +237,12 @@ async def files_download(path: str, user: dict = Depends(require_admin)):
         pass
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        r = await ex.run("bash", "-c", f"sudo cat {shlex.quote(str(resolved))} 2>/dev/null")
+        # Base64 agar download biner tidak korup (executor menghandle string UTF-8)
+        r = await ex.run("bash", "-c", f"sudo base64 {shlex.quote(str(resolved))} 2>/dev/null")
         if r.ok:
             from fastapi.responses import Response
-            return Response(content=r.stdout, media_type="application/octet-stream",
+            return Response(content=base64.b64decode(r.stdout.strip()),
+                            media_type="application/octet-stream",
                             headers={"Content-Disposition": f'attachment; filename="{resolved.name}"'})
     return JSONResponse({"error": "file tidak dapat diakses"}, status_code=400)
 

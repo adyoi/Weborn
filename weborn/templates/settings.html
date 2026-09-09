@@ -15,13 +15,6 @@
     {# ── Config File List ── #}
     <div class="card !p-2">
         <div class="text-[14px] uppercase text-t3 tracking-wider px-2.5 py-1.5 font-bold">Config Files</div>
-        {% set grouped = {} %}
-        {% for name, cfg in configs.items() %}
-            {% set cat = cfg.desc.split('(')[0].strip()[:20] if '(' in cfg.desc else name[:1] %}
-            {% if cat not in grouped %}
-                {% set _ = grouped.update({cat: []}) %}
-            {% endif %}
-        {% endfor %}
         {% for name, cfg in configs.items() %}
         <a href="/settings?path={{ cfg.path }}"
            class="flex items-center gap-2 px-2.5 py-1.5 rounded text-[13px] text-t2 hover:bg-white/5 no-underline {{ 'bg-accent/10 text-accent font-bold' if current and current.path == cfg.path else '' }}">

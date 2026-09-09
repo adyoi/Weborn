@@ -181,12 +181,15 @@
     initTheme, cycleTheme,
 
     // ── Simple POST (JSON response) ──
-    async simplePost(url, title, reload) {
+    async simplePost(url, title, reload, body) {
       showProgress(title);
       setStep('Menjalankan…');
       try {
         const csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
-        const res = await fetch(url, { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } });
+        const opts = { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } };
+        // body opsional (FormData/string) — tanpa body = POST polos
+        if (body) opts.body = body;
+        const res = await fetch(url, opts);
         let data;
         try { data = await res.json(); } catch (e) { data = { output: await res.text() }; }
         if (data.ok === false || data.error) {

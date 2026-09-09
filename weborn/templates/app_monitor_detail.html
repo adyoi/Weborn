@@ -11,7 +11,7 @@
         <a href="/apps/monitor" class="btn sm">← Kembali</a>
         <div class="page-title text-[22px] font-bold mb-1">{{ app.name }}</div>
         <span class="text-t3 text-xs font-mono">{{ app.app_type }}</span>
-        <span class="text-t3 text-xs">({{ app.process_manager }} )</span>
+        <span class="text-t3 text-xs">({{ app.process_manager }})</span>
         {% if gstatus.status == 'active' %}
         <span class="px-2 py-0.5 rounded bg-green-500/20 text-green-400 text-[13px] font-mono">● running</span>
         {% elif gstatus.status == 'stopped' %}
@@ -21,13 +21,13 @@
         {% endif %}
    </div>
     <div class="flex gap-2">
-        <button onclick="weborn.simplePost('/apps/{{ app.id }}/start','Start ' + {{ app.name | tojson }}, true)"
+        <button onclick="weborn.simplePost('/apps/{{ app.id }}/start','Start {{ app.name }}', true)"
                 class="btn sm"
                 {% if gstatus.status == 'active' %}disabled{% endif %}>{{ icon('play', 'w-5 h-5') }} Start</button>
-        <button onclick="weborn.simplePost('/apps/{{ app.id }}/stop','Stop ' + {{ app.name | tojson }}, true)"
+        <button onclick="weborn.simplePost('/apps/{{ app.id }}/stop','Stop {{ app.name }}', true)"
                 class="btn sm"
                 {% if gstatus.status != 'active' %}disabled{% endif %}>{{ icon('stop', 'w-5 h-5') }} Stop</button>
-        <button onclick="weborn.simplePost('/apps/{{ app.id }}/restart','Restart ' + {{ app.name | tojson }}, true)"
+        <button onclick="weborn.simplePost('/apps/{{ app.id }}/restart','Restart {{ app.name }}', true)"
                 class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
         <button onclick="location.reload()" class="btn sm">{{ icon('square-3-stack-3d', 'w-5 h-5') }} Refresh</button>
    </div>
@@ -63,11 +63,16 @@
         <div class="text-t3">App Type</div><div class="mono">{{ app.app_type }}</div>
         <div class="text-t3">Process Manager</div><div class="mono">{{ app.process_manager }}</div>
         <div class="text-t3">Port</div><div class="mono">{{ app.port }}</div>
+        <div class="text-t3">Link</div>
+        <div class="mono text-[13px]">
+            <a href="http://{{ app.link_host }}:{{ app.link_port }}" target="_blank"
+               class="text-accent hover:underline">http://{{ app.link_host }}:{{ app.link_port }}</a>
+        </div>
         <div class="text-t3">User OS</div><div class="mono">{{ app.user }}</div>
         <div class="text-t3">Directory</div><div class="mono text-[13px]">{{ app.home_dir }}</div>
         <div class="text-t3">Systemd Unit</div><div class="mono text-[13px]">{{ app.unit }}</div>
         <div class="text-t3">Command</div><div class="mono text-[13px] break-all">{{ app.command }}</div>
-        <div class="text-t3">Socket</div><div class="mono text-[13px]">/run/gunicorn/{{ app.slug }} .sock</div>
+        <div class="text-t3">Socket</div><div class="mono text-[13px]">/run/gunicorn/{{ app.slug }}.sock</div>
         <div class="text-t3">Created</div><div class="mono text-[13px]">{{ app.created_at }}</div>
    </div>
 </div>
@@ -99,7 +104,7 @@
 {# ── Worker Table ── #}
 {% if gstatus.workers %}
 <div class="card p-4">
-    <h3 class="font-bold text-sm mb-2">Workers ({{ gstatus.workers | length }} )</h3>
+    <h3 class="font-bold text-sm mb-2">Workers ({{ gstatus.workers | length }})</h3>
     <div class="overflow-x-auto">
         <table class="text-xs font-mono w-full">
             <thead>

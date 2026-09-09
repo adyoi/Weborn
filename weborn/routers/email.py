@@ -17,6 +17,9 @@ from ..ui import render
 
 router = APIRouter(tags=["Mail Server"])
 
+# Nama mailbox: huruf kecil, angka, titik, strip, underscore (maks 32)
+_MAILBOX_RE = __import__("re").compile(r"^[a-z0-9][a-z0-9._-]{0,31}$")
+
 
 def _sse(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
@@ -317,6 +320,8 @@ async def email_account_create(username: str = Form(...),
                                user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    if not _MAILBOX_RE.match(username):
+        return RedirectResponse("/email/accounts?msg=Username%20tidak%20valid", status_code=303)
     ex = get_executor()
     full_email = f"{username}@{domain}"
     safe_user = shlex.quote(username)
@@ -341,9 +346,21 @@ async def email_account_delete(username: str = Form(...),
                                user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    if not _MAILBOX_RE.match(username):
+        return RedirectResponse("/email/accounts?msg=Username%20tidak%20valid", status_code=303)
     ex = get_executor()
+    safe_user = shlex.quote(username)
     if ex.mode in ("local", "wsl"):
-        await ex.run("bash", "-c", f"sudo userdel -r {shlex.quote(username)} 2>/dev/null || true")
+        # Aman: hanya hapus Maildir (data mailbox), BUKAN seluruh home dir
+        # (`userdel -r` bisa menghapus home OS user non-mailbox lain).
+        # Baru userdel tanpa -r jika user hanya punya Maildir.
+        await ex.run("bash", "-c",
+                     f"sudo find /home/{safe_user}/Maildir /var/mail/{safe_user} "
+                     f"-type f -delete 2>/dev/null || true")
+        await ex.run("bash", "-c",
+                     f"sudo find /home/{safe_user}/Maildir -type d -empty -delete 2>/dev/null || true")
+        await ex.run("bash", "-c",
+                     f"sudo userdel {safe_user} 2>/dev/null || true")
     return RedirectResponse(f"/email/accounts?domain={domain}&msg=Akun%20dihapus",
                             status_code=303)
 
@@ -355,6 +372,8 @@ async def email_account_password(username: str = Form(...),
                                  user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    if not _MAILBOX_RE.match(username):
+        return RedirectResponse("/email/accounts?msg=Username%20tidak%20valid", status_code=303)
     ex = get_executor()
     safe_pass = shlex.quote(f"{username}:{password}")
     if ex.mode in ("local", "wsl"):

@@ -22,7 +22,7 @@ import re
 import shlex
 from datetime import datetime
 
-from ..config import APP_TYPES, FRAMEWORKS, GUNICORN_SOCK_DIR, RUNTIMES, WEB_ROOT
+from ..config import APP_TYPES, FRAMEWORKS, GUNICORN_SOCK_DIR, RUNTIMES, VENV_ROOT, WEB_ROOT
 from ..db import add_app, delete_app, get_app, get_app_by_name, get_app_by_port, list_apps, set_app_status
 
 # Stub starter per framework
@@ -173,6 +173,22 @@ def _app_type_for(language: str, framework: str) -> str:
     return "static"
 
 
+def _venv_for(slug: str, home: str, inside: bool) -> str:
+    """Return the venv directory path for an app.
+
+    inside=True  -> {home}/.venv
+    inside=False -> {VENV_ROOT}/{slug}
+    """
+    if inside:
+        return f"{home}/.venv"
+    return f"{VENV_ROOT}/{slug}"
+
+
+def _venv_bin(venv_dir: str, *names: str) -> str:
+    """Return path to executable(s) inside a venv."""
+    return "/".join([venv_dir, "bin", *names])
+
+
 class AppManager:
     def __init__(self, ex):
         self.ex = ex
@@ -185,6 +201,72 @@ class AppManager:
                           f"sudo mkdir -p {GUNICORN_SOCK_DIR} /var/log/gunicorn "
                           f"/var/log/nginx /run/php /var/log/php-fpm")
         await self.ex.run("bash", "-c", f"sudo mkdir -p /var/log/{shlex.quote(name)}")
+
+    # ---------------------------------------------------------------- port checks
+    async def _port_busy(self, port: int) -> bool:
+        """True bila port benar-benar sedang dibuka oleh proses runtime (ss)."""
+        if self.ex.mode not in ("local", "wsl"):
+            return False
+        r = await self.ex.run("bash", "-c",
+                              f"ss -tln | awk 'NR>1{{print $4}}' | sed 's/.*://' | grep -qx '{port}'")
+        return bool(r.ok)
+
+    @staticmethod
+    def parse_bind(command: str):
+        """Extract (host, port) asli yang di-bind oleh suatu command.
+
+        Mendukung gunicorn '--bind host:port' & uvicorn '--host X --port N'.
+        Returns (None, None) bila tidak bisa diparsing (mis. bind unix socket).
+        """
+        if not command:
+            return None, None
+        host = None
+        port = None
+        parts = shlex.split(command)
+        i = 0
+        while i < len(parts):
+            p = parts[i]
+            if p == "--bind" and i + 1 < len(parts):
+                b = parts[i + 1]
+                if b.startswith("unix:"):
+                    return None, None
+                if ":" in b:
+                    h, pstr = b.rsplit(":", 1)
+                    if pstr.isdigit():
+                        host, port = h, int(pstr)
+                i += 2
+                continue
+            if p == "--host" and i + 1 < len(parts):
+                host = parts[i + 1]
+                i += 2
+                continue
+            if p == "--port" and i + 1 < len(parts):
+                if parts[i + 1].isdigit():
+                    port = int(parts[i + 1])
+                i += 2
+                continue
+            if p.startswith("--bind="):
+                b = p.split("=", 1)[1]
+                if b.startswith("unix:"):
+                    return None, None
+                if ":" in b:
+                    h, pstr = b.rsplit(":", 1)
+                    if pstr.isdigit():
+                        host, port = h, int(pstr)
+                i += 1
+                continue
+            if p.startswith("--host="):
+                host = p.split("=", 1)[1]
+                i += 1
+                continue
+            if p.startswith("--port="):
+                val = p.split("=", 1)[1]
+                if val.isdigit():
+                    port = int(val)
+                i += 1
+                continue
+            i += 1
+        return host, port
 
     # ---------------------------------------------------------------- port alloc
     async def alloc_port(self) -> int:
@@ -203,10 +285,12 @@ class AppManager:
 
     # ---------------------------------------------------------------- create
     async def create(self, name: str, language: str, framework: str = "",
-                     port: int = 0) -> dict:
+                     port: int = 0, venv: str = "inside") -> dict:
         lang = RUNTIMES.get(language)
         if not lang:
             return {"ok": False, "error": f"bahasa '{language}' tidak dikenal"}
+        if language == "python" and venv not in ("inside", "outside", ""):
+            return {"ok": False, "error": "venv harus 'inside', 'outside', atau kosong (tanpa venv)"}
 
         fw = None
         if framework:
@@ -230,6 +314,8 @@ class AppManager:
                 return {"ok": False, "error": str(e)}
         if get_app_by_port(port):
             return {"ok": False, "error": f"port {port} sudah dipakai app lain"}
+        if await self._port_busy(port):
+            return {"ok": False, "error": f"port {port} sedang dipakai proses lain"}
 
         home = f"{WEB_ROOT}/{slug}"
         os_user = f"weborn-{slug}"[:32]
@@ -237,6 +323,15 @@ class AppManager:
         env_file = f"{home}/.env"
         sock = f"{GUNICORN_SOCK_DIR}/{slug}.sock"
         log_dir = f"/var/log/{slug}"
+
+        # ── Virtualenv untuk Python ──
+        # "inside"  -> venv di {home}/.venv (per-app, isolasi penuh)
+        # "outside" -> venv di {VENV_ROOT}/{slug} (home dir bersih)
+        # ""        -> pakai python3 sistem (tanpa venv)
+        venv_enabled = language == "python" and venv in ("inside", "outside")
+        venv_inside = venv == "inside"
+        venv_dir = _venv_for(slug, home, venv_inside) if venv_enabled else ""
+        py = _venv_bin(venv_dir, "python") if venv_dir else "python3"
 
         # ── Build command based on app_type ──
         workers = type_info.get("workers_default", 4)
@@ -253,6 +348,10 @@ class AppManager:
             command = command.replace("{port}", str(port))
         else:
             command = None
+
+        # Ganti python3 dengan python venv jika aktif
+        if venv_dir and command:
+            command = command.replace("python3 -m", f"{py} -m")
 
         # ── Stub starter file ──
         # Skip stubs for scaffolding frameworks (create-project / npx create-* / nest new)
@@ -274,14 +373,31 @@ class AppManager:
 
             deps = (fw or {}).get("pkg") or ""
             if deps and language == "python":
-                deps = deps.replace("pip install",
-                                    "python3 -m pip install --break-system-packages")
+                if venv_dir:
+                    deps = deps.replace("pip install", f"{py} -m pip install")
+                else:
+                    deps = deps.replace("pip install",
+                                        "python3 -m pip install --break-system-packages")
 
             steps += [
                 ("mkdir", f"sudo mkdir -p {home}/{lang.get('run_dir', '.')}"),
                 ("user", f"id {os_user} >/dev/null 2>&1 || "
                          f"sudo useradd -r -M -d {home} -s /bin/false {os_user}"),
             ]
+
+            # Virtualenv dibuat SETELAH home_dir & OS user tersedia
+            if venv_dir:
+                if venv_inside:
+                    create_venv = (f"sudo python3 -m venv {shlex.quote(venv_dir)} && "
+                                   f"{py} -m pip install --upgrade pip setuptools >/dev/null 2>&1 && "
+                                   f"sudo chown -R {shlex.quote(os_user)}:{shlex.quote(os_user)} {shlex.quote(venv_dir)}")
+                else:
+                    # Di luar home_dir: perlu sudo, lalu chown ke user app
+                    create_venv = (f"sudo mkdir -p {shlex.quote(VENV_ROOT)} && "
+                                   f"sudo python3 -m venv {shlex.quote(venv_dir)} && "
+                                   f"{py} -m pip install --upgrade pip setuptools >/dev/null 2>&1 && "
+                                   f"sudo chown -R {shlex.quote(os_user)}:{shlex.quote(os_user)} {shlex.quote(venv_dir)}")
+                steps.append(("venv", create_venv))
 
             if stub:
                 import base64
@@ -296,8 +412,9 @@ class AppManager:
                 steps.append(("deps", f"cd {home} && {deps}"))
 
             steps += [
-                ("env", self._write_env(home, port, app_type, name)),
-                ("unit", self._write_unit(unit, os_user, home, command, app_type)),
+                ("env", self._write_env(home, port, app_type, name, venv_dir=venv_dir)),
+                ("unit", self._write_unit(unit, os_user, home, command, app_type,
+                                          venv_dir=venv_dir)),
             ]
 
             if pm == "gunicorn":
@@ -337,6 +454,7 @@ class AppManager:
             "command": command or f"Nginx → {pm}",
             "status": "running" if failed is None else "error",
             "env_file": env_file, "unit": unit,
+            "venv_dir": venv_dir, "venv_inside": 1 if venv_inside else 0,
             "created_at": datetime.now().isoformat(),
         })
         return {
@@ -344,12 +462,16 @@ class AppManager:
             "error": f"langkah '{failed}' gagal" if failed else None,
             "port": port, "user": os_user, "home_dir": home,
             "unit": unit, "command": command, "env_file": env_file, "steps": steps,
+            "venv_dir": venv_dir,
         }
 
     # ----------------------------------------------------------------- create native
     async def create_native(self, name: str, app_type: str, command: str,
-                             port: int = 0, dir_path: str = "") -> dict:
+                             port: int = 0, dir_path: str = "",
+                             venv: str = "inside") -> dict:
         """Create a native app with user-specified command (no framework stub)."""
+        if venv not in ("inside", "outside", ""):
+            return {"ok": False, "error": "venv harus 'inside', 'outside', atau kosong (tanpa venv)"}
         slug = _slug(name)
 
         existing = get_app_by_name(name)
@@ -363,6 +485,8 @@ class AppManager:
                 return {"ok": False, "error": str(e)}
         if get_app_by_port(port):
             return {"ok": False, "error": f"port {port} sudah dipakai app lain"}
+        if await self._port_busy(port):
+            return {"ok": False, "error": f"port {port} sedang dipakai proses lain"}
 
         # Use custom dir or default
         if dir_path and dir_path.startswith("/"):
@@ -373,6 +497,14 @@ class AppManager:
         unit = f"weborn-{slug}.service"
         env_file = f"{home}/.env"
         sock = f"{GUNICORN_SOCK_DIR}/{slug}.sock"
+
+        # ── Virtualenv untuk native app (selalu Python) ──
+        venv_enabled = venv in ("inside", "outside")
+        venv_inside = venv == "inside"
+        venv_dir = _venv_for(slug, home, venv_inside) if venv_enabled else ""
+        py = _venv_bin(venv_dir, "python") if venv_dir else "python3"
+        if venv_dir and command:
+            command = command.replace("python3 -m", f"{py} -m")
 
         steps, failed = [], None
         if self.ex.mode in ("local", "wsl"):
@@ -387,17 +519,34 @@ class AppManager:
                          f"sudo useradd -r -M -d {qhome} -s /bin/false {os_user}"),
             ]
 
-            # Auto-install gunicorn + uvicorn if not present
-            steps.append(("deps",
-                "python3 -c 'import gunicorn' 2>/dev/null || "
-                "sudo python3 -m pip install --break-system-packages gunicorn uvicorn 2>/dev/null"))
+            # Virtualenv dibuat SETELAH home_dir & OS user tersedia
+            if venv_dir:
+                if venv_inside:
+                    create_venv = (f"sudo python3 -m venv {shlex.quote(venv_dir)} && "
+                                   f"{py} -m pip install --upgrade pip setuptools >/dev/null 2>&1 && "
+                                   f"sudo chown -R {quser}:{quser} {shlex.quote(venv_dir)}")
+                else:
+                    create_venv = (f"sudo mkdir -p {shlex.quote(VENV_ROOT)} && "
+                                   f"sudo python3 -m venv {shlex.quote(venv_dir)} && "
+                                   f"{py} -m pip install --upgrade pip setuptools >/dev/null 2>&1 && "
+                                   f"sudo chown -R {quser}:{quser} {shlex.quote(venv_dir)}")
+                steps.append(("venv", create_venv))
 
-            # Write sample app if directory is empty
-            steps.append(("sample", self._write_sample_app(home, app_type)))
+            # Auto-install gunicorn + uvicorn ke venv/system python
+            if venv_dir:
+                deps_cmd = f"{py} -m pip install gunicorn uvicorn"
+            else:
+                deps_cmd = ("python3 -c 'import gunicorn' 2>/dev/null || "
+                            "sudo python3 -m pip install --break-system-packages gunicorn uvicorn 2>/dev/null")
+            steps.append(("deps", deps_cmd))
+
+            # Write sample app if directory is empty (installs deps ke venv/system)
+            steps.append(("sample", self._write_sample_app(home, app_type, py=py)))
 
             steps += [
-                ("env", self._write_env(home, port, app_type, name)),
-                ("unit", self._write_unit(unit, os_user, home, command, app_type)),
+                ("env", self._write_env(home, port, app_type, name, venv_dir=venv_dir)),
+                ("unit", self._write_unit(unit, os_user, home, command, app_type,
+                                          venv_dir=venv_dir)),
                 ("glog", f"sudo mkdir -p /var/log/{slug} && sudo chown {os_user}:{os_user} /var/log/{slug}"),
                 ("chown", f"sudo chown -R {quser}:{quser} {qhome}"),
                 ("reload", "sudo systemctl daemon-reload"),
@@ -425,6 +574,7 @@ class AppManager:
             "command": command,
             "status": "running" if failed is None else "error",
             "env_file": env_file, "unit": unit,
+            "venv_dir": venv_dir, "venv_inside": 1 if venv_inside else 0,
             "created_at": datetime.now().isoformat(),
         })
         return {
@@ -432,10 +582,11 @@ class AppManager:
             "error": f"langkah '{failed}' gagal" if failed else None,
             "port": port, "user": os_user, "home_dir": home,
             "unit": unit, "command": command, "env_file": env_file, "steps": steps,
+            "venv_dir": venv_dir,
         }
 
     @staticmethod
-    def _write_sample_app(home: str, app_type: str) -> str:
+    def _write_sample_app(home: str, app_type: str, py: str = "python3") -> str:
         """Write sample main.py if directory is empty."""
         if app_type == "asgi":
             content = (
@@ -479,14 +630,15 @@ class AppManager:
             pkg = "flask gunicorn"
         import base64
         b64 = base64.b64encode(content.encode()).decode()
-        # Only write if main.py doesn't exist
+        # Only write if main.py doesn't exist; install deps ke venv bila tersedia
         return (f"[ -f {home}/main.py ] || "
                 f"(echo {b64} | base64 -d | sudo tee {home}/main.py > /dev/null && "
-                f"sudo python3 -m pip install --break-system-packages {pkg} 2>/dev/null)")
+                f"{py} -m pip install {pkg} 2>/dev/null)")
 
     # ----------------------------------------------------------------- env/unit
     @staticmethod
-    def _write_env(home: str, port: int, app_type: str, name: str) -> str:
+    def _write_env(home: str, port: int, app_type: str, name: str,
+                   venv_dir: str = "") -> str:
         slug = _slug(name)
         sock = f"{GUNICORN_SOCK_DIR}/{slug}.sock"
         content = (
@@ -495,6 +647,9 @@ class AppManager:
             f"APP_TYPE={app_type}\n"
             f"GUNICORN_SOCK={sock}\n"
         )
+        if venv_dir:
+            content += f"VIRTUAL_ENV={venv_dir}\n"
+            content += f"PATH={venv_dir}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n"
         import base64
         b64 = base64.b64encode(content.encode()).decode()
         return (f"echo {b64} | base64 -d | sudo tee {home}/.env > /dev/null && "
@@ -502,10 +657,11 @@ class AppManager:
 
     @staticmethod
     def _write_unit(unit: str, os_user: str, home: str, command: str | None,
-                    app_type: str, limits: dict | None = None) -> str:
+                    app_type: str, limits: dict | None = None,
+                    venv_dir: str = "") -> str:
         slug = _slug(unit.replace("weborn-", "").replace(".service", ""))
         if command:
-            exec_line = f"ExecStart=/bin/bash -c 'cd {home} && {command}'"
+            exec_line = f"ExecStart=/bin/bash -c 'cd {shlex.quote(home)} && {command}'"
         else:
             # PHP-FPM or static: unit just ensures directory perms
             exec_line = f"ExecStart=/bin/true"
@@ -533,6 +689,12 @@ class AppManager:
             f"Group={os_user}\n"
             f"WorkingDirectory={home}\n"
             f"EnvironmentFile={home}/.env\n"
+        )
+        if venv_dir:
+            # Pastikan venv (bisa di luar home) bisa dibaca oleh user app
+            content += f"Environment=PATH={venv_dir}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n"
+            content += f"Environment=VIRTUAL_ENV={venv_dir}\n"
+        content += (
             f"{exec_line}\n"
             "Restart=on-failure\n"
             "RestartSec=5\n"
@@ -595,6 +757,10 @@ class AppManager:
         if pm not in ("gunicorn", "uvicorn"):
             return {"ok": False, "error": "hanya app gunicorn/uvicorn yang bisa dikonfigurasi"}
         new_command = self.build_process_command(app_type, config, app["name"])
+        venv_dir = app.get("venv_dir", "")
+        # Pastikan command memakai interpreter venv bila app memakai venv
+        if venv_dir:
+            new_command = new_command.replace("python3 -m", f"{_venv_bin(venv_dir, 'python')} -m")
         # Update DB
         from ..db import get_conn
         with get_conn() as conn:
@@ -604,7 +770,7 @@ class AppManager:
         if self.ex.mode in ("local", "wsl"):
             slug = _slug(app["name"])
             unit_cmd = self._write_unit(app["unit"], app["user"], app["home_dir"],
-                                        new_command, app_type)
+                                        new_command, app_type, venv_dir=venv_dir)
             await self.ex.run("bash", "-c", unit_cmd)
             await self.ex.run("bash", "-c", "sudo systemctl daemon-reload")
             # Restart app with new config
@@ -620,7 +786,8 @@ class AppManager:
         app_type = stored if stored else _app_type_for(app["language"], app.get("framework", ""))
         if self.ex.mode in ("local", "wsl"):
             unit_cmd = self._write_unit(app["unit"], app["user"], app["home_dir"],
-                                        app["command"], app_type, limits=limits)
+                                        app["command"], app_type, limits=limits,
+                                        venv_dir=app.get("venv_dir", ""))
             await self.ex.run("bash", "-c", unit_cmd)
             await self.ex.run("bash", "-c", "sudo systemctl daemon-reload")
             await self.ex.run("bash", "-c", f"sudo systemctl restart {app['unit']}")
@@ -633,15 +800,19 @@ class AppManager:
         if self.ex.mode in ("local", "wsl"):
             qunit = shlex.quote(app['unit'])
             qsock = shlex.quote(f"{GUNICORN_SOCK_DIR}/{_slug(app['name'])}.sock")
-            qhome = shlex.quote(app['home_dir'])
             quser = shlex.quote(app['user'])
             steps = [
                 ("stop", f"sudo systemctl disable --now {qunit} 2>/dev/null || true"),
                 ("rmunit", f"sudo rm -f /etc/systemd/system/{qunit}"),
                 ("sock", f"sudo rm -f {qsock}"),
-                ("rmdir", f"sudo rm -rf {qhome}"),
-                ("rmuser", f"sudo userdel {quser} 2>/dev/null || true"),
+                # NOTE: direktori aplikasi & file-nya TIDAK dihapus saat delete,
+                #   agar data source yang ada tetap aman. Bersihkan manual bila perlu.
             ]
+            # Hapus venv di LUAR home_dir (mis. {VENV_ROOT}/{slug})
+            qvenv = shlex.quote(app.get("venv_dir", ""))
+            if app.get("venv_dir") and not app.get("venv_inside"):
+                steps.append(("rmvenv", f"sudo rm -rf {qvenv}"))
+            steps.append(("rmuser", f"sudo userdel {quser} 2>/dev/null || true"))
             for _, cmd in steps:
                 await self.ex.run("bash", "-c", cmd)
         delete_app(app_id)
@@ -652,6 +823,10 @@ class AppManager:
         for a in apps:
             lang_info = RUNTIMES.get(a["language"], {})
             a["language_label"] = lang_info.get("label", a["language"])
+            # Link nyata: host/port yang benar-benar di-bind command
+            run_host, run_port = self.parse_bind(a.get("command", ""))
+            a["link_host"] = run_host if run_host and run_host not in ("0.0.0.0", "::") else "localhost"
+            a["link_port"] = run_port if run_port else (a.get("port") or 8000)
             # Use stored app_type if available, else compute
             stored = a.get("app_type", "")
             a["app_type"] = stored if stored else _app_type_for(a["language"], a.get("framework", ""))

@@ -7,7 +7,7 @@ from starlette.responses import JSONResponse
 
 from ..auth import require_admin, require_user
 from ..config import FRAMEWORKS, RUNTIMES
-from ..db import get_app, set_app_status
+from ..db import get_app, get_app_by_port, set_app_status
 from ..executors import get_executor
 from ..managers.apps import AppManager
 from ..ui import render
@@ -99,12 +99,11 @@ async def api_validate_module(dir: str = "", module: str = "", app_name: str = "
     if ex.mode in ("local", "wsl"):
         check_dir = dir.strip() or "/tmp"
         qdir = shlex.quote(check_dir)
-        qmod = shlex.quote(mod_name)
         r = await ex.run("bash", "-c",
                          f"cd {qdir} 2>/dev/null && "
                          f"python3 -c \""
                          f"import importlib.util, sys; "
-                         f"spec = importlib.util.find_spec({qmod}); "
+                         f"spec = importlib.util.find_spec({mod_name!r}); "
                          f"exit(0 if spec else 1)"
                          f"\" 2>/dev/null && echo MODULE_OK || echo MODULE_MISSING")
         mod_ok = "MODULE_OK" in r.stdout
@@ -115,13 +114,12 @@ async def api_validate_module(dir: str = "", module: str = "", app_name: str = "
                 "message": f"❌ Module '{mod_name}' tidak ditemukan",
             })
         if clean_app:
-            qapp = shlex.quote(clean_app)
             r2 = await ex.run("bash", "-c",
                               f"cd {qdir} 2>/dev/null && "
                               f"python3 -c \""
-                              f"from {qmod} import {qapp}; "
+                              f"from {mod_name} import {clean_app}; "
                               f"import inspect; "
-                              f"assert callable({qapp}) or hasattr({qapp}, '__call__') or hasattr({qapp}, 'app') or hasattr({qapp}, 'get') or hasattr({qapp}, 'route')"
+                              f"assert callable({clean_app}) or hasattr({clean_app}, '__call__') or hasattr({clean_app}, 'app') or hasattr({clean_app}, 'get') or hasattr({clean_app}, 'route')"
                               f"\" 2>/dev/null && echo APP_OK || echo APP_MISSING")
             app_ok = "APP_OK" in r2.stdout
             if not app_ok:
@@ -245,6 +243,9 @@ async def apps_edit_page(request: Request, app_id: int,
     stored = app.get("app_type", "")
     app_type = stored if stored else _app_type_for(app["language"], app.get("framework", ""))
     process_config = _AM.parse_process_config(app.get("command", ""))
+    run_host, run_port = _AM.parse_bind(app.get("command", ""))
+    app["link_host"] = run_host if run_host and run_host not in ("0.0.0.0", "::") else "localhost"
+    app["link_port"] = run_port if run_port else (app.get("port") or 8000)
     return render(request, "app_edit.html", {
         "user": user,
         "app": app,
@@ -265,9 +266,23 @@ async def apps_edit(request: Request, app_id: int,
     app = get_app(app_id)
     if not app:
         return RedirectResponse("/apps?msg=App%20tidak%20ditemukan", status_code=303)
+    # Cek port ACTUAL dari command baru sebelum menyimpan perubahan.
+    # Bila port berubah dan masih dipakai (app lain / proses live) → tolak.
+    new_port = None
+    _h, _p = AppManager.parse_bind(command)
+    if _p and _p != app.get("port"):
+        if get_app_by_port(_p):
+            return JSONResponse({"ok": False, "error": f"port {_p} sudah dipakai app lain"}, status_code=400)
+        ex = get_executor()
+        if await AppManager(ex)._port_busy(_p):
+            return JSONResponse({"ok": False, "error": f"port {_p} sedang dipakai proses lain"}, status_code=400)
+        new_port = _p
     from ..db import get_conn
     with get_conn() as conn:
-        conn.execute("UPDATE apps SET command = ? WHERE id = ?", (command, app_id))
+        if new_port:
+            conn.execute("UPDATE apps SET command = ?, port = ? WHERE id = ?", (command, new_port, app_id))
+        else:
+            conn.execute("UPDATE apps SET command = ? WHERE id = ?", (command, app_id))
         conn.commit()
     return RedirectResponse("/apps?msg=App%20diperbarui", status_code=303)
 
@@ -277,6 +292,7 @@ async def apps_create(name: str = Form(...), language: str = Form(...),
                       framework: str = Form(""), port: str = Form("0"),
                       webserver: str = Form("nginx"),
                       webserver_port: str = Form(""),
+                      venv: str = Form("inside"),
                       user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
@@ -287,7 +303,7 @@ async def apps_create(name: str = Form(...), language: str = Form(...),
                             status_code=400)
     try:
         result = await AppManager(get_executor()).create(
-            name.strip(), language, framework.strip(), port_int)
+            name.strip(), language, framework.strip(), port_int, venv=venv)
     except Exception as e:  # mis. nama duplikat (UNIQUE constraint)
         return JSONResponse({"ok": False, "error": f"gagal membuat app: {e}"},
                             status_code=400)
@@ -332,6 +348,7 @@ async def apps_create_native(name: str = Form(...), app_type: str = Form("wsgi")
                               port: str = Form("8000"), dir_path: str = Form(""),
                               webserver: str = Form("nginx"),
                               webserver_port: str = Form(""),
+                              venv: str = Form("inside"),
                               user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
@@ -366,7 +383,7 @@ async def apps_create_native(name: str = Form(...), app_type: str = Form("wsgi")
     try:
         result = await AppManager(get_executor()).create_native(
             name.strip(), app_type, command, port_int,
-            dir_path=dir_path.strip())
+            dir_path=dir_path.strip(), venv=venv)
     except Exception as e:
         return JSONResponse({"ok": False, "error": f"gagal membuat app: {e}"},
                             status_code=400)
@@ -551,7 +568,7 @@ async def apps_logs_ws(websocket: WebSocket, app_id: int):
         proc = await asyncio.create_subprocess_exec(
             "journalctl", "-u", app["unit"], "-f", "--no-pager", "-n", "50",
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
         )
         while True:
             line = await proc.stdout.readline()
@@ -561,6 +578,11 @@ async def apps_logs_ws(websocket: WebSocket, app_id: int):
     except Exception:
         pass
     finally:
+        if "proc" in locals() and proc.returncode is None:
+            try:
+                proc.kill()
+            except Exception:
+                pass
         try:
             await websocket.close()
         except Exception:

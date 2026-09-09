@@ -69,7 +69,8 @@ function testApache() {
     var el = document.getElementById('apache-test');
     el.textContent = 'Testing…';
     el.style.color = '';
-    fetch('/web-server/apache/test', {method:'POST'})
+    var csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
+    fetch('/web-server/apache/test', {method:'POST', headers:{'X-CSRF-Token': csrfToken}})
       .then(r=>r.json()).then(d=>{
         if(d.ok){ el.textContent='✓ Config OK'; el.style.color='var(--ok)'; }
         else { el.textContent='✗ '+((d.output||'').slice(0,120)); el.style.color='var(--err)'; }

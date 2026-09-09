@@ -15,7 +15,7 @@
 </div>
 
 {# ── Summary Cards ── #}
-    <div class="grid grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-5 gap-4 mb-6">
     <div class="card p-4 text-center">
         <div class="text-2xl font-bold text-green-400">{{ apps | selectattr('gunicorn_status', 'eq', 'active') | list | length }}</div>
         <div class="text-t3 text-xs mt-1">Running</div>
@@ -44,7 +44,7 @@
         <div class="flex items-center gap-3">
             <a href="/apps/panel/monitor" class="font-bold text-sm hover:underline">{{ icon('computer-desktop', 'w-5 h-5') }} Weborn Panel</a>
             <span class="text-t3 text-xs font-mono">port {{ panel_info.port }}</span>
-            <span class="text-t3 text-xs">({{ panel_info.mode }} )</span>
+            <span class="text-t3 text-xs">({{ panel_info.mode }})</span>
        </div>
         <div class="flex items-center gap-2">
             {# ── Status badge ── #}
@@ -54,7 +54,7 @@
             <span class="px-2 py-0.5 rounded bg-gray-500/20 text-gray-400 text-[13px] font-mono">● stopped</span>
             {% endif %}
             {# ── Trace log button ── #}
-            <button onclick="openTrace('panel', 'Weborn Panel')"
+            <button onclick="openTrace('panel', 'Weborn Panel', {{ panel_info.unit|tojson }})"
                     class="btn sm accent">{{ icon('document-text', 'w-5 h-5') }} Trace</button>
        </div>
    </div>
@@ -109,7 +109,7 @@
                 <div class="flex items-center gap-3">
                     <a href="/apps/{{ app.id }}/monitor" class="font-bold text-sm hover:underline">{{ app.name }}</a>
                     <span class="text-t3 text-xs font-mono">{{ app.app_type }}</span>
-                    <span class="text-t3 text-xs">({{ app.process_manager }} )</span>
+                    <span class="text-t3 text-xs">({{ app.process_manager }})</span>
                </div>
                 <div class="flex items-center gap-2">
                     {# ── Status badge ── #}
@@ -122,18 +122,18 @@
                     {% endif %}
 
                     {# ── Control buttons: Start | Stop | Restart ── #}
-                    <button onclick="weborn.simplePost('/apps/{{ app.id }}/start','Start ' + {{ app.name | tojson }}, true)"
+                    <button onclick="weborn.simplePost('/apps/{{ app.id }}/start','Start {{ app.name }}', true)"
                             class="btn sm"
                             {% if app.gunicorn_status == 'active' %}disabled{% endif %}>{{ icon('play', 'w-5 h-5') }} Start</button>
-                    <button onclick="weborn.simplePost('/apps/{{ app.id }}/stop','Stop ' + {{ app.name | tojson }}, true)"
+                    <button onclick="weborn.simplePost('/apps/{{ app.id }}/stop','Stop {{ app.name }}', true)"
                             class="btn sm"
                             {% if app.gunicorn_status != 'active' %}disabled{% endif %}>{{ icon('stop', 'w-5 h-5') }} Stop</button>
-                    <button onclick="weborn.simplePost('/apps/{{ app.id }}/restart','Restart ' + {{ app.name | tojson }}, true)"
+                    <button onclick="weborn.simplePost('/apps/{{ app.id }}/restart','Restart {{ app.name }}', true)"
                             class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
 
                     {# ── Trace log button — opens xterm.js modal ── #}
-                    <button onclick="openTrace({{ app.id }}, {{ app.name | tojson }})"
-                            class="btn sm accent">{{ icon('document-text', 'w-5 h-5') }} Trace</button>
+<button onclick="openTrace({{ app.id }}, {{ app.name|tojson }}, {{ app.unit|tojson }})"
+                        class="btn sm accent">{{ icon('document-text', 'w-5 h-5') }} Trace</button>
                </div>
            </div>
 
@@ -196,7 +196,8 @@
        </div>
         <div class="flex items-center gap-2">
             <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[13px] font-mono">{{ orphans | length }}</span>
-            <button onclick="killAllOrphans()" class="btn sm" style="color:var(--red)">Kill All</button>
+            <button onclick="killAllOrphans({{ orphans | map(attribute='pid') | list | tojson }})"
+                    class="btn sm" style="color:var(--red)">Kill All</button>
        </div>
    </div>
     <div class="overflow-x-auto">
@@ -224,7 +225,7 @@
                     <td class="py-1 pr-3">{{ p.uptime }}</td>
                     <td class="py-1 pr-3 truncate max-w-[300px]">{{ p.cmd }}</td>
                     <td class="py-1">
-                        <button onclick="killOrphan('{{ p.pid }} ', '{{ p.cmd[:40] }} ')"
+                        <button onclick="killOrphan({{ p.pid }}, {{ p.cmd[:40]|tojson }})"
                                 class="btn sm" style="color:var(--red)">Kill</button>
                    </td>
                </tr>
@@ -274,7 +275,7 @@ let traceTerm = null;
 let traceFitAddon = null;
 let traceWs = null;
 
-function openTrace(appId, appName) {
+function openTrace(appId, appName, unit) {
     const modal = document.getElementById('trace-modal');
     const container = document.getElementById('trace-terminal');
     const title = document.getElementById('trace-title');
@@ -283,8 +284,10 @@ function openTrace(appId, appName) {
     const modalBox = modal.querySelector('.w-modal-box');
 
     title.textContent = 'Trace Log: ' + appName;
-    if (appId === 'panel') {
-        sub.textContent = 'journalctl -u weborn-panel.service -f';
+    if (unit) {
+        sub.textContent = 'journalctl -u ' + unit + ' -f';
+    } else if (appId === 'panel') {
+        sub.textContent = 'journalctl -u weborn -f';
     } else {
         sub.textContent = 'journalctl -u weborn-' + appName + '.service -f';
     }
@@ -369,9 +372,10 @@ function clearTrace() {
 /* ── Kill orphan process ── */
 function killOrphan(pid, cmdPreview) {
     if (!confirm('Kill process ' + pid + '?\n' + cmdPreview)) return;
+    const csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
     fetch('/api/monitor/kill-orphan', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
         body: JSON.stringify({pid: pid}),
     })
     .then(r => r.json())
@@ -384,6 +388,30 @@ function killOrphan(pid, cmdPreview) {
         }
     })
     .catch(() => weborn.toast('Error koneksi', 'error'));
+}
+
+/* ── Kill all orphan processes ── */
+function killAllOrphans(pids) {
+    if (!pids || !pids.length) return;
+    if (!confirm('Kill ' + pids.length + ' orphan process(es)?')) return;
+    let n = 0;
+    for (const pid of pids) {
+        (function (p) {
+            const csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
+            fetch('/api/monitor/kill-orphan', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
+                body: JSON.stringify({pid: p}),
+            })
+            .then(r => r.json())
+            .then(d => { if (d.ok) n++; })
+            .catch(() => {});
+        })(pid);
+    }
+    setTimeout(() => {
+        weborn.toast('Killed ' + n + ' process', 'success');
+        location.reload();
+    }, 1200);
 }
 </script>
 {% endblock %}

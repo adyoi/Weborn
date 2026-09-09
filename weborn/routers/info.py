@@ -183,6 +183,9 @@ async def info_about_page(request: Request, user: dict = Depends(require_user)):
     if ex.mode in ("local", "wsl"):
         r = await ex.run("bash", "-c", "cat /etc/os-release 2>/dev/null | head -5")
         os_info = r.stdout.strip()
+    import platform
+    py_version = platform.python_version()
     return render(request, "info_about.html", {
-        "user": user, "active": "info-about", "version": VERSION, "os_info": os_info,
+        "user": user, "active": "info-about", "version": VERSION,
+        "py_version": py_version, "os_info": os_info,
     })

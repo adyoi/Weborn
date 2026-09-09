@@ -58,12 +58,17 @@
                 <tr><td class="text-t3 pr-3 py-1">User OS</td><td class="mono">{{ app.user }}</td></tr>
                 <tr><td class="text-t3 pr-3 py-1">Direktori</td><td class="mono text-[13px]">{{ app.home_dir }}</td></tr>
                 <tr><td class="text-t3 pr-3 py-1">Unit Systemd</td><td class="mono text-[13px]">{{ app.unit }}</td></tr>
+                <tr><td class="text-t3 pr-3 py-1">Link</td>
+                    <td class="mono text-[13px]"><a href="http://{{ app.link_host }}:{{ app.link_port }}" target="_blank" class="text-accent hover:underline">http://{{ app.link_host }}:{{ app.link_port }}</a></td></tr>
                 <tr><td class="text-t3 pr-3 py-1">Status</td>
                     <td>{% if app.status == 'running' %}<span class="badge ok">{{ icon('check', 'w-5 h-5') }} RUNNING</span>
                         {% elif app.status == 'error' %}<span class="badge err">{{ icon('x-mark', 'w-5 h-5') }} ERROR</span>
                         {% else %}<span class="badge warn">{{ icon('stop', 'w-5 h-5') }} STOPPED</span>{% endif %}</td></tr>
                 <tr><td class="text-t3 pr-3 py-1">Process Manager</td><td><span class="badge info">{{ process_manager }}</span></td></tr>
                 <tr><td class="text-t3 pr-3 py-1">Env File</td><td class="mono text-[13px]">{{ app.env_file }}</td></tr>
+                <tr><td class="text-t3 pr-3 py-1">Virtualenv</td>
+                    <td>{% if app.venv_dir %}<span class="badge info">{{ icon('check', 'w-5 h-5') }} {{ app.venv_dir }}</span>
+                        {% else %}<span class="text-t3">— (python sistem)</span>{% endif %}</td></tr>
                 <tr><td class="text-t3 pr-3 py-1">Dibuat</td><td>{{ app.created_at[:10] }}</td></tr>
            </table>
        </div>

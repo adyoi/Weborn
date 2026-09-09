@@ -74,10 +74,14 @@ function ufwAction(action) {
     var fd = new FormData();
     fd.append('port', port);
     fd.append('proto', proto);
-    weborn.simplePost('/security/firewall/' + action, action.toUpperCase() + ' port ' + port, true);
+    fd.append('action', action);
+    weborn.simplePost('/security/firewall/' + action, action.toUpperCase() + ' port ' + port, true, fd);
 }
 function quickAllow(port) {
-    weborn.simplePost('/security/firewall/allow', 'Allow port ' + port, true);
+    var fd = new FormData();
+    fd.append('port', port);
+    fd.append('proto', 'tcp');
+    weborn.simplePost('/security/firewall/allow', 'Allow port ' + port, true, fd);
 }
 </script>
 {% endblock %}

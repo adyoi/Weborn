@@ -97,11 +97,11 @@
                         <div class="flex gap-1">
                             {% if s.installed and s.addon.systemd_unit %}
                             <button class="btn sm" title="Start"
-                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }}/start','Start ' + {{ s.addon.name | tojson }}, true)">{{ icon('play', 'w-5 h-5') }}</button>
+                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }}/start','Start {{ s.addon.name }}', true)">{{ icon('play', 'w-5 h-5') }}</button>
                             <button class="btn sm" title="Stop"
-                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }}/stop','Stop ' + {{ s.addon.name | tojson }}, true)">{{ icon('stop', 'w-5 h-5') }}</button>
+                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }}/stop','Stop {{ s.addon.name }}', true)">{{ icon('stop', 'w-5 h-5') }}</button>
                             <button class="btn sm" title="Restart"
-                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }}/restart','Restart ' + {{ s.addon.name | tojson }}, true)">{{ icon('arrow-path', 'w-5 h-5') }}</button>
+                                    onclick="weborn.simplePost('/addons/{{ s.addon.id }}/restart','Restart {{ s.addon.name }}', true)">{{ icon('arrow-path', 'w-5 h-5') }}</button>
                             {% endif %}
                             <a href="/addons/{{ s.addon.id }}" class="btn sm" title="Kelola">{{ icon('cog-6-tooth', 'w-5 h-5') }}</a>
                        </div>

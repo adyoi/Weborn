@@ -133,6 +133,8 @@ async def fail2ban_unban(ip: str = Form(...), jail: str = Form("sshd"),
                          user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    ip = ip.strip()
+    jail = (jail or "sshd").strip()
     await get_executor().run("bash", "-c", f"sudo fail2ban-client set {shlex.quote(jail)} unbanip {shlex.quote(ip)}")
     from starlette.responses import JSONResponse
     return JSONResponse({"ok": True, "output": f"{ip} diunban"})

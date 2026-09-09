@@ -9,7 +9,7 @@ import hashlib
 import hmac
 import secrets
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from .config import DB_PATH
 
@@ -99,6 +99,8 @@ CREATE TABLE IF NOT EXISTS apps (
     status     TEXT NOT NULL DEFAULT 'stopped',-- stopped | running | error
     env_file   TEXT NOT NULL,                  -- <home_dir>/.env
     unit       TEXT NOT NULL,                  -- nama unit systemd weborn-<name>.service
+    venv_dir   TEXT NOT NULL DEFAULT '',       -- path venv; '' = pakai python sistem
+    venv_inside INTEGER NOT NULL DEFAULT 0,    -- 1 = venv di dalam home_dir (.venv)
     created_at TEXT NOT NULL
 );
 
@@ -150,29 +152,6 @@ def verify_password(password: str, stored: str) -> bool:
     return hmac.compare_digest(hash_password(password, salt), stored)
 
 
-def create_session(user_id: int) -> str:
-    token = secrets.token_urlsafe(32)
-    expires = (datetime.now() + timedelta(days=7)).isoformat()
-    with get_conn() as conn:
-        conn.execute(
-            "INSERT INTO sessions(token, user_id, expires_at) VALUES (?, ?, ?)",
-            (token, user_id, expires),
-        )
-    return token
-
-
-def get_user_from_session(token: str):
-    if not token:
-        return None
-    with get_conn() as conn:
-        row = conn.execute(
-            """SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id
-               WHERE s.token = ? AND s.expires_at > ?""",
-            (token, datetime.now().isoformat()),
-        ).fetchone()
-    return dict(row) if row else None
-
-
 def delete_session(token: str):
     with get_conn() as conn:
         conn.execute("DELETE FROM sessions WHERE token = ?", (token,))
@@ -211,6 +190,10 @@ def init_db():
         acols = {r[1] for r in conn.execute("PRAGMA table_info(apps)").fetchall()}
         if "app_type" not in acols:
             conn.execute("ALTER TABLE apps ADD COLUMN app_type TEXT NOT NULL DEFAULT ''")
+        if "venv_dir" not in acols:
+            conn.execute("ALTER TABLE apps ADD COLUMN venv_dir TEXT NOT NULL DEFAULT ''")
+        if "venv_inside" not in acols:
+            conn.execute("ALTER TABLE apps ADD COLUMN venv_inside INTEGER NOT NULL DEFAULT 0")
         # backfill app_type for existing apps
         from .managers.apps import _app_type_for
         for row in conn.execute("SELECT id, language, framework, app_type FROM apps").fetchall():
@@ -312,8 +295,7 @@ def create_shadow_user(username: str, role: str = "user") -> int | None:
     Dipanggil saat user Linux berhasil PAM authenticate tapi belum punya akun panel.
     Mengembalikan user_id yang baru dibuat, atau None jika gagal.
     """
-    import secrets as _secrets
-    fake_hash = hash_password(_secrets.token_hex(16))
+    fake_hash = hash_password(secrets.token_hex(16))
     with get_conn() as conn:
         exists = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
         if exists:
@@ -347,10 +329,14 @@ def add_app(data: dict) -> None:
     with get_conn() as conn:
         conn.execute(
             """INSERT INTO apps(name, language, framework, app_type, user, home_dir, port,
-                                command, status, env_file, unit, created_at)
+                                command, status, env_file, unit, venv_dir, venv_inside, created_at)
                VALUES (:name,:language,:framework,:app_type,:user,:home_dir,:port,
-                       :command,:status,:env_file,:unit,:created_at)""",
-            data,
+                       :command,:status,:env_file,:unit,:venv_dir,:venv_inside,:created_at)""",
+            {
+                "venv_dir": data.get("venv_dir", ""),
+                "venv_inside": 1 if data.get("venv_inside") else 0,
+                **data,
+            },
         )
         conn.commit()
 

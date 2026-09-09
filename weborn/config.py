@@ -20,6 +20,11 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 WEB_ROOT = "/var/www"
 GUNICORN_SOCK_DIR = "/run/gunicorn"
 
+# Virtualenv untuk app Python. Dua lokasi didukung:
+#   - di dalam home_dir  -> {home_dir}/.venv
+#   - di luar home_dir   -> VENV_ROOT/<slug>
+VENV_ROOT = "/opt/weborn/venvs"
+
 # Port panel
 PANEL_HTTP_PORT = 2025
 PANEL_HTTPS_PORT = 2043

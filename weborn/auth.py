@@ -9,6 +9,7 @@ Alur login:
 """
 import os
 import platform
+import time
 
 import jwt
 from datetime import datetime, timedelta, timezone
@@ -21,12 +22,11 @@ from .config import SESSION_COOKIE, USE_PAM
 JWT_EXPIRY_HOURS = 24
 
 # ── Idle lock tracking (in-memory per-process) ──
-import time as _time
 _last_activity: dict[int, float] = {}  # user_id → timestamp
 
 
 def touch_activity(user_id: int):
-    _last_activity[user_id] = _time.time()
+    _last_activity[user_id] = time.time()
 
 
 def is_idle_locked(user_id: int, timeout_sec: int) -> bool:
@@ -35,7 +35,7 @@ def is_idle_locked(user_id: int, timeout_sec: int) -> bool:
     last = _last_activity.get(user_id)
     if last is None:
         return False
-    return (_time.time() - last) > timeout_sec
+    return (time.time() - last) > timeout_sec
 
 # Linux-only modules (not available on Windows)
 _crypt = None
@@ -194,7 +194,7 @@ def get_current_user(request: Request):
     if not user.get("is_active", 1):
         return None
     # Check idle lock
-    timeout = user.get("session_timeout", 300)
+    timeout = int(user.get("session_timeout") or 300)
     if is_idle_locked(user_id, timeout):
         return None
     # Update last activity

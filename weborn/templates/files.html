@@ -81,10 +81,10 @@
        </tr>
         {% for e in entries %}
             <tr>
-                <td><input type="checkbox" class="file-check" value="{{ path }} /{{ e.name }}" onchange="updateBulkBar()"></td>
+                <td><input type="checkbox" class="file-check" value="{{ path }}/{{ e.name }}" onchange="updateBulkBar()"></td>
                 <td>
                     {% if e.dir %}
-                    <a href="/files?path={{ path }} /{{ e.name }}">{{ icon('folder', 'w-5 h-5') }} {{ e.name }}</a>
+                    <a href="/files?path={{ path }}/{{ e.name }}">{{ icon('folder', 'w-5 h-5') }} {{ e.name }}</a>
                     {% else %}
                     {{ icon('document-text', 'w-5 h-5') }} {{ e.name }} 
                     {% endif %}

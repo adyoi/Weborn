@@ -4,6 +4,8 @@ __pycache__/
 .venv/
 .venv-wsl/
 node_modules/
+.git-rewrite/
+.tgrep/
 data/weborn.db
 data/weborn.db-shm
 data/weborn.db-wal

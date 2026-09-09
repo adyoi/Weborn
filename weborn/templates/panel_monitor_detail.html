@@ -12,6 +12,7 @@
         <div class="page-title text-[22px] font-bold mb-1">{{ icon('computer-desktop', 'w-5 h-5') }} Weborn Panel</div>
         <span class="text-t3 text-xs font-mono">{{ panel.mode }}</span>
         <span class="text-t3 text-xs">port {{ panel.port }}</span>
+        {% if panel.unit %}<span class="text-t3 text-xs font-mono">{{ panel.unit }}</span>{% endif %}
         {% if panel.master_pid %}
         <span class="px-2 py-0.5 rounded bg-green-500/20 text-green-400 text-[13px] font-mono">● running</span>
         {% else %}
@@ -83,7 +84,7 @@
 {# ── Worker Table ── #}
 {% if panel.workers %}
 <div class="card p-4">
-    <h3 class="font-bold text-sm mb-2">Workers ({{ panel.workers | length }} )</h3>
+    <h3 class="font-bold text-sm mb-2">Workers ({{ panel.workers | length }})</h3>
     <div class="overflow-x-auto">
         <table class="text-xs font-mono w-full">
             <thead>

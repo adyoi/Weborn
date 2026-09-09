@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from datetime import datetime
+import asyncio
 import time as _time
 import psutil
 
@@ -102,7 +103,7 @@ async def dashboard(request: Request, user: dict = Depends(require_user)):
     panel_users = list_panel_users()
     ex = get_executor()
     updates = await os_update_info_cached(ex)
-    stats = system_stats()
+    stats = await asyncio.to_thread(system_stats)
 
     services_running = sum(1 for s in services if s.get("active"))
     services_stopped = installed_count - services_running

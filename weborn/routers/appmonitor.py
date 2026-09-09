@@ -26,7 +26,8 @@ async def _detect_panel_process(ex) -> dict:
     Returns dict with keys: mode, master_pid, workers, port, pids
     mode: 'gunicorn' | 'uvicorn' | 'python' | 'unknown'
     """
-    info = {"mode": "unknown", "master_pid": "", "workers": [], "port": PANEL_HTTP_PORT, "pids": []}
+    info = {"mode": "unknown", "master_pid": "", "workers": [], "port": PANEL_HTTP_PORT,
+            "pids": [], "unit": ""}
 
     if ex.mode not in ("local", "wsl"):
         info["mode"] = "dry-run"
@@ -56,6 +57,11 @@ async def _detect_panel_process(ex) -> dict:
     info["pids"] = list(pids_found)
     # Take the first (main) PID
     main_pid = list(pids_found)[0]
+
+    # Derive systemd unit name from the process cgroup (robust vs hardcoded name)
+    r6 = await ex.run("bash", "-c",
+                      f"cat /proc/{main_pid}/cgroup 2>/dev/null | grep -oE '[^/]+\\.service$' | tail -1")
+    info["unit"] = r6.stdout.strip() or "weborn"
 
     # Determine mode from command
     r3 = await ex.run("bash", "-c", f"ps -p {main_pid} -o cmd= 2>/dev/null")
@@ -307,6 +313,10 @@ async def apps_monitor_detail(request: Request, app_id: int,
         app["process_manager"] = APP_TYPES.get(app["app_type"], {}).get("process_manager", "direct")
     app["slug"] = _slug(app["name"])
 
+    run_host, run_port = AppManager.parse_bind(app.get("command", ""))
+    app["link_host"] = run_host if run_host and run_host not in ("0.0.0.0", "::") else "localhost"
+    app["link_port"] = run_port if run_port else (app.get("port") or 8000)
+
     # Process status
     gstatus = {"status": "unknown", "master_pid": "", "workers": []}
     if app["process_manager"] in ("gunicorn", "uvicorn") and ex.mode in ("local", "wsl"):
@@ -487,11 +497,14 @@ async def panel_logs_ws(websocket: WebSocket):
         await websocket.send_text("[dry-run] Panel log simulasi\n")
         await websocket.close()
         return
+    info = await _detect_panel_process(ex)
+    unit = info.get("unit") or "weborn"
+    proc = None
     try:
         proc = await asyncio.create_subprocess_exec(
-            "journalctl", "-u", "weborn-panel.service", "-f", "--no-pager", "-n", "50",
+            "journalctl", "-u", unit, "-f", "--no-pager", "-n", "50",
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
         )
         while True:
             line = await proc.stdout.readline()
@@ -501,6 +514,11 @@ async def panel_logs_ws(websocket: WebSocket):
     except Exception:
         pass
     finally:
+        if proc is not None and proc.returncode is None:
+            try:
+                proc.kill()
+            except Exception:
+                pass
         try:
             await websocket.close()
         except Exception:

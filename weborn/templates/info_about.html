@@ -10,7 +10,7 @@
         <div class="text-t3">Versi</div><div><span class="badge info">v{{ version }}</span></div>
         <div class="text-t3">License</div><div>MIT</div>
         <div class="text-t3">Repository</div><div><a href="https://github.com/adyoi/Weborn" class="underline text-blue-400" target="_blank">github.com/adyoi/Weborn</a></div>
-        <div class="text-t3">Platform</div><div>Python {{ '%s.%s'|format(version.split('.')[0], version.split('.')[1]) if version else '3.10+' }} / FastAPI / Tailwind CSS</div>
+        <div class="text-t3">Platform</div><div>Python {{ py_version or '3.10+' }} / FastAPI / Tailwind CSS</div>
    </div>
 </div>
 

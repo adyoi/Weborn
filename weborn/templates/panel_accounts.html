@@ -62,11 +62,11 @@
                         <td class="mono text-[14px]">{{ a.created_at[:10] }}</td>
                         <td class="whitespace-nowrap">
                             {# Change Password Modal Trigger #}
-                            <button onclick="openPassModal({{ a.id }} ,'{{ a.username }} ')" class="btn sm" data-tip="Ganti password">{{ icon('key', 'w-5 h-5') }}</button>
+                            <button onclick="openPassModal({{ a.id }} , {{ a.username|tojson }})" class="btn sm" data-tip="Ganti password">{{ icon('key', 'w-5 h-5') }}</button>
                             {# Change Role #}
-                            <button onclick="openRoleModal({{ a.id }} ,'{{ a.username }} ','{{ a.role }} ')" class="btn sm" data-tip="Ganti role">{{ icon('tag', 'w-5 h-5') }} ️</button>
+                            <button onclick="openRoleModal({{ a.id }} , {{ a.username|tojson }} , {{ a.role|tojson }})" class="btn sm" data-tip="Ganti role">{{ icon('tag', 'w-5 h-5') }} ️</button>
                             {# Session Timeout #}
-                            <button onclick="openTimeoutModal({{ a.id }}, {{ a.username | tojson }}, {{ a.get('session_timeout', 300) }})" class="btn sm" data-tip="Session timeout">{{ icon('clock', 'w-5 h-5') }} ️</button>
+                            <button onclick="openTimeoutModal({{ a.id }}, {{ a.username|tojson }}, {{ a.get('session_timeout', 300) }})" class="btn sm" data-tip="Session timeout">{{ icon('clock', 'w-5 h-5') }} ️</button>
                             {# Toggle Active #}
                             <form method="post" action="/panel-accounts/{{ a.id }}/toggle" style="display:inline">
                                 <button class="btn sm" data-tip="{{ 'Nonaktifkan' if a.get('is_active', 1) else 'Aktifkan' }}">
@@ -75,7 +75,7 @@
                            </form>
                             {# Delete #}
                             <form method="post" action="/panel-accounts/{{ a.id }}/delete" style="display:inline"
-                                  onsubmit="return confirm('Hapus akun panel {{ a.username }} ?')">
+                                  onsubmit="return confirm('Hapus akun panel ' + {{ a.username|tojson }} + ' ?')">
                                 <button class="btn danger sm" data-tip="Hapus {{ a.username }}">{{ icon('trash', 'w-5 h-5') }} ️</button>
                            </form>
                        </td>

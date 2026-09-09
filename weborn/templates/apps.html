@@ -96,7 +96,7 @@
         <form method="post" action="/apps/create-native" class="flex flex-col gap-2" id="native-form">
             <div class="field"><label class="text-[13px]">Nama</label>
                 <input name="name" id="native-name" placeholder="myapp" required class="sm"
-                       oninput="updateNativeDir()"></div>
+                       oninput="updateNativeDir();updateNativeVenv()"></div>
             <div class="flex gap-2">
                 <div class="field flex-1"><label class="text-[13px]">Type</label>
                     <select name="app_type" id="native-type" class="sm" onchange="updateNativeCommand();updateSampleInfo()">
@@ -108,6 +108,16 @@
                         <option value="gunicorn">Gunicorn</option>
                         <option value="uvicorn">Uvicorn</option>
                    </select></div>
+           </div>
+
+            <div class="field">
+                <label class="text-[13px]">Virtualenv</label>
+                <select name="venv" id="native-venv" class="sm" onchange="updateNativeVenv()">
+                    <option value="inside" selected>Di dalam direktori app ({directory}/.venv)</option>
+                    <option value="outside">Di luar direktori app ({VENV_ROOT}/{name})</option>
+                    <option value="">Tanpa venv (python sistem)</option>
+               </select>
+                <div id="venv-result" class="text-[12px] mt-1 text-t3"></div>
            </div>
 
             <div class="field">
@@ -188,15 +198,21 @@
             <div class="text-t3">User OS</div><div class="mono">{{ a.user }}</div>
             <div class="text-t3">Directory</div><div class="mono text-[13px]">{{ a.home_dir }}</div>
             <div class="text-t3">Systemd</div><div class="mono text-[13px]">{{ a.unit }}</div>
+            <div class="text-t3">Link</div>
+            <div class="mono text-[13px]"><a href="http://{{ a.link_host }}:{{ a.link_port }}" target="_blank" class="text-accent hover:underline">http://{{ a.link_host }}:{{ a.link_port }}</a></div>
+            {% if a.venv_dir %}
+            <div class="text-t3">Venv</div><div class="mono text-[13px]">{{ a.venv_dir }}</div>
+            {% endif %}
        </div>
         <div class="flex gap-1 flex-wrap border-t border-line pt-2">
+            <a href="http://{{ a.link_host }}:{{ a.link_port }}" class="btn sm" target="_blank" title="Buka aplikasi">Buka</a>
             <a href="/apps/{{ a.id }}/edit" class="btn sm" title="Edit">{{ icon('pencil', 'w-5 h-5') }}</a>
             <a href="/apps/{{ a.id }}/logs" class="btn sm" title="Logs">{{ icon('document-text', 'w-5 h-5') }}</a>
-            <button class="btn sm" title="Start" onclick="weborn.simplePost('/apps/{{ a.id }}/start','Start ' + {{ a.name | tojson }}, true)">{{ icon('play', 'w-5 h-5') }}</button>
-            <button class="btn sm" title="Stop" onclick="weborn.simplePost('/apps/{{ a.id }}/stop','Stop ' + {{ a.name | tojson }}, true)">{{ icon('stop', 'w-5 h-5') }}</button>
-            <button class="btn sm" title="Restart" onclick="weborn.simplePost('/apps/{{ a.id }}/restart','Restart ' + {{ a.name | tojson }}, true)">{{ icon('arrow-path', 'w-5 h-5') }}</button>
+            <button class="btn sm" title="Start" onclick="weborn.simplePost('/apps/{{ a.id }}/start','Start {{ a.name }}', true)">{{ icon('play', 'w-5 h-5') }}</button>
+            <button class="btn sm" title="Stop" onclick="weborn.simplePost('/apps/{{ a.id }}/stop','Stop {{ a.name }}', true)">{{ icon('stop', 'w-5 h-5') }}</button>
+            <button class="btn sm" title="Restart" onclick="weborn.simplePost('/apps/{{ a.id }}/restart','Restart {{ a.name }}', true)">{{ icon('arrow-path', 'w-5 h-5') }}</button>
             <button class="btn danger sm ml-auto" title="Hapus"
-                    onclick="if(confirm('Hapus ' + {{ a.name | tojson }} + ' beserta user, dir & unit?'))weborn.simplePost('/apps/{{ a.id }}/delete','Hapus ' + {{ a.name | tojson }}, true)">{{ icon('trash', 'w-5 h-5') }}</button>
+                    onclick="if(confirm('Hapus {{ a.name }}' + '? (unit, user & venv dihapus, folder aplikasi TIDAK dihapus)'))weborn.simplePost('/apps/{{ a.id }}/delete','Hapus {{ a.name }}', true)">{{ icon('trash', 'w-5 h-5') }}</button>
        </div>
    </div>
     {% else %}
@@ -236,6 +252,21 @@ function onFrontendWebserverChange(){
   else { portField.style.display = ''; }
 }
 
+function updateNativeVenv(){
+  var venv = document.getElementById('native-venv').value;
+  var name = document.getElementById('native-name').value.trim();
+  var dir = document.getElementById('native-dir').value.trim();
+  var el = document.getElementById('venv-result');
+  if(venv === 'inside'){
+    el.textContent = 'Venv di ' + (dir || '/var/www/' + name) + '/.venv';
+  } else if(venv === 'outside'){
+    el.textContent = 'Venv di /opt/weborn/venvs/' + (name || 'app') + ' (home dir bersih)';
+  } else {
+    el.textContent = 'Pakai python3 sistem (--break-system-packages)';
+  }
+  updateNativeCommand();
+}
+
 function updateNativeDir(){
   var name = document.getElementById('native-name').value.trim();
   var dirEl = document.getElementById('native-dir');
@@ -250,18 +281,27 @@ function updateNativeCommand(){
   var workers = document.getElementById('native-workers').value || '4';
   var host = document.getElementById('native-host').value || '0.0.0.0';
   var port = document.getElementById('native-port').value || '8000';
+  var venv = document.getElementById('native-venv').value;
+  var name = document.getElementById('native-name').value.trim();
+  var dir = document.getElementById('native-dir').value.trim();
+  var pyprefix = 'python3';
+  if(venv === 'inside'){
+    pyprefix = (dir || '/var/www/' + name) + '/.venv/bin/python';
+  } else if(venv === 'outside'){
+    pyprefix = '/opt/weborn/venvs/' + (name || 'app') + '/bin/python';
+  }
   var cmd = '';
   if(type === 'wsgi'){
     if(launcher === 'gunicorn'){
-      cmd = 'python3 -m gunicorn -w ' + workers + ' ' + mod + ' --bind ' + host + ':' + port;
+      cmd = pyprefix + ' -m gunicorn -w ' + workers + ' ' + mod + ' --bind ' + host + ':' + port;
     } else {
-      cmd = 'python3 -m uvicorn ' + mod + ' --interface wsgi --host ' + host + ' --port ' + port;
+      cmd = pyprefix + ' -m uvicorn ' + mod + ' --interface wsgi --host ' + host + ' --port ' + port;
     }
   } else {
     if(launcher === 'gunicorn'){
-      cmd = 'python3 -m gunicorn -w ' + workers + ' -k uvicorn.workers.UvicornWorker ' + mod + ' --bind ' + host + ':' + port;
+      cmd = pyprefix + ' -m gunicorn -w ' + workers + ' -k uvicorn.workers.UvicornWorker ' + mod + ' --bind ' + host + ':' + port;
     } else {
-      cmd = 'python3 -m uvicorn ' + mod + ' --host ' + host + ' --port ' + port + ' --workers ' + workers;
+      cmd = pyprefix + ' -m uvicorn ' + mod + ' --host ' + host + ' --port ' + port + ' --workers ' + workers;
     }
   }
   document.getElementById('native-cmd').textContent = cmd;
@@ -280,6 +320,7 @@ function updateSampleInfo(){
 
 function markDirTouched(){
   document.getElementById('native-dir').dataset.touched = '1';
+  updateNativeVenv();
 }
 document.getElementById('native-dir').addEventListener('input', markDirTouched);
 
@@ -394,6 +435,7 @@ async function saveConfigEditor() {
 
 updateNativeCommand();
 updateSampleInfo();
+updateNativeVenv();
 onFrontendLangChange();
 </script>
 

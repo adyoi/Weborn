@@ -37,9 +37,11 @@ def _kill_port(port: int):
                 return False
             
             pids = []
+            port_suffix = f":{port}"
             for line in result.stdout.splitlines():
                 parts = line.split()
-                if len(parts) >= 5 and f":{port}" in parts[1]:
+                # netstat: kolom Local Address ada di index 1 (0.0.0.0:2025 / [::]:2025)
+                if len(parts) >= 2 and parts[1].endswith(port_suffix):
                     try:
                         pid = int(parts[-1])
                         if pid != os.getpid() and pid not in pids:
@@ -77,7 +79,8 @@ def _kill_port(port: int):
             )
             
             for line in result.stdout.splitlines():
-                if f":{port}" in line:
+                parts = line.split()
+                if len(parts) >= 2 and parts[1].endswith(f":{port}"):
                     return False
             
             return success_count > 0
@@ -102,9 +105,13 @@ def _kill_port(port: int):
             # Regex untuk menangkap SEMUA pid=XXX
             pattern = r'pid=(\d+)'
             pids = []
-            
+            port_suffix = f":{port}"
+
             for line in result.stdout.splitlines():
-                if f":{port}" in line:
+                # ss -tlnp: kolom "Local Address:Port" ada di index 3.
+                # Pastikan akhiran port TEPAT (hindari :443 tercocok ke :4430).
+                parts = line.split()
+                if len(parts) >= 4 and parts[3].endswith(port_suffix):
                     matches = re.findall(pattern, line)
                     for match in matches:
                         try:
@@ -158,7 +165,8 @@ def _kill_port(port: int):
             )
             
             for line in result.stdout.splitlines():
-                if f":{port}" in line:
+                parts = line.split()
+                if len(parts) >= 4 and parts[3].endswith(f":{port}"):
                     if re.search(pattern, line):
                         return False
             

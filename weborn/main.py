@@ -7,9 +7,9 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import RedirectResponse
 
-from .config import BASE_DIR, SESSION_COOKIE, STATIC_DIR
+from .config import BASE_DIR, STATIC_DIR
 from .csrf import CSRFMiddleware
-from .db import get_secret_key, has_panel_users, init_db
+from .db import init_db
 from .executors import get_executor
 from .managers.accounts import AccountManager
 from .routers import (accounts, addons, apps, appmonitor, auth, backup, cron,
@@ -76,7 +76,6 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     _setup_logging()
-    init_db()
     app = FastAPI(title="Weborn Engine", version="1.0.0", lifespan=lifespan)
 
     app.add_middleware(CSRFMiddleware)

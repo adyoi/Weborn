@@ -38,6 +38,11 @@ def _get_jwt_from_request(scope: dict, headers: dict) -> str:
     return ""
 
 
+async def _reject(message: str, status_code: int, scope, receive, send) -> None:
+    response = Response(message, status_code=status_code)
+    await response(scope, receive, send)
+
+
 class CSRFMiddleware:
     EXEMPT_METHODS = {"GET", "HEAD", "OPTIONS"}
     EXEMPT_PATHS = {"/login", "/setup", "/logout", "/ws/terminal"}
@@ -76,7 +81,7 @@ class CSRFMiddleware:
                 message = await receive()
                 body += message.get("body", b"")
                 if len(body) > MAX_BODY:
-                    return Response("Request body terlalu besar", status_code=413)
+                    return await _reject("Request body terlalu besar", 413, scope, receive, send)
                 if not message.get("more_body", False):
                     break
 
@@ -102,7 +107,7 @@ class CSRFMiddleware:
             if not validate_csrf_token(csrf_token, session_id):
                 header_token = headers.get(b"x-csrf-token", b"").decode("latin-1")
                 if not validate_csrf_token(header_token, session_id):
-                    return Response("CSRF token invalid", status_code=403)
+                    return await _reject("CSRF token invalid", 403, scope, receive, send)
 
             async def receive_body():
                 return {"type": "http.request", "body": body}
@@ -112,10 +117,10 @@ class CSRFMiddleware:
         elif "application/json" in content_type:
             csrf_token = headers.get(b"x-csrf-token", b"").decode("latin-1")
             if not validate_csrf_token(csrf_token, session_id):
-                return Response("CSRF token invalid", status_code=403)
+                return await _reject("CSRF token invalid", 403, scope, receive, send)
         else:
             csrf_token = headers.get(b"x-csrf-token", b"").decode("latin-1")
             if not validate_csrf_token(csrf_token, session_id):
-                return Response("CSRF token invalid", status_code=403)
+                return await _reject("CSRF token invalid", 403, scope, receive, send)
 
         return await self.app(scope, receive, send)

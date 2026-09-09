@@ -96,6 +96,12 @@ class Executor:
             r"(-p\s+)([^ ]{6,})",
             r"\1[REDACTED]",
             sanitized)
+        # `echo 'user:pass' | chpasswd` — password di akhir baris tidak
+        # tertangkap pola di atas; redact seluruh argumen yang dikirim ke chpasswd.
+        sanitized = _re.sub(
+            r"(echo\s+)[^\n]*chpasswd",
+            r"\1[REDACTED]",
+            sanitized, flags=_re.IGNORECASE)
         line = f"[{datetime.now().isoformat()}] {sanitized} -> rc={result.returncode} ok={result.ok}"
         try:
             with open(LOG_DIR / "audit.log", "a") as f:
@@ -168,7 +174,7 @@ class DryRunExecutor(Executor):
         super().__init__(mode)
 
     async def run(self, *cmd: str) -> ExecResult:
-        cmdline = " ".join(cmd)
+        cmdline = " ".join(shlex.quote(c) for c in cmd)
         result = ExecResult(ok=True, returncode=0, cmd=cmdline, stdout=f"[dry-run] {cmdline}")
         self._audit(cmdline, result)
         return result
