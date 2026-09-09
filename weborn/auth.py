@@ -193,8 +193,9 @@ def get_current_user(request: Request):
     user = dict(row)
     if not user.get("is_active", 1):
         return None
-    # Check idle lock
-    timeout = int(user.get("session_timeout") or 300)
+    # Check idle lock (0 == disabled)
+    raw = user.get("session_timeout")
+    timeout = 300 if raw is None else int(raw)
     if is_idle_locked(user_id, timeout):
         return None
     # Update last activity
