@@ -62,7 +62,7 @@ Full documentation is available at **[https://adyoi.github.io/Weborn](https://ad
 - **Password Policy** — Min 8 chars with uppercase, lowercase, digit, and symbol enforcement
 - **Path Traversal Fix** — PHP regex validation + `..` rejection in config editor
 - **Worker Class Injection** — Whitelist blocks shell injection via `worker_class` parameter
-- **Template XSS Fix** — All 19 HTML templates use `tojson` filter for user names in onclick
+- **Template XSS Fix** — No `tojson` in attributes (breaks `onclick`/`data-*`); dynamic JS values move through `data-*` + `addEventListener`
 - **Template URL Fix** — Space-in-url bugs fixed across all 19 HTML templates
 - **CSRF Token Fix** — Trailing space that broke HMAC validation removed
 - **Apache Auto-Install** — Auto-installs if missing when starting Apache manager

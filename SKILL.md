@@ -39,15 +39,17 @@ async def list_apps(ex):
 ```
 
 ```html
-<!-- template: nilai dinamis di JS SELALU tojson -->
-<button onclick="viewSite({{ site|tojson }})">
+<!-- template: jangan |tojson di atribut HTML (double-quote memotong onclick/data-*).
+     Taruh nilai di data-* (autoescape {{ }} aman) lalu bind via addEventListener -->
+<button data-site="{{ site }}" data-site-act="view">
+<script>document.querySelectorAll('[data-site]').forEach(b => b.addEventListener('click', () => viewSite(b.dataset.site)));</script>
 ```
 
 ## Checklist Audit Ulang (dipakai tiap iterasi)
 
 - [ ] Semua file Python di-`python -m py_compile`.
 - [ ] Unit test `test/run_tests.py` hijau (52 test, stdlib only).
-- [ ] Tidak ada `'{{ x }}'` di dalam string JS/onclick (harus `|tojson`).
+- [ ] Tidak ada `|tojson` di template; nilai dinamis hanya lewat `data-*` + `addEventListener`.
 - [ ] Semua POST fetch mengirim `X-CSRF-Token`.
 - [ ] Biner tidak lewat `str`/`echo`; gunakan base64.
 - [ ] Fork/exec child memakai `os._exit`.

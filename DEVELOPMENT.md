@@ -61,8 +61,8 @@ r = await ex.write_file(path, content) # otomatis sudo -u owner untuk file app
   - `weborn.simplePost(url, title, reload, body?)` — POST JSON + header `X-CSRF-Token`; body opsional (FormData/string).
   - `weborn.streamPost(url, title, reload, body?)` — POST dengan progress (SSE/stream).
   - `weborn.toast(msg, kind)`, `weborn.modal.open/close`, `weborn.confirmAction`.
-- **Wajib:** nilai dinamis di dalam string JS / onclick HARUS `|tojson` (bukan `'{{ x }}'`), agar aman dari breakout quote & XSS. ID int aman tanpa tojson.
-- Route URL dinamis gunakan `|tojson` atau `{{ x|urlencode }}`; jangan interpolasi mentah.
+- **Wajib:** JANGAN pakai `|tojson` di HTML — output JSON ber-delimiter `"` memotong atribut `onclick`/`data-*` (`Unexpected end of input`). Nilai dinamis untuk JS ditaruh di atribut `data-*` (autoescape `{{ x }}` aman di sana; dataset membacanya sebagai teks ter-decode) lalu handler di-bind via `addEventListener`. ID int aman tanpa filter.
+- Route URL dinamis gunakan `{{ x|urlencode }}`; jangan interpolasi mentah. Di fetch client, encode dengan `encodeURIComponent()`.
 - Nama input form konsisten dengan `request.form.get(...)`. Untuk POST fetch, kirim `FormData` (bukan JSON.stringify) agar cocok `form()`.
 
 ## 5. Keamanan (checklist commit)
@@ -120,7 +120,7 @@ Catatan khusus lingkungan uji (lihat AGENTS.md item gotchas).
 1. **Router:** buat `weborn/routers/<fitur>.py` (APIRouter + depend `require_user/require_admin`), register di `main.py`.
 2. **Manager `async def`:** taruh logika sistem di `weborn/managers/<fitur>.py`, return dict; router cukup parse → render.
    - Operasi blocking (baca proses, psutil) bungkus `await asyncio.to_thread(...)` agar tidak memblokir event loop.
-3. **Template:** extends base.html; gunakan helper JS; `|tojson` untuk nilai dinamis.
+3. **Template:** extends base.html; gunakan helper JS; nilai dinamis ke JS via atribut `data-*` + `addEventListener` (larang `|tojson`).
 4. **Submit:** jika POST via fetch → sertakan header CSRF; bentuk FormData. Jika form HTML biasa → cukup `method=post` (CSRF auto-inject).
 5. **Command lama:** jalankan lewat executor (bukan subprocess langsung) supaya mode dry-run & audit tetap bekerja.
 6. **Test:** tambah kasus di `test/test_<fitur>*.py` mengikuti gaya unittest yang ada.

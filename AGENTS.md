@@ -40,7 +40,7 @@ Jangan commit sebelum 3 langkah di atas lolos. Ikuti pola commit repo: pesan sin
 
 1. **Baca sebelum edit.** Gunakan glob/grep dulu; kalau ragu, baca file penuh target.
 2. **Jangan rombak yang sehat.** Fokus fix minimal-robust; hindari refactor kosmetik besar tanpa diminta.
-3. **Template = nilai dinamis via `|tojson`** di dalam atribut/JS; jangan `'{{ x }}'`.
+3. **Template = nilai dinamis via atribut `data-*` + `addEventListener`;** jangan `|tojson` di HTML (memotong atribut) dan jangan `'{{ x }}'` di string JS.
 4. **CSRF:** setiap POST fetch wajib `X-CSRF-Token`; form HTML biasa auto-inject.
 5. **Jangan** commit: `data/*.db*`, `.env`, `.tgrep/`, `.git-rewrite/`, `node_modules/`, `__pycache__/`.
 6. **Jangan pernah** taruh kredensial/secret di kode atau commit; gunakan env var / tabel settings.
