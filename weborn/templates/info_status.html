@@ -1,49 +1,153 @@
 {% extends "base.html" %}
-{% block title %}Status — Info — Weborn{% endblock %}
+{% block title %}Health Check — Info — Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">{{ icon('chart-bar', 'w-5 h-5') }} System Status</div>
-<div class="page-sub text-t3 text-[13px] mb-5">Informasi lengkap sistem server</div>
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-    <div class="card">
-        <h3 class="text-xs font-bold mb-3">{{ icon('computer-desktop', 'w-5 h-5') }} System</h3>
-        <table class="text-[13px] w-full">
-            <tr><td class="text-t3 pr-3 py-1">Hostname</td><td class="mono">{{ info.hostname }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">OS</td><td>{{ info.os }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Kernel</td><td class="mono">{{ info.kernel }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Uptime</td><td>{{ info.uptime }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Weborn</td><td class="mono">v{{ version }}</td></tr>
-       </table>
-   </div>
-
-    <div class="card">
-        <h3 class="text-xs font-bold mb-3">{{ icon('bolt', 'w-5 h-5') }} Hardware</h3>
-        <table class="text-[13px] w-full">
-            <tr><td class="text-t3 pr-3 py-1">CPU</td><td>{{ info.cpu_model }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Cores</td><td class="mono">{{ info.cores }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">RAM</td><td class="mono">{{ info.ram }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Disk</td><td>{{ info.disk }}</td></tr>
-       </table>
-   </div>
-
-    <div class="card">
-        <h3 class="text-xs font-bold mb-3">{{ icon('globe-alt', 'w-5 h-5') }} Network</h3>
-        <table class="text-[13px] w-full">
-            <tr><td class="text-t3 pr-3 py-1">LAN IP</td><td class="mono">{{ info.ip_lan }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Public IP</td><td class="mono">{{ info.ip_pub }}</td></tr>
-       </table>
-   </div>
-
-    <div class="card">
-        <h3 class="text-xs font-bold mb-3">{{ icon('wrench', 'w-5 h-5') }} Runtime</h3>
-        <table class="text-[13px] w-full">
-            <tr><td class="text-t3 pr-3 py-1">Python</td><td class="mono">{{ info.python }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Node.js</td><td class="mono">{{ info.node }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Nginx</td><td class="mono">{{ info.nginx }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">MariaDB</td><td class="mono">{{ info.mariadb }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">PostgreSQL</td><td class="mono">{{ info.postgresql }}</td></tr>
-            <tr><td class="text-t3 pr-3 py-1">Redis</td><td class="mono">{{ info.redis }}</td></tr>
-       </table>
-   </div>
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <div class="page-title text-[22px] font-bold mb-1">{{ icon('chart-bar-square', 'w-5 h-5') }} Health Check</div>
+        <div class="page-sub text-t3 text-[13px]">Status semua aplikasi inti Weborn</div>
+    </div>
+    <div class="flex items-center gap-2">
+        <span class="text-t3 text-[13px] mono" id="health-checked">{{ checked_at }}</span>
+        <button class="btn sm primary" id="health-refresh-btn">{{ icon('arrow-path', 'w-5 h-5') }} Periksa Ulang</button>
+    </div>
 </div>
+
+{% if simulated %}
+<div class="card mb-3 text-[13px] text-t2 flex items-center gap-2">
+    <span class="badge info">{{ icon('beaker', 'w-4 h-4') }} dry-run</span>
+    Mode simulasi (dry-run) — hasil health check tidak riil.
+</div>
+{% endif %}
+
+{# ── Ringkasan ── #}
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+    <div class="card">
+        <div class="text-t3 text-[14px] uppercase tracking-wide">Total Aplikasi</div>
+        <div class="text-[24px] font-bold mt-1" id="h-total">{{ summary.total }}</div>
+    </div>
+    <div class="card">
+        <div class="text-t3 text-[14px] uppercase tracking-wide">Sehat</div>
+        <div class="text-[24px] font-bold mt-1 text-[var(--ok)]" id="h-ok">{{ summary.ok }}</div>
+        <div class="stat-bar mt-2"><span class="bg-[var(--ok)]" style="width:{{ (summary.ok / summary.total * 100) if summary.total else 0 }}%"></span></div>
+    </div>
+    <div class="card">
+        <div class="text-t3 text-[14px] uppercase tracking-wide">Waspada</div>
+        <div class="text-[24px] font-bold mt-1 text-[var(--warn)]" id="h-warn">{{ summary.warn }}</div>
+        <div class="stat-bar mt-2"><span class="bg-[var(--warn)]" style="width:{{ (summary.warn / summary.total * 100) if summary.total else 0 }}%"></span></div>
+    </div>
+    <div class="card">
+        <div class="text-t3 text-[14px] uppercase tracking-wide">Down / Belum</div>
+        <div class="text-[24px] font-bold mt-1 text-[var(--err)]" id="h-down">{{ summary.down + summary['not-installed'] }}</div>
+        <div class="text-t3 text-[13px] mt-1" id="h-down-label">{{ summary.down }} down · {{ summary['not-installed'] }} belum terpasang</div>
+    </div>
+</div>
+
+{# ── Daftar per kategori ── #}
+{% set order = ['panel', 'app', 'web-server', 'database', 'cache', 'mail', 'monitoring', 'security', 'remote-access', 'runtime', 'watchdog', 'log', 'other'] %}
+{% set groups = {} %}
+{% for c in checks %}
+    {% set _ = groups.update({c.category: groups.get(c.category, []) + [c]}) %}
+{% endfor %}
+
+<div id="health-groups" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+{% for cat in order if groups.get(cat) %}
+    <div class="card">
+        <h3 class="text-xs font-bold mb-3">{{ icon(category_icon.get(cat, 'cube'), 'w-5 h-5') }} {{ category_label.get(cat, cat) }}</h3>
+        <table class="text-[13px] w-full">
+            <tbody>
+            {% for c in groups[cat] %}
+                <tr data-health-id="{{ c.id }}">
+                    <td class="py-1 pr-2 w-6">
+                        <span class="st {{ 'active' if c.state == 'ok' else ('inactive' if c.state == 'not-installed' else 'failed') }}">
+                            <span class="sr-only">{{ c.state }}</span>
+                        </span>
+                    </td>
+                    <td class="py-1 pr-2">
+                        <div class="font-bold">{{ c.name }}</div>
+                        <div class="text-t3 text-[12px] mono">{{ c.unit or '—' }}</div>
+                    </td>
+                    <td class="py-1 pr-2 text-right">
+                        <div class="mono text-[13px]">{{ c.version[:28] if c.version and c.version != '—' else '—' }}</div>
+                        <div class="text-t3 text-[12px]">
+                            port {{ c.port if c.port else '—' }}
+                            {% if c.port %}
+                                · <span class="health-lat mono" data-kind="lat">{{ c.latency ~ 'ms' if c.latency is not none else '…' }}</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="py-1 pl-2 text-right whitespace-nowrap">
+                        <span class="status-pill {{ 'running' if c.state == 'ok' else ('stopped' if c.state == 'not-installed' or c.state == 'warn' else 'error') }}"
+                              data-kind="state">
+                            {{ {'ok': 'OK', 'warn': 'Warn', 'down': 'DOWN', 'not-installed': 'Belum'}[c.state] }}
+                        </span>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const csrf = document.querySelector('input[name="_csrf_token"]')?.value || '';
+    const rows = {};
+    document.querySelectorAll('tr[data-health-id]').forEach(function (tr) {
+        rows[tr.getAttribute('data-health-id')] = tr;
+    });
+
+    function applyRow(id, c) {
+        const tr = rows[id];
+        if (!tr) return;
+        const pill = tr.querySelector('[data-kind="state"]');
+        if (pill) {
+            pill.className = 'status-pill ' +
+                (c.state === 'ok' ? 'running' :
+                 (c.state === 'not-installed' || c.state === 'warn' ? 'stopped' : 'error'));
+            const labels = { ok: 'OK', warn: 'Warn', down: 'DOWN', 'not-installed': 'Belum' };
+            pill.textContent = labels[c.state] || c.state;
+        }
+        const lat = tr.querySelector('.health-lat[data-kind="lat"]');
+        if (lat) lat.textContent = (c.latency != null ? c.latency + 'ms' : '…');
+        const st = tr.querySelector('.st');
+        if (st) {
+            st.className = 'st ' +
+                (c.state === 'ok' ? 'active' :
+                 (c.state === 'not-installed' ? 'inactive' : 'failed'));
+        }
+    }
+
+    function applySummary(s) {
+        const set = (id, v) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = v;
+        };
+        set('h-total', s.total);
+        set('h-ok', s.ok);
+        set('h-warn', s.warn);
+        set('h-down', s.down + s['not-installed']);
+        const el = document.getElementById('h-down-label');
+        if (el) el.textContent = s.down + ' down · ' + s['not-installed'] + ' belum terpasang';
+    }
+
+    function refresh() {
+        fetch('/info/status/check', { headers: { 'X-CSRF-Token': csrf } })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                data.checks.forEach(function (c) { applyRow(c.id, c); });
+                applySummary(data.summary);
+                const t = document.getElementById('health-checked');
+                if (t) t.textContent = data.checked_at;
+            })
+            .catch(function () {});
+    }
+
+    const btn = document.getElementById('health-refresh-btn');
+    if (btn) btn.addEventListener('click', refresh);
+    setInterval(refresh, 15000);
+})();
+</script>
 {% endblock %}

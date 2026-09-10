@@ -4,7 +4,7 @@
   "description": "Webserver mandiri (asgi uvicorn/gunicorn + sync): serve statis, reverse proxy ke app (Node/PHP/Python), dan mount GUI panel di /panel",
   "category": "runtime",
   "type": "runtime",
-  "packages": ["nginx", "python", "guvicorn", "unicorn"],
+  "packages": ["nginx", "python", "gunicorn", "uvicorn"],
   "bin": "python",
   "ports": [8000, 8080, 8443],
   "icon": "🐝",
