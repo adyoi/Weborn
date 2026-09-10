@@ -4,7 +4,7 @@
   "description": "Container runtime untuk aplikasi sandboxed (compose, image, volume)",
   "category": "runtime",
   "type": "system",
-  "packages": ["docker.io", "docker-compose-plugin"],
+  "packages": ["docker.io", "docker-compose"],
   "systemd_unit": "docker",
   "bin": "docker",
   "ports": [2375, 2376],
