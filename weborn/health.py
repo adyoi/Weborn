@@ -105,7 +105,7 @@ async def collect_health(ex=None) -> dict:
         "id": "weborn", "kind": "core", "category": "panel",
         "name": "Weborn Panel", "icon": "bolt", "unit": "weborn",
         "version": VERSION, "port": PANEL_HTTP_PORT,
-        "installed": True, "active": True,
+        "installed": True, "active": True, "core": True,
         "reachable": ok if do_probe else None, "latency": lat,
         "needs_active": True, "detail": "Panel control aktif",
     })
@@ -121,13 +121,13 @@ async def collect_health(ex=None) -> dict:
             "id": f"app-{a['id']}", "kind": "app", "category": "app",
             "name": a["name"], "icon": "rocket-launch", "unit": unit,
             "version": a.get("framework") or a.get("language", "—"),
-            "port": port, "installed": True, "active": active,
+            "port": port, "installed": True, "active": active, "core": False,
             "reachable": ok if do_probe else None, "latency": lat,
             "needs_active": True,
             "detail": f"{a.get('language', '?')} · port {port or '—'}",
         })
 
-    # ── Addon store (layanan & runtime inti) ──
+    # ── Addon store (semua addon: aplikasi inti & pilihan) ──
     for addon in manager.list_addons():
         if addon.type == "builtin":
             continue
@@ -145,11 +145,11 @@ async def collect_health(ex=None) -> dict:
             "port": port, "installed": st.get("installed", False),
             "active": st.get("active", False), "state_raw": st.get("state", "unknown"),
             "reachable": ok if do_probe else None, "latency": lat,
-            "needs_active": needs_active,
+            "needs_active": needs_active, "core": bool(addon.core),
             "detail": (f"{addon.category} · {addon.source}"),
         })
 
-    # ── Ringkasan ──
+    # ── Ringkasan (umum + aplikasi inti Weborn) ──
     order = ["ok", "warn", "down", "not-installed"]
     summary = {s: sum(1 for c in checks if c["state"] == s) for s in order}
     summary["total"] = len(checks)
@@ -162,6 +162,15 @@ async def collect_health(ex=None) -> dict:
         summary["overall"] = "ok"
     else:
         summary["overall"] = "partial"
+
+    cores = [c for c in checks if c.get("core")]
+    summary["core_total"] = len(cores)
+    summary["core_ok"] = sum(1 for c in cores if c["state"] == "ok")
+    summary["core_fault"] = sum(1 for c in cores if c["state"] in ("down", "warn"))
+    if any(c["state"] in ("down", "warn") for c in cores):
+        summary["core_overall"] = "fault"
+    else:
+        summary["core_overall"] = "ok"
 
     return {
         "checks": checks,

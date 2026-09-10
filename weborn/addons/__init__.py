@@ -54,6 +54,7 @@ class Addon:
     repo: str | None = None                          # untuk type app: git url
     icon: str = "🛠️"
     source: str = "builtin"                          # builtin | user
+    core: bool = False                               # aplikasi inti Weborn (default weborn)
 
     @property
     def unit(self) -> str:
@@ -115,7 +116,8 @@ class AddonManager:
         addons = list(self._addons.values())
         if category:
             addons = [a for a in addons if a.category == category]
-        return sorted(addons, key=lambda a: (a.category, a.id))
+        # Aplikasi inti Weborn (core) tampil paling atas di store.
+        return sorted(addons, key=lambda a: (not a.core, a.category, a.id))
 
     def categories(self) -> list[str]:
         return sorted({a.category for a in self._addons.values()})
@@ -302,6 +304,10 @@ class AddonManager:
         if addon.type == "builtin":
             yield {"ok": True, "step": "Addon bawaan tidak bisa di-uninstall"}
             return
+        if addon.core:
+            yield {"ok": False,
+                   "error": f"{addon.name} adalah aplikasi inti Weborn (default weborn) — tidak boleh di-uninstall"}
+            return
         if addon.type in ("system", "app") and addon.systemd_unit:
             result = await self.executor.systemctl("stop", addon.unit)
             yield {"ok": True, "step": f"Stop {addon.unit}", "output": result.output}
@@ -341,6 +347,7 @@ class AddonManager:
     async def _run_collect(self, gen) -> dict:
         output = []
         ok = True
+        error = ""
         async for step in gen:
             line = step.get("step", "")
             if step.get("output"):
@@ -348,7 +355,8 @@ class AddonManager:
             output.append(line)
             if not step.get("ok", True):
                 ok = False
-        return {"ok": ok, "output": "\n".join(output) or "(tidak ada langkah)"}
+                error = step.get("error") or error
+        return {"ok": ok, "output": "\n".join(output) or error or "(tidak ada langkah)"}
 
     # ---------- runtime control ----------
     async def action(self, addon: Addon, action: str) -> dict:

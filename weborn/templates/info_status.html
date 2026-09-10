@@ -19,6 +19,27 @@
 </div>
 {% endif %}
 
+{# ── Aplikasi inti Weborn (default weborn) ── #}
+<div class="card mb-3 {{ '!border-[var(--ok)]/50' if summary.core_overall == 'ok' else '!border-[var(--err)]/60' }}">
+    <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 text-[13px] font-bold">
+            {{ icon('bolt', 'w-5 h-5') }} Aplikasi Inti Weborn
+            <span class="badge info">default weborn</span>
+        </div>
+        <div class="text-[13px] mono" id="h-core">
+            <span class="{{ 'text-[var(--ok)]' if summary.core_overall == 'ok' else 'text-[var(--err)]' }}">{{ summary.core_ok }}</span>/{{ summary.core_total }} normal
+        </div>
+    </div>
+    <div class="flex gap-1 flex-wrap mt-2" id="h-core-list">
+        {% for c in checks if c.core %}
+        {% set st = {'ok':'active','warn':'inactive','down':'failed','not-installed':'inactive'}[c.state] %}
+        <span class="badge {{ 'ok' if c.state == 'ok' else ('err' if c.state == 'down' else 'warn') }}" data-core-id="{{ c.id }}">
+            {{ c.name }} · <span data-kind="core-state">{{ {'ok':'OK','warn':'Warn','down':'DOWN','not-installed':'Belum'}[c.state] }}</span>
+        </span>
+        {% endfor %}
+    </div>
+</div>
+
 {# ── Ringkasan ── #}
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
     <div class="card">
@@ -63,7 +84,10 @@
                         </span>
                     </td>
                     <td class="py-1 pr-2">
-                        <div class="font-bold">{{ c.name }}</div>
+                        <div class="font-bold flex items-center gap-1.5">
+                            {% if c.core %}<span class="badge info !py-0 !text-[10px]">inti</span>{% endif %}
+                            {{ c.name }}
+                        </div>
                         <div class="text-t3 text-[12px] mono">{{ c.unit or '—' }}</div>
                     </td>
                     <td class="py-1 pr-2 text-right">
@@ -98,6 +122,10 @@
     document.querySelectorAll('tr[data-health-id]').forEach(function (tr) {
         rows[tr.getAttribute('data-health-id')] = tr;
     });
+    const coreBadges = {};
+    document.querySelectorAll('[data-core-id]').forEach(function (b) {
+        coreBadges[b.getAttribute('data-core-id')] = b;
+    });
 
     function applyRow(id, c) {
         const tr = rows[id];
@@ -131,13 +159,29 @@
         set('h-down', s.down + s['not-installed']);
         const el = document.getElementById('h-down-label');
         if (el) el.textContent = s.down + ' down · ' + s['not-installed'] + ' belum terpasang';
+        const core = document.getElementById('h-core');
+        if (core) {
+            const span = core.querySelector('span');
+            if (span) span.textContent = s.core_ok + '/' + s.core_total + ' normal';
+            core.className = 'text-[13px] mono ' + (s.core_overall === 'ok' ? '' : 'text-[var(--err)]');
+        }
+    }
+
+    function applyCore(c) {
+        const b = coreBadges[c.id];
+        if (!b) return;
+        const labels = { ok: 'OK', warn: 'Warn', down: 'DOWN', 'not-installed': 'Belum' };
+        const el = b.querySelector('[data-kind="core-state"]');
+        if (el) el.textContent = labels[c.state] || c.state;
+        b.className = 'badge ' +
+            (c.state === 'ok' ? 'ok' : (c.state === 'down' ? 'err' : 'warn'));
     }
 
     function refresh() {
         fetch('/info/status/check', { headers: { 'X-CSRF-Token': csrf } })
             .then(function (r) { return r.json(); })
             .then(function (data) {
-                data.checks.forEach(function (c) { applyRow(c.id, c); });
+                data.checks.forEach(function (c) { applyRow(c.id, c); applyCore(c); });
                 applySummary(data.summary);
                 const t = document.getElementById('health-checked');
                 if (t) t.textContent = data.checked_at;

@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ addon.name }} - Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">{{ addon.icon }} {{ addon.name }}</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ addon.icon }} {{ addon.name }}
+    {% if addon.core %}<span class="badge info align-middle">{{ icon('bolt', 'w-4 h-4') }} inti Weborn (default weborn)</span>{% endif %}
+</div>
 <div class="page-sub text-t3 text-[13px] mb-5">{{ addon.description }}</div>
 
 <div class="card mb-4">
@@ -16,8 +18,10 @@
             <button class="btn" data-tip="Restart layanan {{ addon.name }}" onclick="weborn.simplePost('/addons/{{ addon.id }}/restart','Merestart {{addon.name }}', true)">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
             <button class="btn" data-tip="Hentikan layanan {{ addon.name }}" onclick="weborn.simplePost('/addons/{{ addon.id }}/stop','Menghentikan {{addon.name }}', true)">{{ icon('stop', 'w-5 h-5') }} Stop</button>
             <button class="btn" data-tip="Perbarui {{ addon.name }} ke versi terbaru" onclick="weborn.streamPost('/addons/{{ addon.id }}/update/stream','Mengupdate {{addon.name }}', true)">{{ icon('arrow-up', 'w-4 h-4') }} Update</button>
+            {% if not addon.core %}
             <button class="btn danger" data-tip="Hapus {{ addon.name }} dari server"
                     onclick="if(confirm('Uninstall {{addon.name }}' + ' ?'))weborn.streamPost('/addons/{{ addon.id }}/uninstall/stream','Menghapus {{addon.name }}', true)">{{ icon('trash', 'w-5 h-5') }} Uninstall</button>
+            {% endif %}
         {% elif not status.installed %}
             <button class="btn primary" data-tip="Install {{ addon.name }} ke server"
                     onclick="weborn.streamPost('/addons/{{ addon.id }}/install/stream','Menginstall {{addon.name }}', true)">{{ icon('arrow-down-tray', 'w-5 h-5') }} Install</button>

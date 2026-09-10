@@ -8,6 +8,7 @@
   "bin": "python",
   "ports": [8000, 8080, 8443],
   "icon": "🐝",
+  "core": true,
   "config": {
     "template": "weborn-engine.conf.j2"
   },
