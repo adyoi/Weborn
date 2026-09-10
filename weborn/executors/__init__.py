@@ -9,6 +9,7 @@ executor ini, bukan dieksekusi langsung — supaya bisa:
 import asyncio
 import os
 import shlex
+import signal
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -119,7 +120,8 @@ class LocalExecutor(Executor):
     def __init__(self, mode: str = "local"):
         super().__init__(mode)
 
-    async def run(self, *cmd: str, timeout: int | None = None) -> ExecResult:
+    async def run(self, *cmd: str, timeout: int | None = None,
+                  env: dict | None = None) -> ExecResult:
         # Prepend sudo untuk perintah yang butuh root
         privileged = {"apt-get", "apt", "systemctl", "ufw", "certbot",
                       "fail2ban-client", "freshclam", "clamscan", "useradd",
@@ -129,12 +131,20 @@ class LocalExecutor(Executor):
 
         cmdline = " ".join(shlex.quote(c) for c in cmd)
         effective_timeout = timeout or self.COMMAND_TIMEOUT
+        full_env = dict(os.environ)
+        if env:
+            full_env.update(env)
         try:
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                env=full_env,
+                # process group sendiri → timeout bisa kill seluruh pohon
+                # (sudo + apt + postinst), bukan cuma sudo (yang tadinya
+                # membuat apt yatim & dpkg lock menggantung).
+                start_new_session=True,
             )
             try:
                 stdout, stderr = await asyncio.wait_for(
@@ -142,12 +152,21 @@ class LocalExecutor(Executor):
                     timeout=effective_timeout,
                 )
             except asyncio.TimeoutError:
-                proc.kill()
+                try:
+                    os.killpg(proc.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
                 await proc.communicate()
                 return ExecResult(ok=False, returncode=-1, stdout="", stderr="timeout", cmd=cmdline)
             # Cap output size
             stdout_str = stdout.decode(errors="replace")[:self.MAX_OUTPUT]
             stderr_str = stderr.decode(errors="replace")[:self.MAX_OUTPUT]
+        except FileNotFoundError:
+            # Perintah tidak ada di PATH (mis. `docker` belum terpasang) —
+            # beri pesan jelas, bukan 'No such file or directory'.
+            return ExecResult(ok=False, returncode=-1, stdout="",
+                              stderr="command not found: " + (cmd[0] if cmd else "?"),
+                              cmd=cmdline)
         except Exception as e:
             return ExecResult(ok=False, returncode=-1, stdout="", stderr=str(e), cmd=cmdline)
         result = ExecResult(
@@ -173,7 +192,8 @@ class DryRunExecutor(Executor):
     def __init__(self, mode: str = "dry-run"):
         super().__init__(mode)
 
-    async def run(self, *cmd: str) -> ExecResult:
+    async def run(self, *cmd: str, timeout: int | None = None,
+                  env: dict | None = None) -> ExecResult:
         cmdline = " ".join(shlex.quote(c) for c in cmd)
         result = ExecResult(ok=True, returncode=0, cmd=cmdline, stdout=f"[dry-run] {cmdline}")
         self._audit(cmdline, result)
@@ -212,21 +232,31 @@ class WSLExecutor(Executor):
             return f"/mnt/{drive}{rest}"
         return p
 
-    async def run(self, *cmd: str, root: bool = False) -> ExecResult:
+    async def run(self, *cmd: str, root: bool = False,
+                  timeout: int | None = None, env: dict | None = None) -> ExecResult:
         argv = ["wsl", "-d", self.distro]
         if root or self.root:
             argv += ["-u", "root"]
         argv += ["--exec"] + [self._wslpath(c) for c in cmd]
         cmdline = " ".join(shlex.quote(c) for c in argv)
-        proc = await asyncio.create_subprocess_exec(
-            *argv,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
+        full_env = dict(os.environ)
+        if env:
+            full_env.update(env)
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                *argv,
+                env=full_env,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+        except FileNotFoundError:
+            return ExecResult(ok=False, returncode=-1, stdout="",
+                              stderr="command not found: " + (cmd[0] if cmd else "?"),
+                              cmd=cmdline)
         try:
             stdout, stderr = await asyncio.wait_for(
                 proc.communicate(),
-                timeout=60,
+                timeout=timeout or 60,
             )
         except asyncio.TimeoutError:
             proc.kill()

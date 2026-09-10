@@ -13,6 +13,7 @@ siklus hidup seragam:
 - Konfigurasi digenerate dari template Jinja2 (weborn/addons/templates).
 """
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -23,6 +24,17 @@ from ..db import get_setting, set_setting
 from ..executors import get_executor
 
 CONF_TEMPLATES = Jinja2Templates(directory=str(CONF_TEMPLATES_DIR))
+
+# apt-get (terutama install AIDE: postinst hash seluruh filesystem) bisa
+# berjalan beberapa menit — jauh melebihi COMMAND_TIMEOUT eksekutor (60s).
+APT_TIMEOUT = 1800
+# Tanpa DEBIAN_FRONTEND=noninteractive, debconf bisa menunggu input selamanya
+# (karena panel tidak punya tty interaktif) → instalasi terlihat macet.
+APT_ENV = {
+    "DEBIAN_FRONTEND": "noninteractive",
+    "PATH": os.environ.get("PATH",
+                           "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"),
+}
 
 
 @dataclass
@@ -121,6 +133,10 @@ class AddonManager:
     async def installed(self, addon: Addon) -> bool:
         if addon.type == "builtin":
             return True
+        if addon.type == "plugin":
+            # Plugin dijalankan via container — dicek dari keberadaan image,
+            # bukan binary host (bin di dalam container, mis. grafana-server).
+            return addon.packages and await self._image_present(addon.packages[0])
         if addon.type == "system":
             if not addon.bin:
                 return False
@@ -128,6 +144,28 @@ class AddonManager:
         if addon.bin:
             return await self._binary_exists(addon)
         return False
+
+    async def _docker_ready(self) -> bool:
+        return (await self.executor.run("which", "docker")).ok
+
+    async def _image_present(self, img: str) -> bool:
+        if not await self._docker_ready():
+            return False
+        return (await self.executor.run("docker", "image", "inspect", img)).ok
+
+    async def _ensure_docker(self):
+        """Pastikan Docker tersedia; kalau belum, install addon Docker dulu."""
+        if await self._docker_ready():
+            return
+        docker_addon = self._addons.get("docker")
+        if docker_addon is None:
+            yield {"ok": False, "error": "Addon Docker tidak tersedia — plugin butuh Docker"}
+            return
+        yield {"ok": True, "step": "Docker belum terpasang — menginstall Docker dulu…"}
+        async for s in self.install_steps(docker_addon):
+            yield s
+            if s.get("error") and not s.get("ok", True):
+                return
 
     async def version(self, addon: Addon) -> str:
         if not addon.bin:
@@ -148,7 +186,14 @@ class AddonManager:
             result = await self.executor.systemctl("is-active", addon.systemd_unit)
             active = result.ok
             state = result.stdout.strip() or "inactive"
-        version = await self.version(addon)
+        version = "—"
+        if addon.type == "plugin" and addon.packages and await self._docker_ready():
+            r = await self.executor.run("docker", "images", "--format",
+                                        "{{.Repository}}:{{.Tag}}", addon.packages[0])
+            parts = [ln for ln in r.stdout.strip().splitlines() if ln]
+            version = parts[0] if parts else "—"
+        else:
+            version = await self.version(addon)
         return {"installed": True, "active": active, "state": state, "version": version}
 
     # ---------- lifecycle ----------
@@ -186,7 +231,10 @@ class AddonManager:
                     cmds.append(("Pull image docker: " + ", ".join(addon.packages),
                                  ["docker", "pull", *addon.packages]))
         elif op == "uninstall":
-            if addon.packages and addon.type != "builtin":
+            if addon.type == "plugin" and addon.packages:
+                cmds.append(("Menghapus image Docker: " + ", ".join(addon.packages),
+                             ["docker", "rmi", *addon.packages]))
+            elif addon.packages and addon.type != "builtin":
                 cmds.append(("Menghapus paket: " + ", ".join(addon.packages),
                              ["apt-get", "remove", "-y", *addon.packages]))
         return cmds
@@ -199,9 +247,19 @@ class AddonManager:
         if addon.type == "builtin":
             yield {"ok": True, "step": "Addon bawaan, selalu tersedia"}
             return
+        if addon.type == "plugin":
+            # Plugin dijalankan lewat container → pastikan Docker ada dulu.
+            async for s in self._ensure_docker():
+                yield s
+                if s.get("error") and not s.get("ok", True):
+                    return
+            if not await self._docker_ready():
+                yield {"ok": False, "error": "Docker tidak tersedia — install addon Docker dulu"}
+                return
         installed_packages = False
         for label, cmd in self._commands_for("install", addon):
-            result = await self.executor.run(*cmd)
+            yield {"ok": True, "step": f"{label} — sedang berjalan…"}
+            result = await self._exec(cmd)
             if cmd[0:2] == ["apt-get", "install"]:
                 installed_packages = True
             yield {"ok": result.ok, "step": label, "output": result.output}
@@ -209,7 +267,7 @@ class AddonManager:
                 if installed_packages and addon.type == "system":
                     yield {"ok": True, "step": "Rollback: menghapus paket yang gagal install...",
                            "output": "(partial install)"}
-                    await self.executor.run("apt-get", "remove", "-y", *addon.packages)
+                    await self._exec(("apt-get", "remove", "-y", *addon.packages))
                 yield {"ok": False, "error": result.output}
                 return
         conf_path = addon.config.get("path")
@@ -217,15 +275,23 @@ class AddonManager:
             r = await self.executor.run("bash", "-c", f"test -f {conf_path} && echo yes || echo no")
             if "no" in (r.stdout or ""):
                 yield {"ok": True, "step": f"Restoring config {conf_path}"}
-                await self.executor.run("apt-get", "install", "--reinstall", "-y", *addon.packages)
+                await self._exec(("apt-get", "install", "--reinstall", "-y", *addon.packages))
         yield {"ok": True, "step": "Instalasi selesai ✓"}
+
+    async def _exec(self, cmd):
+        """Jalankan perintah addon; apt pakai env noninteractive + timeout besar."""
+        kwargs = {}
+        if tuple(cmd[:1]) == ("apt-get",):
+            kwargs = {"timeout": APT_TIMEOUT, "env": APT_ENV}
+        return await self.executor.run(*cmd, **kwargs)
 
     async def update_steps(self, addon: Addon):
         if addon.type == "builtin":
             yield {"ok": True, "step": "Addon bawaan tidak perlu diupdate"}
             return
         for label, cmd in self._commands_for("update", addon):
-            result = await self.executor.run(*cmd)
+            yield {"ok": True, "step": f"{label} — sedang berjalan…"}
+            result = await self._exec(cmd)
             yield {"ok": result.ok, "step": label, "output": result.output}
             if not result.ok:
                 yield {"ok": False, "error": result.output}
@@ -242,7 +308,8 @@ class AddonManager:
             result = await self.executor.systemctl("disable", addon.unit)
             yield {"ok": True, "step": f"Disable {addon.unit}", "output": result.output}
         for label, cmd in self._commands_for("uninstall", addon):
-            result = await self.executor.run(*cmd)
+            yield {"ok": True, "step": f"{label} — sedang berjalan…"}
+            result = await self._exec(cmd)
             yield {"ok": result.ok, "step": label, "output": result.output}
             if not result.ok:
                 yield {"ok": False, "error": result.output}
@@ -258,7 +325,7 @@ class AddonManager:
                                              f"test -f {unit_file} && sudo rm -f {unit_file} && sudo systemctl daemon-reload && echo removed || echo skip")
             yield {"ok": True, "step": f"Hapus unit file {addon.unit}", "output": result.output}
         if addon.type in ("system", "app") and addon.packages and self.executor.mode in ("local", "wsl"):
-            result = await self.executor.run("apt-get", "autoremove", "-y")
+            result = await self._exec(("apt-get", "autoremove", "-y"))
             yield {"ok": result.ok, "step": "Autoremove unused packages", "output": result.output}
         yield {"ok": True, "step": "Penghapusan selesai ✓"}
 

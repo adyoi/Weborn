@@ -19,7 +19,7 @@
                 <td>
                     {% if p.pid not in (1, 2) %}
                     <button class="btn danger !py-1 !px-2" data-tip="Kill PID {{ p.pid }}"
-                            onclick="if(confirm('Kill ' + {{ p.name|tojson }} + ' ({{ p.pid }})?'))weborn.simplePost('/processes/{{ p.pid }}/kill','Menghentikan ' + {{ p.name|tojson }}, true)">{{ icon('x-mark', 'w-5 h-5') }}</button>
+                            data-kill-pid="{{ p.pid }}" data-kill-name="{{ p.name }}">{{ icon('x-mark', 'w-5 h-5') }}</button>
                     {% endif %}
                </td>
            </tr>
@@ -27,4 +27,14 @@
        </tbody>
    </table>
 </div>
+<script>
+document.querySelectorAll('[data-kill-pid]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var pid = btn.dataset.killPid;
+        var name = btn.dataset.killName || '';
+        if (!confirm('Kill ' + name + ' (' + pid + ')?')) return;
+        weborn.simplePost('/processes/' + pid + '/kill', 'Menghentikan ' + name, true);
+    });
+});
+</script>
 {% endblock %}

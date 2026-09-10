@@ -15,7 +15,7 @@
 </div>
 
 {# ── Summary Cards ── #}
-    <div class="grid grid-cols-5 gap-4 mb-6">
+<div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 mb-6">
     <div class="card p-4 text-center">
         <div class="text-2xl font-bold text-green-400">{{ apps | selectattr('gunicorn_status', 'eq', 'active') | list | length }}</div>
         <div class="text-t3 text-xs mt-1">Running</div>
@@ -54,7 +54,7 @@
             <span class="px-2 py-0.5 rounded bg-gray-500/20 text-gray-400 text-[13px] font-mono">● stopped</span>
             {% endif %}
             {# ── Trace log button ── #}
-            <button onclick="openTrace('panel', 'Weborn Panel', {{ panel_info.unit|tojson }})"
+            <button data-trace-id="panel" data-trace-name="Weborn Panel" data-trace-unit="{{ panel_info.unit }}"
                     class="btn sm accent">{{ icon('document-text', 'w-5 h-5') }} Trace</button>
        </div>
    </div>
@@ -132,7 +132,7 @@
                             class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }} Restart</button>
 
                     {# ── Trace log button — opens xterm.js modal ── #}
-<button onclick="openTrace({{ app.id }}, {{ app.name|tojson }}, {{ app.unit|tojson }})"
+<button data-trace-id="{{ app.id }}" data-trace-name="{{ app.name }}" data-trace-unit="{{ app.unit }}"
                         class="btn sm accent">{{ icon('document-text', 'w-5 h-5') }} Trace</button>
                </div>
            </div>
@@ -196,7 +196,7 @@
        </div>
         <div class="flex items-center gap-2">
             <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[13px] font-mono">{{ orphans | length }}</span>
-            <button onclick="killAllOrphans({{ orphans | map(attribute='pid') | list | tojson }})"
+            <button data-kill-all="{{ orphans | map(attribute='pid') | list | join(',') }}"
                     class="btn sm" style="color:var(--red)">Kill All</button>
        </div>
    </div>
@@ -225,7 +225,7 @@
                     <td class="py-1 pr-3">{{ p.uptime }}</td>
                     <td class="py-1 pr-3 truncate max-w-[300px]">{{ p.cmd }}</td>
                     <td class="py-1">
-                        <button onclick="killOrphan({{ p.pid }}, {{ p.cmd[:40]|tojson }})"
+                        <button data-kill-one="{{ p.pid }}" data-kill-cmd="{{ p.cmd[:40] }}"
                                 class="btn sm" style="color:var(--red)">Kill</button>
                    </td>
                </tr>
@@ -413,5 +413,23 @@ function killAllOrphans(pids) {
         location.reload();
     }, 1200);
 }
+
+/* ── Bind dynamic buttons (data-* attrs instead of inline args) ── */
+document.querySelectorAll('[data-trace-id]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        openTrace(btn.dataset.traceId, btn.dataset.traceName || '', btn.dataset.traceUnit || '');
+    });
+});
+document.querySelectorAll('[data-kill-all]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        var pids = (btn.dataset.killAll || '').split(',').filter(function (v) { return v !== ''; });
+        killAllOrphans(pids);
+    });
+});
+document.querySelectorAll('[data-kill-one]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        killOrphan(btn.dataset.killOne, (btn.dataset.killCmd || '').slice(0, 40));
+    });
+});
 </script>
 {% endblock %}

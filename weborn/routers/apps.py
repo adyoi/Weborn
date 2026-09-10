@@ -35,6 +35,39 @@ async def apps_page(request: Request, user: dict = Depends(require_user),
     })
 
 
+@router.get("/apps/api/check-port")
+async def api_check_port(port: int = 0, user: dict = Depends(require_admin)):
+    """Cek ketersediaan port: dipakai DB app lain / proses OS (ss)."""
+    if hasattr(user, "headers"):
+        return user
+    if port <= 0:
+        return JSONResponse({"ok": False, "error": "port tidak valid"}, status_code=400)
+    ex = get_executor()
+    manager = AppManager(ex)
+    by_app = get_app_by_port(port)
+    busy = await manager._port_busy(port)
+    return JSONResponse({
+        "ok": True,
+        "port": port,
+        "free": by_app is None and not busy,
+        "by_app": {"id": by_app["id"], "name": by_app["name"],
+                   "status": by_app["status"]} if by_app else None,
+        "busy_by_process": busy,
+    })
+
+
+@router.get("/apps/api/free-port")
+async def api_free_port(user: dict = Depends(require_admin)):
+    """Tawarkan port bebas (8000-8999)."""
+    if hasattr(user, "headers"):
+        return user
+    try:
+        port = await AppManager(get_executor()).alloc_port()
+    except RuntimeError as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
+    return JSONResponse({"ok": True, "port": port})
+
+
 @router.get("/apps/api/check-dir")
 async def api_check_dir(path: str = "", user: dict = Depends(require_admin)):
     """Check if a directory path exists, is a directory, and is writable."""

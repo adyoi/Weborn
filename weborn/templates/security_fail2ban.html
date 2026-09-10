@@ -56,7 +56,7 @@
             <div class="px-4 py-2 border-b border-line/20 flex items-center gap-3 hover:bg-white/[.02]">
                 <code class="mono text-[13px] flex-1">{{ b.ip }}</code>
                 <span class="text-t3 text-[14px]">{{ b.jail }}</span>
-                <button onclick="f2bUnban({{ b.ip|tojson }}, {{ b.jail|tojson }})" class="btn sm">{{ icon('lock-open', 'w-5 h-5') }} Unban</button>
+                <button data-ban-ip="{{ b.ip }}" data-ban-jail="{{ b.jail }}" class="btn sm">{{ icon('lock-open', 'w-5 h-5') }} Unban</button>
            </div>
             {% endfor %}
        </div>
@@ -82,5 +82,10 @@ function f2bUnban(ip, jail) {
     fetch('/security/fail2ban/unban', { method: 'POST', body: fd })
         .then(function() { location.reload(); });
 }
+document.querySelectorAll('[data-ban-ip]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        f2bUnban(btn.dataset.banIp, btn.dataset.banJail);
+    });
+});
 </script>
 {% endblock %}

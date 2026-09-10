@@ -33,8 +33,8 @@
         <div class="flex items-center justify-between p-2 bg-black/10 rounded text-[13px]">
             <code class="mono">{{ site }}</code>
             <div class="flex gap-1">
-                <button class="btn sm" onclick="viewSite({{ site|tojson }})">{{ icon('document-text', 'w-5 h-5') }}</button>
-                <button class="btn danger sm" onclick="deleteSite({{ site|tojson }})">{{ icon('trash', 'w-5 h-5') }}</button>
+                <button class="btn sm" data-site="{{ site }}" data-site-act="view">{{ icon('document-text', 'w-5 h-5') }}</button>
+                <button class="btn danger sm" data-site="{{ site }}" data-site-act="del">{{ icon('trash', 'w-5 h-5') }}</button>
            </div>
        </div>
         {% endfor %}
@@ -98,6 +98,13 @@ function deleteSite(name) {
       else alert('Error: ' + (d.output||''));
     });
 }
+
+document.querySelectorAll('[data-site]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        if (btn.dataset.siteAct === 'del') deleteSite(btn.dataset.site);
+        else viewSite(btn.dataset.site);
+    });
+});
 </script>
 
 <div id="modal-site-view" class="w-modal" onclick="if(event.target===this)weborn.modal.close(this)">

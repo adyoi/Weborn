@@ -17,7 +17,7 @@
         <option value="500" {{ 'selected' if lines == 500 }} >500 baris</option>
    </select>
     {% if source in ('panel', 'audit') %}
-    <button class="btn danger sm" onclick="clearLog()">{{ icon('trash', 'w-5 h-5') }} Clear</button>
+    <button class="btn danger sm" data-clear-log="{{ source }}">{{ icon('trash', 'w-5 h-5') }} Clear</button>
     {% endif %}
     <button class="btn sm" onclick="scrollBottom()">⬇️ Bottom</button>
 </div>
@@ -41,10 +41,10 @@
         var el = document.getElementById('log-output');
         if (el) el.scrollTop = el.scrollHeight;
     };
-    window.clearLog = function() {
-        if (!confirm('Hapus semua log ' + {{ source|tojson }} + ' ?')) return;
+    window.clearLog = function(source) {
+        if (!confirm('Hapus semua log ' + source + ' ?')) return;
         var csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
-        fetch('/logs/' + {{ source|tojson }} + '/clear', {
+        fetch('/logs/' + encodeURIComponent(source) + '/clear', {
             method: 'POST',
             headers: {'X-CSRF-Token': csrfToken}
         }).then(function(r){ return r.json(); }).then(function(d){
@@ -58,6 +58,12 @@
             weborn.toast('Error: ' + e.message, 'err');
         });
     };
+    var clearBtn = document.querySelector('[data-clear-log]');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            clearLog(clearBtn.dataset.clearLog);
+        });
+    }
 })();
 </script>
 {% endblock %}

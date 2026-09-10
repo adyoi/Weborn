@@ -96,14 +96,14 @@
                 <td class="whitespace-nowrap">
                     <div class="flex gap-0.5 flex-wrap">
                         {% if not e.dir %}
-                        <button class="btn sm" title="Edit" onclick="openEdit({{ (path + '/' + e.name) | tojson }})">{{ icon('pencil', 'w-5 h-5') }} ️</button>
+                        <button class="btn sm" title="Edit" data-file-action="edit" data-file="{{ path }}/{{ e.name }}">{{ icon('pencil', 'w-5 h-5') }} ️</button>
                         <a href="/files/download?path={{ (path + '/' + e.name) | urlencode }}" class="btn sm" title="Download">⬇</a>
                         {% else %}
                         <a href="/files/compress?path={{ (path + '/' + e.name) | urlencode }}" class="btn sm" title="Compress (tar.gz)">{{ icon('cube', 'w-5 h-5') }}</a>
                         {% endif %}
-                        <button class="btn sm" title="Rename" onclick="openRename({{ (path + '/' + e.name) | tojson }}, {{ e.name | tojson }})">{{ icon('pencil', 'w-5 h-5') }}</button>
-                        <button class="btn sm" title="Copy path" onclick="copyPath({{ (path + '/' + e.name) | tojson }})">{{ icon('link', 'w-5 h-5') }}</button>
-                        <button class="btn danger sm" title="Hapus" onclick="openDelete({{ (path + '/' + e.name) | tojson }}, {{ e.name | tojson }})">{{ icon('trash', 'w-5 h-5') }} ️</button>
+                        <button class="btn sm" title="Rename" data-file-action="rename" data-file="{{ path }}/{{ e.name }}" data-file-name="{{ e.name }}">{{ icon('pencil', 'w-5 h-5') }}</button>
+                        <button class="btn sm" title="Copy path" data-file-action="copy" data-file="{{ path }}/{{ e.name }}">{{ icon('link', 'w-5 h-5') }}</button>
+                        <button class="btn danger sm" title="Hapus" data-file-action="delete" data-file="{{ path }}/{{ e.name }}" data-file-name="{{ e.name }}">{{ icon('trash', 'w-5 h-5') }} ️</button>
                    </div>
                </td>
            </tr>
@@ -348,5 +348,16 @@ function bulkChmod() {
     weborn.toast('chmod ' + paths.length + ' file', 'ok');
     setTimeout(function(){ location.reload(); }, 800);
 }
+
+document.querySelectorAll('[data-file-action]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var path = btn.dataset.file;
+        var name = btn.dataset.fileName || '';
+        if (btn.dataset.fileAction === 'edit') openEdit(path);
+        else if (btn.dataset.fileAction === 'rename') openRename(path, name);
+        else if (btn.dataset.fileAction === 'copy') copyPath(path);
+        else if (btn.dataset.fileAction === 'delete') openDelete(path, name);
+    });
+});
 </script>
 {% endblock %}
