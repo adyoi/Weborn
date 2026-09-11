@@ -120,7 +120,7 @@
                 <td class="mono text-[14px]">{{ r.name }}</td>
                 <td class="mono text-[13px] max-w-[140px] truncate" title="{{ r.value }}">{{ r.value[:20] }}{% if r.value|length > 20 %}…{% endif %}</td>
                 <td class="text-[13px]">{{ r.ttl }}</td>
-                <td class="whitespace-nowrap">
+                <td class="text-right whitespace-nowrap">
                     <div class="flex gap-1 justify-end items-center">
                         <button type="button" class="btn sm !py-0.5 !px-2 text-[13px] dns-edit-btn"
                                 data-edit-id="{{ r.id }}"
