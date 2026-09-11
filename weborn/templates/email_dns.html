@@ -92,15 +92,10 @@
                         <div class="mono text-[12px] mt-1 break-all whitespace-pre-wrap max-h-32 overflow-y-auto rounded border border-line/60 bg-black/5 p-2">
                             {% if dkim_value %}{{ dkim_value }}{% else %}(kunci belum ada — klik Regenerate untuk membuat){% endif %}
                         </div>
-                        <div class="flex gap-2 mt-2">
-                        {% if dkim_value %}
-                        <button type="button" class="btn sm !py-0.5 !px-2 text-[12px]" data-dkim-value="{{ dkim_value }}">Salin value</button>
-                        {% endif %}
-                        <form method="post" action="/email/dns/dkim/generate" onsubmit="return confirm('Generate ulang pasangan kunci DKIM? TXT `weborn._domainkey.<domain>` akan diganti.')">
+                        <form method="post" action="/email/dns/dkim/generate" class="mt-2" onsubmit="return confirm('Generate ulang pasangan kunci DKIM? TXT `weborn._domainkey.<domain>` akan diganti.')">
                             <input type="hidden" name="domain" value="{{ selected_domain }}">
                             <button type="submit" class="btn sm !py-0.5 !px-2 text-[12px]">Regenerate</button>
                         </form>
-                        </div>
                     </div>
                     <div class="bg-black/10 rounded-lg p-3">
                         <div class="font-bold mb-1">TXT / DMARC</div>
@@ -188,13 +183,5 @@ document.querySelectorAll('.dns-edit-btn').forEach(btn => {
   });
 });
 dnsCancel.addEventListener('click', dnsReset);
-document.querySelectorAll('button[data-dkim-value]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    navigator.clipboard.writeText(btn.dataset.dkimValue).then(() => {
-      const old = btn.textContent; btn.textContent = 'Salin value ✓';
-      setTimeout(() => { btn.textContent = old; }, 1200);
-    });
-  });
-});
 </script>
 {% endblock %}
