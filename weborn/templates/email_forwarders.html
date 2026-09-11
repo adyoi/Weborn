@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Mail Forwarder - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('arrow-up-tray', 'w-5 h-5') }} Mail Forwarder</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Forwarder email — terusan ke alamat eksternal / tujuan lain</div>
+
+{% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start">
+    {# ─── Add Forwarders Form ─── #}
+    <div class="card">
+        <h3 class="text-sm mb-3 font-bold">{{ icon('plus', 'w-5 h-5') }} Tambah Forwarder</h3>
+        {% if not domains %}
+        <div class="msg err">Buat domain dulu di <a href="/domains" class="text-accent">Domain & DNS</a> — otomatis jadi mail domain.</div>
+        {% else %}
+        <form method="post" action="/email/forwarders/add">
+            <div class="field">
+                <label>Domain</label>
+                <select name="domain" onchange="window.location='?domain='+this.value">
+                    {% for d in domains %}
+                    <option value="{{ d.name }}" {{ 'selected' if d.name == selected_domain }} >{{ d.name }}</option>
+                    {% endfor %}
+               </select>
+           </div>
+            <div class="field">
+                <label>Alamat Sumber</label>
+                <div class="flex items-center gap-0">
+                    <input name="source" placeholder="info" required class="!rounded-r-none !border-r-0 flex-1">
+                    <span class="text-[13px] text-t3 px-2 border border-line !rounded-l-none bg-black/5 whitespace-nowrap">@{{ selected_domain }}</span>
+               </div>
+               <small>Alamat yang emailnya akan diteruskan keluar.</small>
+           </div>
+            <div class="field">
+                <label>Tujuan (pisahkan dengan koma)</label>
+                <input name="dest" placeholder="nama@example.com" required>
+                <small>Alamat eksternal tujuan forwarding.</small>
+           </div>
+            <button type="submit" class="btn primary w-full justify-center">+ Tambah Forwarder</button>
+       </form>
+        {% endif %}
+   </div>
+
+    {# ─── Forwarders List ─── #}
+    <div class="card !p-0 overflow-hidden">
+<div class="px-4 py-3 border-b border-line flex items-center gap-3">
+            <span class="text-sm font-bold">{{ icon('arrow-up-tray', 'w-5 h-5') }} Forwarders</span>
+        </div>
+<table>
+            <thead><tr><th>Sumber</th><th>Diteruskan ke</th><th>Aksi</th></tr></thead>
+            <tbody>
+            {% for e in entries %}
+            {% if e.source.endswith('@' + selected_domain) %}
+            <tr>
+                <td class="mono text-[13px]">{{ e.source }}</td>
+                <td class="mono text-[13px] text-t3">{{ e.dest | join(', ') }}</td>
+                <td class="text-right">
+                    <form method="post" action="/email/forwarders/delete" style="display:inline"
+                          onsubmit="return confirm('Hapus forwarder {{ e.source }} ?')">
+                        <input type="hidden" name="source" value="{{ e.source.rsplit('@',1)[0] }}">
+                        <input type="hidden" name="domain" value="{{ e.source.rsplit('@',1)[1] }}">
+                        <button class="btn danger !py-0.5 !px-2 text-[13px]">{{ icon('trash', 'w-5 h-5') }}</button>
+                   </form>
+                </td>
+            </tr>
+            {% endif %}
+            {% else %}
+            <tr><td colspan="3" class="text-t3 text-center py-7">Belum ada forwarder.</td></tr>
+            {% endfor %}
+           </tbody>
+        </table>
+   </div>
+</div>
+{% endblock %}

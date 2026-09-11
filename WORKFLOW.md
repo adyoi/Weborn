@@ -80,24 +80,40 @@ WEBORN_PASS=yourpassword sudo -E .venv/bin/python test/test_apps_integration.py
 ### 📧 Mail Server
 
 #### Overview (`/email`)
-- Status semua komponen mail (Postfix, Dovecot, Rspamd, OpenDKIM, Roundcube, SpamAssassin)
-- Setup Wizard: pilih domain → Install & Konfigurasi otomatis
+- Status semua komponen mail (Postfix, Dovecot, Rspamd, OpenDKIM, Roundcube)
+- Setup Wizard: pilih domain → Install & Konfigurasi otomatis (sertifikat TLS, passwd-file, virtual map, milter, DNS records)
 - Quick actions: Start/Stop/Restart per service
-
-#### Mailbox (`/email/accounts`)
-- Create/delete mailboxes, change passwords
-- Auto-creates Linux user + Maildir structure
-
-#### Mail DNS (`/email/dns`)
-- Auto-generate SPF, DKIM, DMARC, MX records
 
 #### Webmail (`/email/webmail`)
 - Install & manage Roundcube webmail
 - Status detection via `/var/lib/roundcube` directory check
 
-#### Spam & DKIM (`/email/security`)
-- Install Rspamd, ClamAV, SpamAssassin, OpenDKIM stack
+#### Mail List (`/email/lists`)
+- Mailing list dari mailbox yang ada (anggota CSV) → virtual map Postfix
+- Hapus list
+
+#### Mail DNS (`/email/dns`)
+- Tambah/edit/hapus DNS record mail per domain (MX, A, TXT/SPF, DKIM, DMARC)
+- Dropdown domain sebagai switcher; form tunggal untuk tambah & edit
+- "DNS Records yang Dibutuhkan" menampilkan nilai SPF/DKIM/DMARC siap salin
+
+#### Mail Alias (`/email/aliases`)
+- Alias: alamat → satu/beberapa mailbox yang ada
+- Catch-all `@domain → dest` dengan proteksi alamat asli (alias identitas otomatis)
+
+#### Mail Security (`/email/security`)
+- Install Rspamd, ClamAV, OpenDKIM stack (Rspamd sebagai anti-spam tunggal)
 - Start/Stop/Restart per service
+
+#### Mail Account (`/email/accounts`)
+- Create/delete mailboxes, change passwords
+- Set kuota storage (Dovecot quota + enforcement LDA)
+- Autoresponder vacation (Sieve) per mailbox
+- Multi-domain mail (tambah/hapus mail domain, seed owner + DNS otomatis)
+
+#### Mail Forwarder (`/email/forwarders`)
+- Forwarder: alamat → tujuan bebas (termasuk alamat eksternal)
+- Hapus forwarder
 
 ### 📦 Weborn (App Management)
 

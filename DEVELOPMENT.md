@@ -135,9 +135,37 @@ Catatan khusus lingkungan uji (lihat AGENTS.md item gotchas).
 - **Upload/download biner:** jangan lewati `str`/`echo`; pakai `base64` + decouple response.
 - **Aplikasi hasil delete:** folder `/var/www/<name>` sengaja dipertahankan (hanya unit/user/venv yang dihapus).
 - **Autentikasi halaman untuk test/screenshot:** mint token lewat `weborn.auth.encode_jwt(1, "admin", "admin")` — tanpa perlu password (secret dari DB).
+- **Dovecot 2.4:** plugin dikonfigurasi per-protocol (`mail_plugins { ... }`); blok `protocol lda` **menimpa** global — bila ingin kuota di LDA, sertakan `quota = yes` di dalamnya, bukan hanya global.
+- **passwd-file kuota:** kolom extra `userdb_quota_storage_size=<Q>`; userdb username = alamat lengkap (`admin@localhost`) sehingga pipe LDA memakai `-d ${user}@${domain}`.
+- **OpenDKIM (daemon root):** kunci & direktori harus owned `root` mode `0700` (bukan `opendkim:opendkim`) bila tidak → `key data is not secure` dan milter tempfail (451). Soket di `/var/spool/postfix/opendkim` perlu dir setgid grup `postfix` agar postfix (user `postfix`) bisa connect (kalau tidak: `Permission denied`, rantai milter dihentikan postfix).
+- **`milter_default_action = accept`:** bila milter error/timeout, email TETAP diterima tanpa header DKIM/spam — selalu cek header saat verifikasi.
+- **`opendkim-genkey`** menghasilkan `weborn.private` (prefix selector); rename ke `{domain}.weborn.private` agar cocok dengan `KeyTable` template.
 
 ## 10. Roadmap Terdekat (item terbuka)
 
 - Eksekusi `bash -c` di `_write_unit` sudah dibungkus `shlex.quote(home)` — pantau room untuk komado app custom lain.
 - Pertimbangkan registrasi addon penuh (API `addons/`) + tes integrasi.
 - Pertimbangkan instalasi `D:\localhost\pyth-webapps` (FastAPI/PostgreSQL, port 8080) sebagai referensi vendor-integration.
+
+## 11. Email Stack (Postfix + Dovecot) — Catatan Implementasi
+
+Semua logika ada di `weborn/routers/email.py`; template UI `weborn/templates/email_*.html`; konfigurasi layanan dirender dari `weborn/addons/templates/` (`postfix-main.cf.j2`, `dovecot-*.j2`, `opendkim-*.j2`, `rspamd-local.conf.j2`, `opendkim.conf.j2`).
+
+### Model multi-domain
+- Daftar domain disimpan di setting `mail_domains` (JSON). `_apply_mail_domains(names)` menulis `virtual_mailbox_domains` + TLS ke `main.cf`; `localhost` selalu primary (ssl dir `/etc/ssl/mail.<primary>`).
+- Menambah domain (`/email/domains/add`) → seed mailbox owner + insert DNS records (MX/A/SPF/DMARC); menghapus domain harus bersih dari mailbox (proteksi di `email_domain_delete`).
+- Perangkap: relasi di `/etc/postfix/virtual` dievaluasi LEBIH dulu daripada mailbox (Postfix `virtual_alias` > mailbox lookup). Domain ber-catchall membutuhkan **alias identitas** `user@domain → user@domain` untuk tiap mailbox agar alamat asli tidak tertelan catch-all (`_write_virtual_map`).
+
+### Virtual mailbox + kuota
+- Penyimpanan: `passwd-file` — `email:{hash}:{uid}:{gid}::{home}:/usr/sbin/nologin[:userdb_quota_storage_size=...]`. Kuota di setting `mail_quota:<email>` (format `1G/500M/K`); `_apply_mail_quota_conf()` menulis `dovecot-90-quota.conf` + memastikan `10-mail.conf` memuat blok proteksi.
+- Enforcement: `quota-status` (SMTP 552) hanya menolak sender non-mynetworks; sender lokal lolos `permit_mynetworks`. Pengiriman lewat LDA (`protocol lda` + plugin quota) menjamin lokal juga dibatasi.
+- Autoresponder: sieve vacation di `.dovecot.sieve` per user (setting `mail_vacation:<email>` = JSON `{subject,message}`).
+
+### Milter (DKIM + anti-spam)
+- `smtpd_milters` di `postfix-main.cf.j2`: `local:opendkim/opendkim.sock inet:localhost:11332`.
+- OpenDKIM: KeyTable/SigningTable per domain (`weborn._domainkey.<d>`), kunci `{domain}.weborn.private` (owner root — lihat gotcha), socket dir setgid `postfix`.
+- Rspamd: `worker rspamd_proxy (11332)` milter = yes; threshold `add header` default 6.0; verifikasi tampak lewat `rspamc` atau log `rspamd.log` (`proxy_milter_finish_handler`).
+- Klien port: submission `587` (STARTTLS) + submissions `465` (TLS wrap) disediakan `_ensure_postfix_master()` — SASL via dovecot `private/auth`.
+
+### Publikasi DNS
+- `/email/dns` menyimpan panduan di tabel `dns_records` (MX `10 mail.<d>`, A `mail.<d>`, SPF, DKIM `weborn._domainkey.<d>` TXT, DMARC). Setup otomatis mengisi MX/A/SPF/DMARC + DKIM TXT dari file `.txt` publik key. Publikasi ke DNS provider tetap manual oleh user.

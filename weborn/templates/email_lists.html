@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Mail List - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('user-group', 'w-5 h-5') }} Mail List</div>
+<div class="page-sub text-t3 text-[13px] mb-5">List diskusi — kirim ke satu alamat, otomatis diteruskan ke semua anggota (mailbox lokal)</div>
+
+{% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start">
+    {# ─── Management List Form ─── #}
+    <div class="card">
+        <h3 class="text-sm mb-3 font-bold">{{ icon('plus', 'w-5 h-5') }} Simpan Mail List</h3>
+        {% if not domains %}
+        <div class="msg err">Buat domain dulu di <a href="/domains" class="text-accent">Domain & DNS</a> — otomatis jadi mail domain.</div>
+        {% else %}
+        <form method="post" action="/email/lists/add">
+            <div class="field">
+                <label>Domain</label>
+                <select name="domain" onchange="window.location='?domain='+this.value">
+                    {% for d in domains %}
+                    <option value="{{ d.name }}" {{ 'selected' if d.name == selected_domain }} >{{ d.name }}</option>
+                    {% endfor %}
+               </select>
+           </div>
+            <div class="field">
+                <label>Alamat List</label>
+                <div class="flex items-center gap-0">
+                    <input name="source" placeholder="info" required class="!rounded-r-none !border-r-0 flex-1">
+                    <span class="text-[13px] text-t3 px-2 border border-line !rounded-l-none bg-black/5 whitespace-nowrap">@{{ selected_domain }}</span>
+               </div>
+               <small>Alamat list. Tulis ulang dengan nama sama untuk memperbarui anggota.</small>
+           </div>
+            <div class="field">
+                <label>Anggota (pisahkan dengan koma)</label>
+                <textarea name="dest" list="mailbox-list" placeholder="user1@{{ selected_domain }}, user2@{{ selected_domain }}" required></textarea>
+                <datalist id="mailbox-list">
+                    {% for m in mailboxes %}<option value="{{ m }}">{% endfor %}
+               </datalist>
+               <small>Hanya mailbox yang sudah ada.</small>
+           </div>
+            <button type="submit" class="btn primary w-full justify-center">+ Simpan List</button>
+       </form>
+        {% endif %}
+   </div>
+
+    {# ─── List List ─── #}
+    <div class="card !p-0 overflow-hidden">
+<div class="px-4 py-3 border-b border-line flex items-center gap-3">
+            <span class="text-sm font-bold">{{ icon('user-group', 'w-5 h-5') }} Mailing Lists</span>
+        </div>
+<table>
+            <thead><tr><th>List</th><th>Anggota</th><th>Jumlah</th><th>Aksi</th></tr></thead>
+            <tbody>
+            {% for e in entries %}
+            {% if e.source.endswith('@' + selected_domain) %}
+            <tr>
+                <td class="mono text-[13px]">{{ e.source }}</td>
+                <td class="mono text-[13px] text-t3">{{ e.dest | join(', ') }}</td>
+                <td class="text-center text-[13px]">{{ e.dest | length }}</td>
+                <td class="text-right">
+                    <form method="post" action="/email/lists/delete" style="display:inline"
+                          onsubmit="return confirm('Hapus list {{ e.source }} ?')">
+                        <input type="hidden" name="source" value="{{ e.source.rsplit('@',1)[0] }}">
+                        <input type="hidden" name="domain" value="{{ e.source.rsplit('@',1)[1] }}">
+                        <button class="btn danger !py-0.5 !px-2 text-[13px]">{{ icon('trash', 'w-5 h-5') }}</button>
+                   </form>
+                </td>
+            </tr>
+            {% endif %}
+            {% else %}
+            <tr><td colspan="4" class="text-t3 text-center py-7">Belum ada mailing list.</td></tr>
+            {% endfor %}
+           </tbody>
+        </table>
+   </div>
+</div>
+{% endblock %}

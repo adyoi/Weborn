@@ -119,6 +119,51 @@ Jika user dikonfigurasi `session_timeout > 0`, session yang tidak aktif otomatis
 | POST | `/files/compress` | Tar.gz path (async, BackgroundTask) |
 | GET | `/files/download?path=...` | Unduh file (biner aman via base64 internal) |
 
+### Panel Mail / Email Server
+
+> Endpoint form di bawah merespons **redirect 303** ke halaman panel (bukan JSON). Untuk integrasi otomatis: POST dengan header `X-CSRF-Token`, lalu verifikasi `?msg=` di lokasi redirect.
+
+| Method | Path | Form | Keterangan |
+|--------|------|------|------------|
+| GET | `/email` | — | Overview mail server + status stack |
+| POST | `/email/setup` | (wizard, SSE stream) | Setup otomatis Postfix+Dovecot+Rspamd+OpenDKIM+Roundcube |
+| POST | `/email/service/{postfix\|dovecot\|rspamd\|opendkim\|roundcube}/{start\|stop\|restart}` | — | Kontrol service |
+| GET | `/email/accounts?domain=` | — | Daftar mailbox (kuota, pemakaian, vacation) |
+| POST | `/email/accounts/create` | `username, domain, password` | Buat mailbox |
+| POST | `/email/accounts/delete` | `username, domain` | Hapus mailbox (termasuk Maildir) |
+| POST | `/email/accounts/password` | `username, domain, password` | Ganti password mailbox |
+| POST | `/email/accounts/quota` | `username, domain, quota` | Set kuota (contoh `1G`, `500M`; kosong = tak terbatas) |
+| POST | `/email/accounts/vacation` | `username, domain, subject, message` | Autoresponder (Sieve); kosongkan `subject`+`message` untuk matikan |
+| POST | `/email/domains/add` | `name` | Tambah mail domain (seed mailbox owner + DNS otomatis) |
+| POST | `/email/domains/delete` | `name` | Hapus mail domain (tidak boleh untuk `localhost`/domain terakhir/ada mailbox) |
+| GET | `/email/aliases?domain=` | — | Daftar alias + catch-all |
+| POST | `/email/aliases/catchall` | `domain, dest` | Set catch-all `@domain → dest` |
+| POST | `/email/aliases/catchall/clear` | `domain` | Hapus catch-all |
+| POST | `/email/aliases/add` | `source, domain, dest` | Buat alias (dest = mailbox yang ada, boleh CSV) |
+| POST | `/email/aliases/delete` | `source, domain` | Hapus alias |
+| GET | `/email/forwarders?domain=` | — | Daftar forwarder |
+| POST | `/email/forwarders/add` | `source, domain, dest` | Forwarder (dest bebas, ke alamat luar) |
+| POST | `/email/forwarders/delete` | `source, domain` | Hapus forwarder |
+| GET | `/email/lists?domain=` | — | Daftar mailing list |
+| POST | `/email/lists/add` | `source, domain, dest` | Mailing list (anggota = mailbox yang ada, CSV) |
+| POST | `/email/lists/delete` | `source, domain` | Hapus list |
+| GET | `/email/dns?domain=` | — | DNS records mail (MX/SPF/DKIM/DMARC) |
+| POST | `/email/dns/record` | `domain, record_type, name, value, ttl` | Tambah DNS record |
+| POST | `/email/dns/record/edit` | `record_id, domain, record_type, name, value, ttl` | Ubah DNS record |
+| POST | `/email/dns/record/delete` | `record_id, domain` | Hapus DNS record |
+| GET | `/email/webmail` · `/email/webmail/install` | — | Roundcube webmail |
+| GET | `/email/security` | — | Mail Security (Rspamd·OpenDKIM·ClamAV) |
+| POST | `/email/security/install` | — | Install stack anti-spam/DKIM |
+| POST | `/email/security/service/{rspamd\|opendkim\|clamav}/{start\|stop\|restart}` | — | Kontrol service anti-spam |
+
+Catatan model data:
+
+- **Mailbox** disimpan di `/etc/dovecot/passwd` (passwd-file), baris: `email:{hash}:{uid}:{gid}::{home}:/usr/sbin/nologin[:userdb_quota_storage_size=<Q>]` — username userdb = alamat lengkap.
+- **Alias/forwarder/catch-all/mailing list** di `/etc/postfix/virtual` (Postfix `virtual_alias_maps`).
+- **Prefix settings DB:** `mail_pass:*`, `mail_quota:*`, `mail_vacation:*`, `mail_vk:*`, `mail_members:*`, dan `mail_domains` (JSON array).
+- **DNS records mail** disimpan di tabel SQLite `dns_records` (panduan publikasi ke provider DNS — bukan DNS zone nyata).
+- **Anti-spam:** Rspamd via milter (`inet:localhost:11332`), OpenDKIM penanda tangan DKIM; threshold `add header` rspamd = 6.0.
+
 ## 4. WebSocket Endpoint
 
 Semua WS divalidasi via cookie session (`ws_require_admin`/`ws_require_user`).

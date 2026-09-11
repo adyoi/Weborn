@@ -2,6 +2,27 @@
 
 All notable changes to Weborn will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **Mailing List Page**: `email/lists` — list diskusi yang meneruskan email ke beberapa mailbox lokal; upsert anggota, hapus list, kind `list` disimpan di settings
+- **Mail Alias & Mail Forwarder Pages**: `email/aliases` dan `email/forwarders` — alias ke mailbox internal + forwarder ke alamat eksternal via `virtual_alias_maps`
+- **Virtual Mailbox Model**: migrasi dari Maildir-per-user-PAM ke Postfix `virtual_mailbox_*` + Dovecot `passdb passwd-file` + `userdb static` (satu owner OS, path `/var/mail/vhosts/<email>/Maildir`); kompatibel Dovecot 2.4 (`fields { uid/gid/home }`, `passwd_file_path`); auto-registrasi mail domain saat tambah domain di `/domains`
+- **Catch-all Alias**: card di `email/aliases` — `@domain` diteruskan ke mailbox target; alias identitas otomatis ditambah untuk mailbox yang sudah ada (Postfix `virtual_alias` lebih dulu dari map mailbox) agar mail ke alamat asli tidak terambil catch-all
+- **DNS Record Edit**: tombol edit per baris di `email/dns` mengisi ulang form "Tambah DNS Record" (satu form, mode add/edit; endpoint `POST /email/dns/record/edit`); semua field berlabel; dropdown domain di form sebagai satu-satunya switcher; layout kolom 1 = form + kebutuhan record, kolom 2 = current records
+- **Quota & Autoresponder**: kuota per mailbox via extra field `userdb_quota_storage_size` (Dovecot 2.4, `quota-status` untuk SMTP over-quota 552); enforcement di LDA lewat `protocol lda { mail_plugins { quota } }`; autoresponder sieve e2e lewat panel
+
+### Changed
+- **Mail Account**: dua kolom (`1fr_1.6fr`) seperti halaman email lain; dropdown domain tunggal pada label "Domain" sekaligus mengganti filter daftar mailbox; dropdown redundan di header daftar dihapus (sama: Mail Alias, Mail Forwarder, Mail List)
+- **Menu Email (base.html)**: Overview → Webmail → Mail List → Mail DNS → Mail Alias → Mail Security → Mail Account → Mail Forwarder; "Mail Server"→"Mail Account", "Spam & DKIM"→"Mail Security"
+- **`/domains/{id}/delete`**: kini membersihkan artefak mail domain (settings, passwd-file, virtual map, home Maildir) via `_mail_domain_unregister`
+- **Submission client aktif**: `submission`/`submissions` (587 STARTTLS / 465 TLS wrap) di `_ensure_postfix_master` dengan SASL Dovecot — klien (Thunderbird/Outlook) bisa kirim
+- **DKIM milter diperbaiki**: kunci `{domain}.weborn.private` (rename hasil `opendkim-genkey`), kepemilikan root `0700`, dir soket setgid grup `postfix` — rantai milter kini berjalan penuh (sebelumnya `Permission denied`, email tanpa DKIM/header spam)
+- **DKIM TXT otomatis**: publikasi `weborn._domainkey.<domain>` TXT ke `dns_records` saat setup; nilai tampil di "DNS Records yang Dibutuhkan" & current records
+- **SpamAssassin dihapus** dari overview (`email.html`) dan Mail Security (`email_security.html`) — Rspamd menjadi satu-satunya anti-spam; `spamc` tidak lagi di MAIL_STACK/install stack
+- **Dokumen**: README (overview mail + menu), API.md (bagian Panel Mail), DEVELOPMENT.md (bagian 11 email stack + gotchas), WORKFLOW.md (email section sesuai menu final) diperbarui
+- **`/email/dns`**: kolom Value tabel di-slice (60 char + ellipsis, tooltip nilai utuh); tombol aksi edit/hapus sebaris `flex gap-1`; kartu TXT/DKIM menampilkan value tanpa whitespace + tombol **Regenerate** untuk membuat ulang pasangan kunci DKIM (POST `/email/dns/dkim/generate`: genkey → rename → chown root:root → upsert TXT → restart opendkim; teruji live, dkimpy verify True)
+
 ## [1.0.1] - 2026-08-23
 
 ### Added

@@ -115,13 +115,17 @@ See [CHANGELOG.md](CHANGELOG.md) for full version history.
 - **Memcached** — Lightweight cache
 
 ### 📧 Mail Server
-- **Postfix** (SMTP) — Port 25/587/465
-- **Dovecot** (IMAP/POP3) — Port 143/993/110/995
-- **Rspamd** — Modern anti-spam with ML scoring
-- **OpenDKIM** — DKIM signing for email authentication
-- **SPF/DMARC** — DNS-based email authentication
-- **Roundcube** — Web-based email client
-- Automated setup wizard with DNS record generation
+- **Postfix** (SMTP) — Port 25/587/465 + submission `STARTTLS`/`TLS wrap`
+- **Dovecot** (IMAP/POP3) — Port 143/993/110/995 (Sieve + kuota per mailbox)
+- **Rspamd** — Anti-spam tunggal dengan ML scoring (via milter)
+- **OpenDKIM** — DKIM signing + verifikasi untuk email authentication
+- **SPF/DMARC** — DNS-based email authentication (auto-generate record)
+- **Mail Account** — mailbox CRUD, ubah password, kuota, autoresponder vacation (Sieve)
+- **Mail Alias / Forwarder / Mailing List / Catch-all** — manajemen relasi virtual Postfix
+- **Mail DNS** — kelola record MX/SPF/DKIM/DMARC untuk tiap mail domain
+- **Multi-domain** — dukungan beberapa mail domain (localhost primary, TLS otomatis)
+- **Roundcube** — Web-based email client (instal via panel)
+- Automated setup wizard dengan DNS record generation
 
 ### 🔒 Security
 - **CSRF Protection** — Token-based validation on all POST form submissions
@@ -179,7 +183,7 @@ Each addon supports: **Install → Config → Update → Start/Stop/Restart → 
 | **Beranda** | Dashboard, Addon Store |
 | **Web Server** | Domain & DNS, Nginx, PHP-FPM, Cache, Reverse Proxy |
 | **Database** | MariaDB, PostgreSQL, MongoDB, Redis, Memcached |
-| **Mail Server** | Overview, Mailbox, Mail DNS, Webmail, Spam & DKIM |
+| **Mail Server** | Overview, Webmail, Mail List, Mail DNS, Mail Alias, Mail Security, Mail Account, Mail Forwarder |
 | **Weborn** | WSGI Apps, ASGI Apps, Process Monitor |
 | **Monitoring** | Logs, Proses, Network, Paket, Cron |
 | **Access & Security** | Terminal, File Explorer, OS Users, Panel Users, Services, Firewall, Fail2Ban, ClamAV, Backup, Settings |

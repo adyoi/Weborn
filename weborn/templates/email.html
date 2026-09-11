@@ -33,7 +33,7 @@
         <button onclick="mailSetup()" class="btn primary sm">{{ icon('rocket-launch', 'w-5 h-5') }} Install & Konfigurasi</button>
    </div>
     {% else %}
-    <div class="msg err text-xs">Buat domain dulu di <a href="/domains" class="text-accent">Domain Manager</a>.</div>
+    <div class="msg err text-xs">Buat domain dulu di <a href="/domains" class="text-accent">Domain & DNS</a> — otomatis jadi mail domain.</div>
     {% endif %}
 </div>
 {% endif %}
@@ -69,7 +69,6 @@
     {% for svc_key, svc_name, svc_desc in [
         ('opendkim', 'OpenDKIM', 'Tanda tangan DKIM — validasi email'),
         ('roundcube', 'Roundcube (Webmail)', 'Web-based email client'),
-        ('spamc', 'SpamAssassin', 'Backup spam filter'),
     ] %}
     <div class="card">
         <div class="flex items-center justify-between mb-1.5">

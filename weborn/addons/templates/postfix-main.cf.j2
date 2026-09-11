@@ -11,16 +11,30 @@ readme_directory = no
 myhostname = mail.{{ domain }}
 mydomain = {{ domain }}
 myorigin = $mydomain
-mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+# {{ domain }} di-handle sebagai virtual mail domain (bukan local delivery)
+mydestination = $myhostname, localhost.$mydomain
 mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128
+alias_maps = hash:/etc/aliases
+alias_database = hash:/etc/aliases
 mailbox_size_limit = 0
 recipient_delimiter = +
 inet_interfaces = all
 inet_protocols = all
 
-# ─── Mailbox format (Maildir) ───
-home_mailbox = Maildir/
-mailbox_command =
+# ─── Virtual mailboxes (semua mailbox = virtual user milik {{ mail_owner }}) ───
+# Maildir tiap email: /var/mail/vhosts/<email>/Maildir
+virtual_mailbox_base = /var/mail/vhosts
+virtual_mailbox_domains = {{ vdomains }}
+virtual_mailbox_maps = hash:/etc/postfix/vmailbox
+virtual_alias_maps = hash:/etc/postfix/virtual
+# Delivery lewat dovecot-lda (LDA) supaya sieve (autoresponder) bisa jalan.
+# `D` pipe flag butuh 1 penerima per panggilan pipe.
+dovecot_destination_recipient_limit = 1
+virtual_transport = dovecot
+virtual_uid_maps = static:{{ vuid }}
+virtual_gid_maps = static:{{ vgid }}
+virtual_minimum_uid = 100
+virtual_mailbox_limit = 0
 
 # ─── TLS (Let's Encrypt) ───
 smtpd_tls_cert_file = /etc/letsencrypt/live/{{ domain }}/fullchain.pem
@@ -53,11 +67,12 @@ smtpd_recipient_restrictions =
     permit_mynetworks,
     permit_sasl_authenticated,
     reject_unauth_destination,
+    check_policy_service unix:private/quota-status,
     reject_non_fqdn_recipient,
     reject_unknown_recipient_domain
 
 # ─── Milter (OpenDKIM + Rspamd) ───
 milter_default_action = accept
 milter_protocol = 6
-smtpd_milters = local:opendkim/opendkim.sock local:/var/run/rspamd/rspamd-milter.sock
+smtpd_milters = local:opendkim/opendkim.sock inet:localhost:11332
 non_smtpd_milters = local:opendkim/opendkim.sock

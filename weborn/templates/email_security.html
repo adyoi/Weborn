@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Spam & DKIM — Weborn{% endblock %}
+{% block title %}Mail Security — Weborn{% endblock %}
 {% block content %}
 <div class="flex items-center justify-between mb-4">
     <div>
-        <div class="page-title text-[22px] font-bold mb-1">{{ icon('shield-check', 'w-5 h-5') }} Spam & DKIM Security</div>
-        <div class="page-sub text-t3 text-[13px] mb-5">Rspamd + SpamAssassin + OpenDKIM — SPF, DKIM, DMARC</div>
+        <div class="page-title text-[22px] font-bold mb-1">{{ icon('shield-check', 'w-5 h-5') }} Mail Security</div>
+        <div class="page-sub text-t3 text-[13px] mb-5">Rspamd + OpenDKIM + ClamAV — SPF, DKIM, DMARC</div>
    </div>
-    {% if not rspamd_installed and not spamassassin_installed %}
-    <button onclick="weborn.confirmAction('/email/security/install','Install Spam & DKIM Stack',true,'Install Rspamd + SpamAssassin + OpenDKIM?')"
+    {% if not rspamd_installed %}
+    <button onclick="weborn.confirmAction('/email/security/install','Install Spam & DKIM Stack',true,'Install Rspamd + OpenDKIM + ClamAV?')"
             class="btn primary sm">{{ icon('arrow-down-tray', 'w-5 h-5') }} Install Stack</button>
     {% endif %}
 </div>
@@ -33,27 +33,6 @@
        </div>
         {% else %}
         <div class="text-t3 text-[13px]">Belum terpasang. Klik "Install Stack" di atas.</div>
-        {% endif %}
-   </div>
-
-    {# ─── SpamAssassin ─── #}
-    <div class="card">
-        <div class="flex items-center justify-between mb-2">
-            <h3 class="text-xs font-bold">{{ icon('exclamation-triangle', 'w-5 h-5') }} SpamAssassin (Legacy)</h3>
-            <span class="st {{ 'active' if spamassassin_active else ('inactive' if spamassassin_installed else 'failed') }}">{{ 'active' if spamassassin_active else ('stopped' if spamassassin_installed else 'not installed') }}</span>
-       </div>
-        <div class="text-[13px] text-t3 mb-2">Heuristic spam filter. Threshold: 5.0</div>
-        {% if spamassassin_installed %}
-        <div class="flex gap-1.5">
-            {% if not spamassassin_active %}
-            <button onclick="weborn.simplePost('/email/security/service/spamassassin/start','Start SpamAssassin',false)" class="btn primary sm">{{ icon('play', 'w-5 h-5') }} Start</button>
-            {% else %}
-            <button onclick="weborn.simplePost('/email/security/service/spamassassin/stop','Stop SpamAssassin',false)" class="btn danger sm">{{ icon('stop', 'w-5 h-5') }} Stop</button>
-            {% endif %}
-            <button onclick="weborn.simplePost('/email/security/service/spamassassin/restart','Restart SpamAssassin',false)" class="btn sm">{{ icon('arrow-path', 'w-5 h-5') }}</button>
-       </div>
-        {% else %}
-        <div class="text-t3 text-[13px]">Belum terpasang.</div>
         {% endif %}
    </div>
 

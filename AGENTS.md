@@ -29,10 +29,12 @@ Jangan commit sebelum 3 langkah di atas lolos. Ikuti pola commit repo: pesan sin
 | `weborn/executors/` | Local/Wsl/DryRun + redaksi password di audit |
 | `weborn/managers/` | domain logic (apps, accounts, backup, cron, nginx) |
 | `weborn/routers/` | endpoint per fitur |
+| `weborn/routers/email.py` | mail stack (Postfix+Dovecot+Rspamd+OpenDKIM+Roundcube + DNS records); `.eml` étape |
 | `weborn/static/js/panel.js` | helper `weborn.*` (simplePost punya param `body` opsional) |
 | `test/run_tests.py` | suite unit (52 test, stdlib) |
 | `update.sh` | deploy repo → `/opt/weborn` (tar-sync + pip + restart systemd) |
 | `DEVELOPMENT.md` | arsitektur & cara menambah fitur |
+| `WORKFLOW.md` | alur kerja per fitur (bagian email = sesuai menu final panel) |
 | `API.md` | API untuk integrator 3rd party / vendor |
 | `SKILL.md` | skill prompt untuk membangun/memanjangkan project |
 
@@ -58,6 +60,10 @@ Jangan commit sebelum 3 langkah di atas lolos. Ikuti pola commit repo: pesan sin
 - **Panel user id 1 = `admin`** (role admin). Password tidak disimpan; bila butuh sesi, mint JWT (bukan login).
 - **Chrome/Chromium CDP** perlu `--no-sandbox --remote-allow-origins=*`.
 - **Excel/eksekutor `ex.run(argv)`** = argumen list, jangan string bash (kecuali skrip kompleks + `shlex.quote`).
+- **OpenDKIM di Debian jalan sebagai root** → kunci harus `root:root` mode `0700` (selain itu: "key data is not secure" → tempfail 451) dan KeyTable menunjuk `{domain}.weborn.private` (rename hasil `opendkim-genkey`). Soket milter: dir `/var/spool/postfix/opendkim` wajib `opendkim:postfix` + setgid `2775` — jika pemilik salah, rantai milter postfix berhenti (DKIM & rspamd tidak diproses). Verifikasi tanda tangan pakai `dkimpy` (bukan `opendkim-testmsg` yang hanya menandatangani); `dnsfunc(name)` mengembalikan satu string nilai TXT.
+- **Rspamd via milter proxy** `localhost:11332` + `milter_default_action=accept` (milter error → email tetap diterima, tanpa header). Threshold `Add header` rspamd = 6.0 → mail round-trip normal (skor <6) TIDAK diberi header spam; bukan bug. Uji deteksi manual: `echo ... | rspamc -h 127.0.0.1:11333`.
+- **Klien email kirim via 587 STARTTLS / 465 TLS wrap** (SASL Dovecot). Port 25 hanya untuk penerimaan; dari luar WSL tidak ada akses SMTP.
+- **DKIM TXT panjang (420 char)** — value di tabel `email_dns.html` di-**slice** (60 char + ellipsis) dengan tooltip `title` nilai utuh; nilai lengkap ada di kartu "DNS Records yang Dibutuhkan" (kotak `break-all`) + tombol Salin. Regenerasi kunci: POST `/email/dns/dkim/generate` (opendkim-genkey → rename `{domain}.weborn.*` → root:root 0700 → upsert TXT `weborn._domainkey.{domain}` → restart opendkim).
 
 ## Checklist Sebelum "Selesai"
 
@@ -70,7 +76,9 @@ Jangan commit sebelum 3 langkah di atas lolos. Ikuti pola commit repo: pesan sin
 
 ## Status Terakhir yang Diketahui
 
-- Employ: panel aktif di WSL (`/opt/weborn`, unit `weborn.service`, port 2025, executor local).
-- Semua fitur inti diuji: HTTP pages, port-busy 400, terminal WS (banner/echo/resize/exit/no-orphan), panel logs stream, app link (create/edit/monitor/delete).
-- Audit keamanan + cleanup + logo SVG + screenshot baru + dokumen (README/DEVELOPMENT/API/SKILL/AGENTS) selesai; menunggu verifikasi akhir & commit/push.
-- Item lama terbuka: instalasi `D:\localhost\pyth-webapps` (FastAPI/PostgreSQL:8080).
+- Employ: panel aktif di WSL (`/opt/weborn`, unit `weborn.service`, port 2025, executor local); smoke live 3 langkah & unit test 52/52 hijau.
+- Semua fitur inti diuji (HTTP pages, port-busy 400, terminal WS echo/resize/exit/no-orphan, panel logs, app link CRUD).
+- Mail stack (email.py) live-tested: kirim/terima via 25/587/465, DKIM sign + crypto-verify (dkimpy True), Rspamd milter scan aktif, virtual mailboxes multi-domain + kuota + autoresponder + catch-all, DNS records MX/A/SPF/DMARC/DKIM-TXT tampil di panel.
+- **SpamAssassin dihapus** dari overview & Mail Security — Rspamd anti-spam tunggal (addon store `spamassassin.json` tetap ada).
+- Dokumentasi (README, DEVELOPMENT §11, API Panel Mail, WORKFLOW email = menu final, CHANGELOG, AGENTS) diperbarui menyusul fitur email.
+- Belum dieksekusi (opsional): screenshot panel per halaman mail via CDP; dan item lama instalasi `D:\localhost\pyth-webapps` (FastAPI/PostgreSQL:8080).

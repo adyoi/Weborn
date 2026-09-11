@@ -222,6 +222,7 @@ def set_setting(key: str, value: str):
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
             (key, value),
         )
+        conn.commit()
 
 
 def create_panel_user(username: str, password: str, role: str = "user") -> bool:

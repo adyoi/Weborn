@@ -47,14 +47,17 @@
                 <a href="/database/memcached" class="menu-link {{ 'menu-active' if active == 'db-memcached' else '' }}">{{ icon('square-3-stack-3d', 'w-5 h-5 shrink-0') }} Memcached</a>
            </div>
 
-            {# ── Mail Server ── #}
+            {# ── Email ── #}
             <div class="menu-group mt-1">
-                <h4 class="text-[12px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Mail Server</h4>
-                <a href="/email/accounts" class="menu-link {{ 'menu-active' if active == 'email-accounts' else '' }}">{{ icon('user-group', 'w-5 h-5 shrink-0') }} Mailbox</a>
+                <h4 class="text-[12px] tracking-[2px] uppercase text-t3 px-2.5 py-1.5">Email</h4>
                 <a href="/email" class="menu-link {{ 'menu-active' if active == 'email' else '' }}">{{ icon('envelope', 'w-5 h-5 shrink-0') }} Overview</a>
                 <a href="/email/webmail" class="menu-link {{ 'menu-active' if active == 'email-webmail' else '' }}">{{ icon('inbox', 'w-5 h-5 shrink-0') }} Webmail</a>
+                <a href="/email/lists" class="menu-link {{ 'menu-active' if active == 'email-lists' else '' }}">{{ icon('user-group', 'w-5 h-5 shrink-0') }} Mail List</a>
                 <a href="/email/dns" class="menu-link {{ 'menu-active' if active == 'email-dns' else '' }}">{{ icon('signal', 'w-5 h-5 shrink-0') }} Mail DNS</a>
-                <a href="/email/security" class="menu-link {{ 'menu-active' if active == 'email-security' else '' }}">{{ icon('shield-check', 'w-5 h-5 shrink-0') }} Spam & DKIM</a>
+                <a href="/email/aliases" class="menu-link {{ 'menu-active' if active == 'email-aliases' else '' }}">{{ icon('link', 'w-5 h-5 shrink-0') }} Mail Alias</a>
+                <a href="/email/security" class="menu-link {{ 'menu-active' if active == 'email-security' else '' }}">{{ icon('shield-check', 'w-5 h-5 shrink-0') }} Mail Security</a>
+                <a href="/email/accounts" class="menu-link {{ 'menu-active' if active == 'email-accounts' else '' }}">{{ icon('user-group', 'w-5 h-5 shrink-0') }} Mail Account</a>
+                <a href="/email/forwarders" class="menu-link {{ 'menu-active' if active == 'email-forwarders' else '' }}">{{ icon('arrow-up-tray', 'w-5 h-5 shrink-0') }} Mail Forwarder</a>
            </div>
 
             {# ── Monitoring ── #}

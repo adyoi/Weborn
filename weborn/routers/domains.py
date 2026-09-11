@@ -121,6 +121,10 @@ async def domains_add(request: Request, name: str = Form(...),
     nginx = NginxManager(get_executor())
     nginx.apply_domain(name, document_root, None, bool(ssl))
     await nginx._deploy(name)
+    if kind == "domain":
+        # Domain juga otomatis jadi virtual mailbox domain (email).
+        from .email import _mail_domain_register
+        await _mail_domain_register(name)
     return RedirectResponse(
         "/domains?msg=Domain%20ditambahkan" + ("%20+%20DNS" if kind == "domain" else ""),
         status_code=303)
@@ -176,6 +180,8 @@ async def domains_delete(domain_id: int, user: dict = Depends(require_admin)):
         conn.commit()
     if row:
         await NginxManager(get_executor())._remove(row["name"])
+        from .email import _mail_domain_unregister
+        await _mail_domain_unregister(row["name"])
     return RedirectResponse("/domains?msg=Domain%20dihapus", status_code=303)
 
 

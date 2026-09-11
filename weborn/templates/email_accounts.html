@@ -1,76 +1,138 @@
 {% extends "base.html" %}
 {% block title %}Mailbox - Weborn{% endblock %}
 {% block content %}
-<div class="page-title text-[22px] font-bold mb-1">{{ icon('user', 'w-5 h-5') }} Mailbox Management</div>
-<div class="page-sub text-t3 text-[13px] mb-5">Buat & kelola akun email per domain</div>
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('user', 'w-5 h-5') }} Mail Account</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Buat & kelola akun email per domain — kuota, autoresponder, dan webmail</div>
 
 {% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
 
-<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start">
-    {# ─── Create Form ─── #}
-    <div class="card">
-        <h3 class="text-sm mb-3 font-bold">{{ icon('plus', 'w-5 h-5') }} Buat Akun Email</h3>
-        {% if not domains %}
-        <div class="msg err">Buat domain dulu di <a href="/domains" class="text-accent">Domain Manager</a>.</div>
-        {% else %}
-        <form method="post" action="/email/accounts/create">
-            <div class="field">
-                <label>Domain</label>
-                <select name="domain">
-                    {% for d in domains %}
-                    <option value="{{ d.name }}" {{ 'selected' if d.name == selected_domain }} >{{ d.name }}</option>
-                    {% endfor %}
-               </select>
-           </div>
-            <div class="field">
-                <label>Username</label>
-                <div class="flex items-center gap-0">
-                    <input name="username" placeholder="user" required class="!rounded-r-none !border-r-0 flex-1">
-                    <span class="text-[13px] text-t3 px-2 border border-line !rounded-l-none bg-black/5 whitespace-nowrap">@{{ selected_domain }}</span>
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start gap-4">
+
+    {# ─── Side: create / domains ─── #}
+    <div class="flex flex-col gap-4">
+        {# ─── Create Form ─── #}
+        <div class="card">
+            <h3 class="text-sm mb-3 font-bold">{{ icon('plus', 'w-5 h-5') }} Buat Akun Email</h3>
+            {% if not domains %}
+            <div class="msg err">Tambah domain di <a href="/domains" class="text-accent">Domain & DNS</a> — otomatis jadi mail domain.</div>
+            {% else %}
+            <form method="post" action="/email/accounts/create">
+<div class="field">
+                    <label>Domain</label>
+                    <select name="domain" onchange="window.location='?domain='+this.value">
+                        {% for d in domains %}
+                        <option value="{{ d.name }}" {{ 'selected' if d.name == selected_domain }} >{{ d.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Username</label>
+                    <div class="flex items-center gap-0">
+                        <input name="username" placeholder="user" required class="!rounded-r-none !border-r-0 flex-1">
+                        <span class="text-[13px] text-t3 px-2 border border-line !rounded-l-none bg-black/5 whitespace-nowrap">@{{ selected_domain }}</span>
+                   </div>
                </div>
-           </div>
-            <div class="field">
-                <label>Password</label>
-                <input name="password" type="password" required>
-           </div>
-            <button type="submit" class="btn primary w-full justify-center">+ Buat Akun</button>
-       </form>
-        {% endif %}
+                <div class="field">
+                    <label>Password</label>
+                    <input name="password" type="password" required>
+               </div>
+                <button type="submit" class="btn primary w-full justify-center">+ Buat Akun</button>
+           </form>
+            {% endif %}
+       </div>
    </div>
 
     {# ─── Mailbox List ─── #}
     <div class="card !p-0 overflow-hidden">
-        <div class="px-4 py-3 border-b border-line flex items-center gap-3">
+<div class="px-4 py-3 border-b border-line flex items-center gap-3">
             <span class="text-sm font-bold">{{ icon('envelope', 'w-5 h-5') }} Mailboxes</span>
-            {% if domains|length > 1 %}
-            <select class="text-[14px] !py-1" onchange="window.location='?domain='+this.value">
-                {% for d in domains %}
-                <option value="{{ d.name }}" {{ 'selected' if d.name == selected_domain }} >{{ d.name }}</option>
-                {% endfor %}
-           </select>
-            {% endif %}
-       </div>
-        <table>
-            <thead><tr><th>Username</th><th>Home</th><th></th></tr></thead>
+        </div>
+<table>
+            <thead><tr><th>Mailbox</th><th>Kuota</th><th>Auto</th><th>Aksi</th></tr></thead>
             <tbody>
             {% for m in mailboxes %}
             <tr>
-                <td class="mono text-[13px]">{{ m.user }} @{{ selected_domain }}</td>
-                <td class="mono text-[13px] text-t3">{{ m.home }}</td>
-                <td class="text-right">
+                <td class="mono text-[13px]">{{ m.email }}
+                    {% if m.quota and m.quota_kb > 0 %}
+                    <div class="quota-track mt-1" style="max-width:200px">
+                        <div class="quota-bar {{ 'bg-amber-500' if m.quota_pct and m.quota_pct >= 90 else 'bg-emerald-500' }}"
+                             style="width: {{ m.quota_pct }}%"></div>
+                   </div>
+                    {% endif %}
+                </td>
+                <td class="mono text-[12px] text-t3">
+                    {{ m.quota_label }} <small class="text-t3">/ {{ m.quota or '∞' }}</small>
+                </td>
+                <td class="text-center">{{ 'ON' if m.vacation else '—' }}</td>
+                <td class="text-right whitespace-nowrap">
+                    <a class="btn sm !py-0.5 !px-2 text-[13px]"
+                       title="Buka webmail {{ m.user }}@{{ selected_domain }} (auto-login)"
+                       href="/email/accounts/webmail/{{ m.user }}?domain={{ selected_domain }}" target="_blank">
+                        {{ icon('inbox', 'w-5 h-5') }}
+                    </a>
+                    <button type="button" class="btn sm !py-0.5 !px-2 text-[13px]"
+                            title="Autoresponder {{ m.user }}@{{ selected_domain }}"
+                            onclick="mailVacation('{{ m.user }}', '{{ selected_domain }}', {{ 'true' if m.vacation else 'false' }})">
+                        {{ icon('clock', 'w-5 h-5') }}
+                    </button>
+                    <button type="button" class="btn sm !py-0.5 !px-2 text-[13px]"
+                            title="Kuota {{ m.user }}@{{ selected_domain }}"
+                            onclick="mailQuota('{{ m.user }}', '{{ selected_domain }}', '{{ m.quota }}')">
+                        {{ icon('chart-bar', 'w-5 h-5') }}
+                    </button>
+                    <button type="button" class="btn sm !py-0.5 !px-2 text-[13px]"
+                            title="Ganti password"
+                            onclick="mailPass('{{ m.user }}', '{{ selected_domain }}')">
+                        {{ icon('key', 'w-5 h-5') }}
+                    </button>
                     <form method="post" action="/email/accounts/delete" style="display:inline"
                           onsubmit="return confirm('Hapus akun {{ m.user }} @{{ selected_domain }} ?')">
                         <input type="hidden" name="username" value="{{ m.user }}">
                         <input type="hidden" name="domain" value="{{ selected_domain }}">
-                        <button class="btn danger !py-0.5 !px-2 text-[13px]">{{ icon('trash', 'w-5 h-5') }} ️</button>
+                        <button class="btn danger !py-0.5 !px-2 text-[13px]">{{ icon('trash', 'w-5 h-5') }}</button>
                    </form>
-               </td>
-           </tr>
+                </td>
+            </tr>
             {% else %}
-            <tr><td colspan="3" class="text-t3 text-center py-7">Belum ada mailbox</td></tr>
+            <tr><td colspan="4" class="text-t3 text-center py-7">Belum ada mailbox di @{{ selected_domain }}.</td></tr>
             {% endfor %}
            </tbody>
-       </table>
+        </table>
    </div>
 </div>
+
+<script>
+function postForm(action, data) {
+  const csrf = document.querySelector('input[name="_csrf_token"]')?.value || '';
+  const f = document.createElement('form');
+  f.method = 'POST'; f.action = action;
+  const fields = Object.assign({ _csrf_token: csrf }, data);
+  for (const [k, v] of Object.entries(fields)) {
+    const i = document.createElement('input');
+    i.type = 'hidden'; i.name = k; i.value = v;
+    f.appendChild(i);
+  }
+  document.body.appendChild(f); f.submit();
+}
+function mailPass(user, domain) {
+  const pw = prompt('Password baru untuk ' + user + '@' + domain);
+  if (!pw) return;
+  postForm('/email/accounts/password', { username: user, domain, password: pw });
+}
+function mailQuota(user, domain, current) {
+  const q = prompt('Kuota untuk ' + user + '@' + domain +
+    (current ? ' (sekarang: ' + current + ')' : '') + '\nContoh: 2G, 500M. Kosongkan untuk hapus limit.');
+  if (q === null) return;
+  postForm('/email/accounts/quota', { username: user, domain, quota: q.trim() });
+}
+function mailVacation(user, domain, active) {
+  const subj = prompt((active ? 'Update' : 'Aktifkan') + ' autoresponder ' + user + '@' + domain +
+    '\nSubjek (kosongkan kedua-duanya = matikan):');
+  if (subj === null) return;
+  if (!subj.trim()) { postForm('/email/accounts/vacation', { username: user, domain, subject: '', message: '' }); return; }
+  const msg = prompt('Isi pesan autoresponder:');
+  if (msg === null) return;
+  postForm('/email/accounts/vacation', { username: user, domain, subject: subj.trim(), message: (msg || '').trim() });
+}
+</script>
 {% endblock %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Mail Alias - Weborn{% endblock %}
+{% block content %}
+<div class="page-title text-[22px] font-bold mb-1">{{ icon('link', 'w-5 h-5') }} Mail Alias</div>
+<div class="page-sub text-t3 text-[13px] mb-5">Alias email internal — semua email ke alias diteruskan ke satu/lebih mailbox yang ada</div>
+
+{% if msg %}<div class="msg ok">{{ msg }}</div>{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start">
+    <div class="flex flex-col gap-4">
+        {# ─── Add Aliases Form ─── #}
+        <div class="card">
+            <h3 class="text-sm mb-3 font-bold">{{ icon('plus', 'w-5 h-5') }} Tambah Alias</h3>
+            {% if not domains %}
+            <div class="msg err">Buat domain dulu di <a href="/email/accounts" class="text-accent">Mailbox Management</a>.</div>
+            {% else %}
+            <form method="post" action="/email/aliases/add">
+                <div class="field">
+                    <label>Domain</label>
+                    <select name="domain" onchange="window.location='?domain='+this.value">
+                        {% for d in domains %}
+                        <option value="{{ d.name }}" {{ 'selected' if d.name == selected_domain }} >{{ d.name }}</option>
+                        {% endfor %}
+                   </select>
+               </div>
+                <div class="field">
+                    <label>Alias</label>
+                    <div class="flex items-center gap-0">
+                        <input name="source" placeholder="info" required class="!rounded-r-none !border-r-0 flex-1">
+                        <span class="text-[13px] text-t3 px-2 border border-line !rounded-l-none bg-black/5 whitespace-nowrap">@{{ selected_domain }}</span>
+                   </div>
+                   <small>Alamat yang akan menjadi alias. Contoh: info</small>
+               </div>
+                <div class="field">
+                    <label>Tujuan (pisahkan dengan koma)</label>
+                    <input name="dest" list="mailbox-list" placeholder="admin@{{ selected_domain }}" required>
+                    <datalist id="mailbox-list">
+                        {% for m in mailboxes %}<option value="{{ m }}">{% endfor %}
+                   </datalist>
+                   <small>Harus mailbox yang sudah ada (mis. admin@{{ selected_domain }}).</small>
+               </div>
+                <button type="submit" class="btn primary w-full justify-center">+ Tambah Alias</button>
+           </form>
+            {% endif %}
+       </div>
+
+        {# ─── Catch-all ─── #}
+        <div class="card">
+            <h3 class="text-sm mb-3 font-bold">{{ icon('code-bracket', 'w-5 h-5') }} Catch-all @{{ selected_domain }}</h3>
+            {% if domains %}
+            <form method="post" action="/email/aliases/catchall" class="flex flex-col gap-2">
+                <input type="hidden" name="domain" value="{{ selected_domain }}">
+                <label class="text-[12px] text-t3">Semua email ke alamat yang tak dikenal @{{ selected_domain }} diteruskan ke:</label>
+                <input name="dest" list="mailbox-list" placeholder="admin@{{ selected_domain }}"
+                       value="{{ catchall[0] if catchall }}" {{ 'required' if not catchall }}>
+                <button class="btn primary w-full justify-center">{{ 'Terapkan' if catchall else 'Aktifkan Catch-all' }}</button>
+           </form>
+            {% if catchall %}
+            <form method="post" action="/email/aliases/catchall/clear" class="mt-2">
+                <input type="hidden" name="domain" value="{{ selected_domain }}">
+                <button class="btn danger w-full justify-center">Nonaktifkan</button>
+           </form>
+            {% endif %}
+            {% else %}
+            <div class="msg err">Belum ada domain.</div>
+            {% endif %}
+       </div>
+   </div>
+
+    {# ─── Alias List ─── #}
+    <div class="card !p-0 overflow-hidden">
+<div class="px-4 py-3 border-b border-line flex items-center gap-3">
+            <span class="text-sm font-bold">{{ icon('link', 'w-5 h-5') }} Aliases</span>
+        </div>
+<table>
+            <thead><tr><th>Alias</th><th>Menuju</th><th>Aksi</th></tr></thead>
+            <tbody>
+            {% for e in entries %}
+            {% if e.source.endswith('@' + selected_domain) %}
+            <tr>
+                <td class="mono text-[13px]">{{ e.source }}</td>
+                <td class="mono text-[13px] text-t3">{{ e.dest | join(', ') }}</td>
+                <td class="text-right">
+                    <form method="post" action="/email/aliases/delete" style="display:inline"
+                          onsubmit="return confirm('Hapus alias {{ e.source }} ?')">
+                        <input type="hidden" name="source" value="{{ e.source.rsplit('@',1)[0] }}">
+                        <input type="hidden" name="domain" value="{{ e.source.rsplit('@',1)[1] }}">
+                        <button class="btn danger !py-0.5 !px-2 text-[13px]">{{ icon('trash', 'w-5 h-5') }}</button>
+                   </form>
+                </td>
+            </tr>
+            {% endif %}
+            {% else %}
+            <tr><td colspan="3" class="text-t3 text-center py-7">Belum ada alias.</td></tr>
+            {% endfor %}
+           </tbody>
+        </table>
+   </div>
+</div>
+{% endblock %}
