@@ -7,7 +7,7 @@ from starlette.responses import JSONResponse
 
 from ..auth import require_admin, require_user
 from ..config import APP_TYPES_IN_GROUP, APP_TYPE_GROUPS, FRAMEWORKS, RUNTIMES
-from ..db import get_app, get_app_by_port, get_conn, set_app_status
+from ..db import get_app, get_app_by_name, get_app_by_port, get_conn, set_app_status
 from ..executors import get_executor
 from ..managers.apps import AppManager
 from ..ui import render
@@ -29,10 +29,13 @@ async def apps_page(request: Request, user: dict = Depends(require_user),
     with get_conn() as conn:
         domains = [r["name"] for r in conn.execute(
             "SELECT name FROM domains WHERE kind = 'domain' AND enabled = 1 ORDER BY name")]
+    from ..routers.domains import _get_server_ip
+    server_ip = _get_server_ip()
     return render(request, "apps.html", {
         "user": user,
         "apps": apps,
         "domains": domains,
+        "server_ip": server_ip,
         "runtimes": RUNTIMES,
         "frameworks": FRAMEWORKS,
         "app_type_groups": APP_TYPE_GROUPS,
@@ -308,6 +311,7 @@ async def apps_edit_page(request: Request, app_id: int,
 
 @router.post("/apps/{app_id}/edit")
 async def apps_edit(request: Request, app_id: int,
+                    name: str = Form(""),
                     command: str = Form(...),
                     os_user: str = Form(""),
                     port: str = Form(""),
@@ -320,12 +324,24 @@ async def apps_edit(request: Request, app_id: int,
     app = get_app(app_id)
     if not app:
         return RedirectResponse("/apps?msg=App%20tidak%20ditemukan", status_code=303)
-    from ..managers.apps import _app_type_for, _detect_pm
+    from ..managers.apps import _app_type_for, _detect_pm, _slug
     stored = app.get("app_type", "")
     app_type = stored if stored else _app_type_for(app["language"], app.get("framework", ""))
     pm = _detect_pm(app.get("command", ""))
     serve_only = app_type in ("php", "laravel", "static") or pm == "php-fpm"
     ex = get_executor()
+
+    # ── Nama (bisa diedit, harus unik) ──
+    new_name = (name or "").strip() or app["name"]
+    old_slug = _slug(app["name"])
+    new_slug = _slug(new_name)
+    if new_name != app["name"]:
+        if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9 ._-]*", new_name) or len(new_name) > 64:
+            return JSONResponse({"ok": False, "error": "nama tidak valid (huruf/angka/spasi/-/_/. maks 64)"}, status_code=400)
+        existing = get_app_by_name(new_name)
+        if existing and existing["id"] != app_id:
+            return JSONResponse({"ok": False, "error": f"nama '{new_name}' sudah dipakai app lain"}, status_code=400)
+    new_unit = f"weborn-{new_slug}.service"
 
     # ── Port (eksplisit dari form, atau hasil parse-bind command baru) ──
     explicit_port = None
@@ -347,10 +363,17 @@ async def apps_edit(request: Request, app_id: int,
         if await AppManager(ex)._port_busy(target):
             return JSONResponse({"ok": False, "error": f"port {target} sedang dipakai proses lain"}, status_code=400)
 
-    # ── User OS (www-data atau user app) ──
+    want_unit = systemd_enabled == "on"
+    # User OS seragam: weborn-apps (dedicated) atau www-data.
+    # User lama bergaya weborn-<slug> dipindahkan ke weborn-apps (migrate, tak ada user baru).
     new_user = (os_user or "").strip()
     if new_user and not re.fullmatch(r"[a-z][a-z0-9_-]*", new_user):
         return JSONResponse({"ok": False, "error": "User OS tidak valid"}, status_code=400)
+    if new_user not in ("", "weborn-apps", "www-data"):
+        return JSONResponse({"ok": False, "error": "User OS harus 'weborn-apps' atau 'www-data'"}, status_code=400)
+    final_user = new_user or app["user"]
+    if final_user not in ("weborn-apps", "www-data"):
+        final_user = "weborn-apps"  # migrate user lama → shared weborn-apps
 
     # ── Direktori ──
     new_home = (dir_path or "").strip()
@@ -358,8 +381,7 @@ async def apps_edit(request: Request, app_id: int,
         return JSONResponse({"ok": False, "error": "direktori harus path absolut tanpa '..'"}, status_code=400)
     home = (new_home or app["home_dir"]).rstrip("/")
 
-    want_unit = systemd_enabled == "on"
-    # Serve-only (PHP/static): unit opsional. Sudah ada + tidak disimpan aktif → unit dihapus.
+    # Unit systemd: default TIDAK aktif untuk serve-only. Non-serve-only wajib unit.
     unit_applies = (not serve_only) or want_unit
     exec_cmd = new_cmd if not serve_only else None
 
@@ -368,21 +390,41 @@ async def apps_edit(request: Request, app_id: int,
         q = shlex.quote
         if new_home and home != app["home_dir"]:
             steps.append(("mkdir", f"sudo mkdir -p {q(home)}"))
-        if new_user and new_user != app["user"]:
-            steps.append(("chown", f"sudo chown -R {q(new_user)}:{q(new_user)} {q(home)}"))
-        steps.insert(0, ("env", AppManager._write_env(home, target, app_type, app["name"],
+        if final_user == "weborn-apps":
+            steps.insert(0, ("shared-user",
+                f"id weborn-apps >/dev/null 2>&1 || "
+                f"sudo useradd -r -M -d /var/www -s /bin/false weborn-apps"))
+        if final_user != app["user"]:
+            steps.append(("chown", f"sudo chown -R {q(final_user)}:{q(final_user)} {q(home)}"))
+        # Rename unit file bila nama berubah
+        if new_slug != old_slug:
+            steps.append(("unit-rename",
+                f"sudo systemctl disable --quiet {q(app['unit'])} 2>/dev/null; "
+                f"sudo rm -f /etc/systemd/system/{q(app['unit'])}"))
+        # Environment (.env) memakai nama baru (slug → GUNICORN_SOCK ikut berubah)
+        steps.insert(0, ("env", AppManager._write_env(home, target, app_type, new_name,
                                                       venv_dir=app.get("venv_dir", ""))))
         if unit_applies:
-            steps.append(("unit", AppManager._write_unit(app["unit"], new_user or app["user"],
+            steps.append(("unit", AppManager._write_unit(new_unit, final_user,
                                                          home, exec_cmd, app_type,
                                                          venv_dir=app.get("venv_dir", ""))))
         else:
-            steps.append(("unit-off", f"sudo systemctl disable --quiet {q(app['unit'])} 2>/dev/null; "
-                                      f"sudo rm -f /etc/systemd/system/{q(app['unit'])}"))
+            steps.append(("unit-off", f"sudo systemctl disable --quiet {q(new_unit)} 2>/dev/null; "
+                                      f"sudo rm -f /etc/systemd/system/{q(new_unit)}"))
+        # Nginx: hanya bila app dilayani lewat config bernama slug lama
+        if new_slug != old_slug:
+            old_conf = f"/etc/nginx/sites-available/{old_slug}.conf"
+            r_exist = await ex.run("bash", "-c", f"test -f {old_conf} && echo Y || echo N")
+            if r_exist.stdout.strip() == "Y":
+                from ..managers.nginx import NginxManager
+                nginx = NginxManager(ex)
+                nginx.apply_domain(new_slug, home, f"http://127.0.0.1:{target}")
+                await nginx._deploy(new_slug)
+                await nginx._remove(old_slug)
         steps.append(("reload", "sudo systemctl daemon-reload"))
         if unit_applies:
-            steps.append(("enable", f"sudo systemctl enable --quiet {q(app['unit'])}"))
-            steps.append(("restart", f"sudo systemctl restart {q(app['unit'])}"))
+            steps.append(("enable", f"sudo systemctl enable --quiet {q(new_unit)}"))
+            steps.append(("restart", f"sudo systemctl restart {q(new_unit)}"))
         for label, cmd in steps:
             r = await ex.run("bash", "-c", cmd)
             if ex.mode in ("local", "wsl") and not r.ok:
@@ -391,8 +433,8 @@ async def apps_edit(request: Request, app_id: int,
     from ..db import get_conn
     with get_conn() as conn:
         conn.execute(
-            "UPDATE apps SET command = ?, port = ?, user = ?, home_dir = ? WHERE id = ?",
-            (new_cmd, target, new_user or app["user"], home, app_id))
+            "UPDATE apps SET name = ?, unit = ?, command = ?, port = ?, user = ?, home_dir = ? WHERE id = ?",
+            (new_name, new_unit, new_cmd, target, final_user, home, app_id))
         conn.commit()
     return RedirectResponse("/apps?msg=App%20diperbarui", status_code=303)
 
@@ -479,8 +521,8 @@ async def apps_create_native(name: str = Form(...), app_type: str = Form("wsgi")
     h = (host.strip() or "0.0.0.0")
     if not _re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*:[a-zA-Z_][a-zA-Z0-9_]*$', mod):
         return JSONResponse({"ok": False, "error": "module_app format: module:obj (contoh: main:app)"}, status_code=400)
-    if not _re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', h):
-        return JSONResponse({"ok": False, "error": "host harus IP address (contoh: 0.0.0.0)"}, status_code=400)
+    if not _re.match(r'^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?$', h):
+        return JSONResponse({"ok": False, "error": "host harus IP atau hostname (contoh: 0.0.0.0, 192.168.1.7, example.com)"}, status_code=400)
     if app_type == "wsgi":
         if launcher == "gunicorn":
             command = f"python3 -m gunicorn -w {workers_int} {mod} --bind {h}:{port_int}"

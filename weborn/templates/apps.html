@@ -50,7 +50,12 @@
             <div class="field"><label class="text-[13px]">Directory Path</label>
                 <input name="dir_path" placeholder="/var/www/myapp" class="sm mono"></div>
             <div class="field"><label class="text-[13px]">Port</label>
-                <input name="port" type="number" min="8000" max="8999" placeholder="auto (8000-8999)" class="sm"></div>
+                <div class="flex gap-1">
+                    <input name="port" id="fw-port" type="number" min="8000" max="8999" placeholder="auto (8000-8999)" class="sm flex-1">
+                    <button type="button" class="btn sm" onclick="checkPort('fw-port','fw-port-result')">{{ icon('magnifying-glass', 'w-5 h-5') }} Check</button>
+               </div>
+                <div id="fw-port-result" class="text-[12px] mt-1" style="display:none"></div>
+            </div>
             <button type="submit" class="btn primary sm w-full">Create App</button>
        </form>
    </div>
@@ -86,6 +91,13 @@
            </div>
 
             <div class="field">
+                <label class="text-[13px]">Host (Domain / IP)</label>
+                <input name="domain" id="native-domain" value="{{ server_ip }}" class="sm mono"
+                       title="server_name nginx — domain/subdomain atau IP server">
+                <div class="text-t3 text-[12px]">server_name nginx (default: IP server). Kosongkan untuk memakai nama app.</div>
+           </div>
+
+            <div class="field">
                 <label class="text-[13px]">Direktori Aplikasi</label>
                 <div class="flex gap-1">
                     <input name="dir_path" id="native-dir" placeholder="/var/www/myapp" class="sm mono flex-1">
@@ -112,8 +124,13 @@
                     <input name="host" id="native-host" value="0.0.0.0" class="sm"
                            oninput="updateNativeCommand()"></div>
                 <div class="field flex-1"><label class="text-[13px]">Port</label>
-                    <input name="port" id="native-port" type="number" min="8000" max="8999" placeholder="auto" class="sm"
-                           oninput="updateNativeCommand()"></div>
+                    <div class="flex gap-1">
+                        <input name="port" id="native-port" type="number" min="8000" max="8999" placeholder="auto" class="sm mono flex-1"
+                               oninput="updateNativeCommand()">
+                        <button type="button" class="btn sm" onclick="checkPort('native-port','native-port-result')">{{ icon('magnifying-glass', 'w-5 h-5') }} Check</button>
+                   </div>
+                    <div id="native-port-result" class="text-[12px] mt-1" style="display:none"></div>
+               </div>
            </div>
 
             <div id="sample-info" class="text-[12px] p-2 rounded border" style="background:var(--bg-2);border-color:var(--panel-border);display:none"></div>
@@ -303,6 +320,34 @@ async function validateModule(){
 }
 
 function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function checkPort(inputId, resultId){
+  var input = document.getElementById(inputId);
+  var resultEl = document.getElementById(resultId);
+  var port = parseInt(input.value);
+  if(!port || port <= 0 || port > 65535){
+    resultEl.style.display='block';
+    resultEl.innerHTML='<span style="color:var(--err)">⚠ Masukkan port 1-65535</span>';
+    return;
+  }
+  resultEl.style.display='block';
+  resultEl.innerHTML='<span style="color:var(--t3)">Mengecek port ' + port + '…</span>';
+  try {
+    var res = await fetch('/apps/api/check-port?port=' + port);
+    var data = await res.json();
+    if(data.ok && data.free){
+      resultEl.innerHTML = '<span style="color:var(--ok)">✅ Port ' + port + ' tersedia</span>';
+    } else if(data.ok && data.by_app){
+      resultEl.innerHTML = '<span style="color:var(--err)">❌ Dipakai app <b>' + escHtml(data.by_app.name) + '</b> (' + data.by_app.status + ')</span>';
+    } else if(data.ok){
+      resultEl.innerHTML = '<span style="color:var(--err)">❌ Sedang dipakai proses lain</span>';
+    } else {
+      resultEl.innerHTML = '<span style="color:var(--err)">❌ ' + escHtml(data.error || 'gagal cek') + '</span>';
+    }
+  } catch(e) {
+    resultEl.innerHTML = '<span style="color:var(--err)">❌ Error: ' + escHtml(e.message) + '</span>';
+  }
+}
 
 updateNativeCommand();
 updateSampleInfo();
