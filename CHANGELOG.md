@@ -23,6 +23,7 @@ All notable changes to Weborn will be documented in this file.
 - **Dokumen**: README (overview mail + menu), API.md (bagian Panel Mail), DEVELOPMENT.md (bagian 11 email stack + gotchas), WORKFLOW.md (email section sesuai menu final) diperbarui
 - **`/email/dns`**: kolom Value tabel di-slice (20 char + ellipsis, tooltip nilai utuh); tombol aksi edit/hapus sebaris `flex gap-1`; kartu TXT/DKIM = `textarea` readonly tanpa whitespace + tombol **Regenerate** (POST `/email/dns/dkim/generate`: genkey → rename → chown root:root → upsert TXT → restart opendkim; teruji live, dkimpy verify True)
 - **Mailbox Auto-Login diperbaiki**: `_roundcube_autologin` kini mengembalikan **semua** cookie sesi Roundcube (`roundcube_sessid` + `roundcube_sessauth` — sebelumnya hanya sessid, sesi ditolak Roundcube 1.6 dan kembali ke login); cookie dipasang via header HTTP `Set-Cookie` (HttpOnly + SameSite=Lax + Secure bila panel HTTPS, skema/host mengikuti request) bukan lagi `document.cookie`; `base` URL dapat ditimpa untuk instalasi/test — teruji E2E browser: redirect ke `?_task=mail&_mbox=INBOX`, tanpa form login
+- **Home `/email/webmail`**: kotak "Buka Webmail (Auto-Login)" — dropdown seluruh mailbox → buka langsung login tanpa password (endpoint `GET /email/accounts/webmail/{username}?domain=`)
 
 ## [1.0.1] - 2026-08-23
 

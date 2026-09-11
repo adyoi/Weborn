@@ -35,7 +35,7 @@
         {% endif %}
    </div>
 
-    <div class="card">
+<div class="card">
         <h3 class="text-xs font-bold mb-2">{{ icon('document-text', 'w-5 h-5') }} Cara Akses</h3>
         <div class="text-[13px] text-t3 space-y-1.5">
             <p>Akses webmail di:</p>
@@ -43,6 +43,39 @@
             <p>atau: <code class="text-[13px]">https://mail.domain.com</code></p>
             <p class="text-[14px]">Kredensial = akun email dari <a href="/email/accounts" class="text-accent">Mailbox</a></p>
        </div>
-   </div>
+    </div>
 </div>
+
+{% if installed and mailboxes %}
+<div class="card mt-4">
+    <h3 class="text-xs font-bold mb-2">{{ icon('bolt', 'w-5 h-5') }} Buka Webmail (Auto-Login)</h3>
+    <p class="text-[13px] text-t3 mb-2">Pilih mailbox — Anda langsung masuk ke inbox tanpa memasukkan password.</p>
+    <div class="flex gap-2 flex-wrap items-end">
+        <div class="field flex-1 min-w-[240px] mb-0">
+            <label>Mailbox</label>
+            <select id="wl-mailbox">
+                {% for mb in mailboxes %}
+                <option value="{{ mb }}">{{ mb }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="button" id="wl-open" class="btn primary sm">{{ icon('bolt', 'w-5 h-5') }} Buka</button>
+    </div>
+</div>
+<script>
+(function () {
+    var open = document.getElementById('wl-open');
+    var sel = document.getElementById('wl-mailbox');
+    if (!open || !sel) return;
+    open.addEventListener('click', function () {
+        var full = sel.value;
+        var idx = full.indexOf('@');
+        if (idx < 1) return;
+        var user = encodeURIComponent(full.slice(0, idx));
+        var domain = encodeURIComponent(full.slice(idx + 1));
+        window.open('/email/accounts/webmail/' + user + '?domain=' + domain, '_blank');
+    });
+})();
+</script>
+{% endif %}
 {% endblock %}

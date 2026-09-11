@@ -1427,10 +1427,12 @@ async def email_webmail_page(request: Request, msg: str = "",
         ip = r.stdout.strip()
         if ip:
             webmail_url = f"https://{ip}/roundcube"
+    mailboxes = sorted(await _read_dovecot_passwd()) if installed else []
     return render(request, "email_webmail.html", {
         "user": user, "msg": msg,
         "installed": installed, "running": running,
-        "webmail_url": webmail_url, "active": "email-webmail",
+        "webmail_url": webmail_url, "mailboxes": mailboxes,
+        "active": "email-webmail",
     })
 
 
