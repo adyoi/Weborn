@@ -164,6 +164,22 @@ APP_TYPES = {
         "command": "node server.js",
     },
 
+    # ── Deno ──
+    "deno": {
+        "label": "Deno",
+        "runtime": "deno",
+        "process_manager": "direct",
+        "command": "deno run --allow-net --allow-env main.ts",
+    },
+
+    # ── Bun ──
+    "bun": {
+        "label": "Bun",
+        "runtime": "bun",
+        "process_manager": "direct",
+        "command": "bun run main.ts",
+    },
+
     # ── Static ──
     "static": {
         "label": "Static Site",
@@ -172,6 +188,28 @@ APP_TYPES = {
         "command": None,  # Nginx serves directly
     },
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# APP TYPE GROUPS — Filter daftar aplikasi (chips di halaman Application)
+# ─────────────────────────────────────────────────────────────────────────────
+
+APP_TYPE_GROUPS = {
+    "wsgi": "WSGI",
+    "asgi": "ASGI",
+    "js": "JavaScript",
+    "php": "PHP",
+}
+
+APP_TYPES_IN_GROUP = {
+    "wsgi": {"wsgi", "django", "flask", "tornado", "pyramid", "bottle"},
+    "asgi": {"asgi", "fastapi", "litestar", "sanic"},
+    "js": {"nodejs", "deno", "bun"},
+    "php": {"php", "laravel"},
+}
+
+# Setiap app_type di APP_TYPES yang tidak tercantum di atas (mis. "static")
+# hanya muncul pada chip "Semua" — grup filter tidak memilikinya.
+ALL_GROUPED_TYPES = frozenset(t for group in APP_TYPES_IN_GROUP.values() for t in group)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # RUNTIMES — Bahasa yang dikelola panel
@@ -208,6 +246,28 @@ RUNTIMES = {
         "version_cmd": "node -v && npm -v",
         "default": {
             "serve": "node server.js",
+        },
+    },
+    "deno": {
+        "label": "Deno",
+        "addon": "deno",
+        "pkg": "deno",
+        "version_cmd": "deno --version | head -1",
+        "install_cmd": "curl -fsSL https://deno.land/install.sh | sh && "
+                       "sudo cp \"$HOME/.deno/bin/deno\" /usr/local/bin/deno && deno --version",
+        "default": {
+            "serve": "deno run --allow-net --allow-env main.ts",
+        },
+    },
+    "bun": {
+        "label": "Bun",
+        "addon": "bun",
+        "pkg": "bun",
+        "version_cmd": "bun --version",
+        "install_cmd": "curl -fsSL https://bun.sh/install | bash && "
+                       "sudo cp \"$HOME/.bun/bin/bun\" /usr/local/bin/bun && bun --version",
+        "default": {
+            "serve": "bun run main.ts",
         },
     },
 }
@@ -247,6 +307,12 @@ FRAMEWORKS = {
         {"id": "laravel", "label": "Laravel", "app_type": "laravel",
          "pkg": "composer create-project laravel/laravel .",
          "serve": "Nginx → PHP-FPM"},
+        {"id": "spiral", "label": "Spiral", "app_type": "php",
+         "pkg": "composer create-project spiral/app .",
+         "serve": "Nginx → PHP-FPM"},
+        {"id": "yii3", "label": "Yii3", "app_type": "php",
+         "pkg": "composer create-project yiisoft/app .",
+         "serve": "Nginx → PHP-FPM"},
         {"id": "wordpress", "label": "WordPress", "app_type": "php",
          "pkg": "wp core download",
          "serve": "Nginx → PHP-FPM"},
@@ -282,5 +348,33 @@ FRAMEWORKS = {
         {"id": "astro", "label": "Astro", "app_type": "nodejs",
          "pkg": "npm create astro@latest . -- --template basics",
          "start": "npm run dev"},
+    ],
+    "deno": [
+        {"id": "fresh", "label": "Fresh", "app_type": "deno",
+         "pkg": "deno run -A -r https://fresh.deno.dev .",
+         "start": "deno run -A main.ts"},
+        {"id": "hono-deno", "label": "Hono", "app_type": "deno",
+         "pkg": "deno add npm:hono",
+         "start": "deno run --allow-net --allow-env main.ts"},
+        {"id": "oak", "label": "Oak", "app_type": "deno",
+         "pkg": "deno add npm:oak",
+         "start": "deno run --allow-net --allow-env main.ts"},
+        {"id": "deno-http", "label": "Deno std/http", "app_type": "deno",
+         "pkg": "",
+         "start": "deno run --allow-net --allow-env main.ts"},
+    ],
+    "bun": [
+        {"id": "elysia", "label": "Elysia", "app_type": "bun",
+         "pkg": "bun add elysia",
+         "start": "bun run main.ts"},
+        {"id": "hono-bun", "label": "Hono", "app_type": "bun",
+         "pkg": "bun add hono",
+         "start": "bun run main.ts"},
+        {"id": "bun-express", "label": "Express", "app_type": "bun",
+         "pkg": "bun add express",
+         "start": "bun run main.ts"},
+        {"id": "bun-http", "label": "Bun.serve", "app_type": "bun",
+         "pkg": "",
+         "start": "bun run main.ts"},
     ],
 }

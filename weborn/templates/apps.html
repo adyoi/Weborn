@@ -43,47 +43,12 @@
                    </select></div>
            </div>
             <div class="field"><label class="text-[13px]">Domain</label>
-                <input name="domain" placeholder="example.com" class="sm"></div>
+                <select name="domain" class="sm">
+                    <option value="">Auto (nama app)</option>
+                    {% for d in domains %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
+               </select></div>
             <div class="field"><label class="text-[13px]">Directory Path</label>
                 <input name="dir_path" placeholder="/var/www/myapp" class="sm mono"></div>
-            <div class="flex gap-2">
-                <div class="field flex-1"><label class="text-[13px]">Web Server</label>
-                    <select name="webserver" id="app-webserver" class="sm" onchange="onFrontendWebserverChange()">
-                        <option value="nginx">Nginx</option>
-                        <option value="apache">Apache</option>
-                        <option value="caddy">Caddy</option>
-                        <option value="lighttpd">Lighttpd</option>
-                   </select></div>
-                <div class="field flex-1"><label class="text-[13px]">Web Server Config</label>
-                    <div class="flex gap-1">
-                        <input name="webserver_config" id="webserver-config-name" value="nginx.conf" placeholder="nginx.conf" class="sm flex-1">
-                        <button type="button" class="btn sm" onclick="openConfigEditor('nginx',document.getElementById('webserver-config-name').value)">{{ icon('pencil', 'w-5 h-5') }}</button>
-                   </div></div>
-           </div>
-           <div id="webserver-port-field" class="field" style="display:none"><label class="text-[13px]">Web Server Port</label>
-               <input name="webserver_port" type="number" min="1" max="65535" placeholder="80" class="sm"></div>
-            <div id="php-config-fields" class="flex gap-2">
-                <div class="field flex-1"><label class="text-[13px]">PHP-FPM Config</label>
-                    <div class="flex gap-1">
-                        <select name="php_fpm_config" id="php-fpm-config-name" class="sm flex-1">
-                            <option value="php.ini">php.ini</option>
-                            <option value="www.conf">www.conf</option>
-                            <option value="php-fpm.conf">php-fpm.conf</option>
-                       </select>
-                        <button type="button" class="btn sm" onclick="openConfigEditor('php-fpm',document.getElementById('php-fpm-config-name').value)">{{ icon('pencil', 'w-5 h-5') }}</button>
-                   </div></div>
-           </div>
-            <div id="node-config-fields" class="flex gap-2" style="display:none">
-                <div class="field flex-1"><label class="text-[13px]">Node Config</label>
-                    <div class="flex gap-1">
-                        <select name="node_config" id="node-config-name" class="sm flex-1">
-                            <option value=".env">.env</option>
-                            <option value="config.json">config.json</option>
-                            <option value="package.json">package.json</option>
-                       </select>
-                        <button type="button" class="btn sm" onclick="openConfigEditor('node',document.getElementById('node-config-name').value)">{{ icon('pencil', 'w-5 h-5') }}</button>
-                   </div></div>
-           </div>
             <div class="field"><label class="text-[13px]">Port</label>
                 <input name="port" type="number" min="8000" max="8999" placeholder="auto (8000-8999)" class="sm"></div>
             <button type="submit" class="btn primary sm w-full">Create App</button>
@@ -141,7 +106,7 @@
 
             <div class="flex gap-2">
                 <div class="field flex-1"><label class="text-[13px]">Workers</label>
-                    <input name="workers" id="native-workers" type="number" min="1" max="32" value="4" class="sm"
+                    <input name="workers" id="native-workers" type="number" min="1" max="32" value="2" class="sm"
                            oninput="updateNativeCommand()"></div>
                 <div class="field flex-1"><label class="text-[13px]">Host</label>
                     <input name="host" id="native-host" value="0.0.0.0" class="sm"
@@ -150,16 +115,6 @@
                     <input name="port" id="native-port" type="number" min="8000" max="8999" placeholder="auto" class="sm"
                            oninput="updateNativeCommand()"></div>
            </div>
-
-            <div class="flex gap-2">
-                <div class="field flex-1"><label class="text-[13px]">Web Server</label>
-                    <select name="webserver" class="sm">
-                        <option value="nginx">Nginx</option>
-                        <option value="apache">Apache</option>
-                        <option value="caddy">Caddy</option>
-                        <option value="lighttpd">Lighttpd</option>
-                   </select></div>
-            </div>
 
             <div id="sample-info" class="text-[12px] p-2 rounded border" style="background:var(--bg-2);border-color:var(--panel-border);display:none"></div>
 
@@ -174,11 +129,9 @@
 
 <div class="flex gap-1 mb-3 flex-wrap text-[14px]">
     <a href="/apps" class="btn {{ 'primary' if not app_type_filter else '' }} sm">Semua</a>
-    <a href="/apps?type=wsgi" class="btn {{ 'primary' if app_type_filter == 'wsgi' else '' }} sm">WSGI</a>
-    <a href="/apps?type=asgi" class="btn {{ 'primary' if app_type_filter == 'asgi' else '' }} sm">ASGI</a>
-    <a href="/apps?type=nodejs" class="btn {{ 'primary' if app_type_filter == 'nodejs' else '' }} sm">Node.js</a>
-    <a href="/apps?type=laravel" class="btn {{ 'primary' if app_type_filter == 'laravel' else '' }} sm">Laravel</a>
-    <a href="/apps?type=php" class="btn {{ 'primary' if app_type_filter == 'php' else '' }} sm">PHP</a>
+    {% for g, label in app_type_groups.items() %}
+    <a href="/apps?type={{ g }}" class="btn {{ 'primary' if app_type_filter == g else '' }} sm">{{ label }}</a>
+    {% endfor %}
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -225,31 +178,12 @@
 <script>
 function onFrontendLangChange(){
   var lang = document.getElementById('app-language').value;
-  var phpFields = document.getElementById('php-config-fields');
-  var nodeFields = document.getElementById('node-config-fields');
-  if(lang === 'php'){
-    phpFields.style.display = 'flex';
-    nodeFields.style.display = 'none';
-  } else if(lang === 'nodejs'){
-    phpFields.style.display = 'none';
-    nodeFields.style.display = 'flex';
-  } else {
-    phpFields.style.display = 'none';
-    nodeFields.style.display = 'none';
-  }
   var fw = document.getElementById('app-framework');
   Array.prototype.forEach.call(fw.options, function(o){
     var hide = o.dataset.lang && o.dataset.lang !== lang;
     o.style.display = hide ? 'none' : '';
     if (hide && o.selected) o.selected = false;
   });
-}
-
-function onFrontendWebserverChange(){
-  var ws = document.getElementById('app-webserver').value;
-  var portField = document.getElementById('webserver-port-field');
-  if(ws === 'nginx'){ portField.style.display = 'none'; }
-  else { portField.style.display = ''; }
 }
 
 function updateNativeVenv(){
@@ -278,7 +212,7 @@ function updateNativeCommand(){
   var type = document.getElementById('native-type').value;
   var launcher = document.getElementById('native-launcher').value;
   var mod = document.getElementById('native-module').value || 'main:app';
-  var workers = document.getElementById('native-workers').value || '4';
+  var workers = document.getElementById('native-workers').value || '2';
   var host = document.getElementById('native-host').value || '0.0.0.0';
   var port = document.getElementById('native-port').value || '8000';
   var venv = document.getElementById('native-venv').value;
@@ -370,198 +304,10 @@ async function validateModule(){
 
 function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-async function openConfigEditor(configType, configName) {
-  var nameInput = document.getElementById('native-name');
-  var appName = nameInput ? nameInput.value.trim() : '';
-  var url = '/apps/api/config-file?config_type=' + encodeURIComponent(configType)
-           + '&config_name=' + encodeURIComponent(configName)
-           + '&app_name=' + encodeURIComponent(appName);
-  var titleEl = document.getElementById('cfg-editor-title');
-  var pathEl = document.getElementById('cfg-editor-path');
-  var contentEl = document.getElementById('cfg-editor-content');
-  var saveBtn = document.getElementById('cfg-editor-save');
-  titleEl.textContent = configType.toUpperCase() + ' — ' + configName;
-  pathEl.textContent = 'Memuat…';
-  contentEl.value = '';
-  saveBtn.disabled = true;
-  weborn.modal.open('modal-config-editor');
-  try {
-    var res = await fetch(url);
-    var data = await res.json();
-    if (!data.ok) {
-      pathEl.textContent = 'Error: ' + (data.error || 'gagal memuat');
-      return;
-    }
-    pathEl.textContent = data.path;
-    contentEl.value = data.content || '';
-    saveBtn.disabled = false;
-    saveBtn.dataset.path = data.path;
-  } catch(e) {
-    pathEl.textContent = 'Error: ' + e.message;
-  }
-}
-
-async function saveConfigEditor() {
-  var saveBtn = document.getElementById('cfg-editor-save');
-  var contentEl = document.getElementById('cfg-editor-content');
-  var statusEl = document.getElementById('cfg-editor-status');
-  var path = saveBtn.dataset.path;
-  if (!path) return;
-  saveBtn.disabled = true;
-  statusEl.textContent = 'Menyimpan…';
-  statusEl.style.color = '';
-  try {
-    var csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
-    var res = await fetch('/apps/api/config-file', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-      body: JSON.stringify({ path: path, content: contentEl.value })
-    });
-    var data = await res.json();
-    if (data.ok) {
-      statusEl.textContent = '✓ Tersimpan';
-      statusEl.style.color = 'var(--ok)';
-      setTimeout(function() { statusEl.textContent = ''; }, 3000);
-    } else {
-      statusEl.textContent = '✗ ' + (data.error || 'Gagal');
-      statusEl.style.color = 'var(--err)';
-    }
-  } catch(e) {
-    statusEl.textContent = '✗ ' + e.message;
-    statusEl.style.color = 'var(--err)';
-  }
-  saveBtn.disabled = false;
-}
-
 updateNativeCommand();
 updateSampleInfo();
 updateNativeVenv();
 onFrontendLangChange();
-
-/* ── Port conflict guard: cegah create saat port dipakai, tawarkan Replace/Change ── */
-var pendingPortForm = null;
-
-function portInputOf(form) {
-  return form.querySelector('input[name="port"]');
-}
-
-function guardPortSubmit(form, ev) {
-  var input = portInputOf(form);
-  var raw = (input && input.value || '').trim();
-  if (!raw) return; // kosong = auto-alloc, biarkan backend
-  if (!/^\d+$/.test(raw)) {
-    ev.preventDefault();
-    alert('Port harus berupa angka');
-    return;
-  }
-  var port = parseInt(raw, 10);
-  if (port < 1 || port > 65535) {
-    ev.preventDefault();
-    alert('Port di luar jangkauan (1-65535)');
-    return;
-  }
-  ev.preventDefault();
-  fetch('/apps/api/check-port?port=' + port)
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.ok && data.free) { form.submit(); return; }
-      pendingPortForm = form;
-      var msg = 'Port <b>' + port + '</b> sedang dipakai';
-      var byApp = null;
-      if (data.by_app) {
-        byApp = data.by_app;
-        msg += ' oleh aplikasi <b>' + escHtml(byApp.name) + '</b> (status: ' + escHtml(byApp.status) + ').';
-      } else if (data.busy_by_process) {
-        msg += ' oleh proses lain di sistem (bukan app Weborn).';
-      } else {
-        msg += ' oleh sesuatu yang tidak dikenal.';
-      }
-      var replaceBtn = document.getElementById('port-conflict-replace');
-      replaceBtn.style.display = byApp ? '' : 'none';
-      replaceBtn.dataset.appId = byApp ? byApp.id : '';
-      document.getElementById('port-conflict-msg').innerHTML = msg;
-      weborn.modal.open('modal-port-conflict');
-    })
-    .catch(function() { form.submit(); }); // fallback: biarkan backend menilai
-}
-
-function portConflictChange() {
-  weborn.modal.close(document.getElementById('modal-port-conflict'));
-  if (!pendingPortForm) return;
-  var input = portInputOf(pendingPortForm);
-  if (!input) return;
-  fetch('/apps/api/free-port').then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.ok && d.port) {
-        input.value = d.port;
-        input.focus();
-      }
-    })
-    .catch(function() { input.focus(); });
-  pendingPortForm = null;
-}
-
-function portConflictReplace() {
-  var btn = document.getElementById('port-conflict-replace');
-  var appId = btn.dataset.appId;
-  if (!appId || !pendingPortForm) return;
-  var csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
-  if (!confirm('Hentikan & hapus aplikasi pemilik port ini? Folder & file-nya TIDAK dihapus.')) return;
-  fetch('/apps/' + appId + '/delete', {
-    method: 'POST',
-    headers: { 'X-CSRF-Token': csrfToken },
-  }).then(function(r) { return r.json(); })
-    .then(function(data) {
-      weborn.modal.close(document.getElementById('modal-port-conflict'));
-      if (data.ok === false || data.error) {
-        alert('Gagal replace: ' + (data.error || data.output || 'unknown'));
-        pendingPortForm = null;
-        return;
-      }
-      var form = pendingPortForm;
-      pendingPortForm = null;
-      form.submit();
-    })
-    .catch(function(e) { alert('Error: ' + e.message); pendingPortForm = null; });
-}
-
-['frontend-create-form', 'native-form'].forEach(function(id) {
-  var form = document.getElementById(id);
-  if (form) form.addEventListener('submit', function(ev) { guardPortSubmit(form, ev); });
-});
 </script>
-
-<div id="modal-config-editor" class="w-modal" onclick="if(event.target===this)weborn.modal.close(this)">
-    <div class="w-modal-box" style="width:min(95vw,960px)">
-        <h3 class="w-modal-title" id="cfg-editor-title">Config Editor</h3>
-        <div class="text-[12px] text-t3 mono mb-2" id="cfg-editor-path"></div>
-        <textarea id="cfg-editor-content" rows="24"
-            class="w-full !font-mono !text-[13px] !leading-relaxed p-3 rounded border"
-            style="background:var(--bg-2);border-color:var(--panel-border);resize:vertical;min-height:300px"
-            spellcheck="false"></textarea>
-        <div class="flex items-center gap-2 mt-3">
-            <span id="cfg-editor-status" class="text-[13px] flex-1"></span>
-            <button type="button" class="btn sm" onclick="weborn.modal.close(document.getElementById('modal-config-editor'))">Batal</button>
-            <button type="button" id="cfg-editor-save" class="btn primary sm" onclick="saveConfigEditor()" disabled>{{ icon('check', 'w-5 h-5') }} Simpan</button>
-       </div>
-   </div>
-</div>
-
-<div id="modal-port-conflict" class="w-modal" onclick="if(event.target===this)weborn.modal.close(this)">
-    <div class="w-modal-box w-[440px]">
-        <h3 class="w-modal-title">{{ icon('exclamation-triangle', 'w-5 h-5') }} Port Tidak Tersedia</h3>
-        <div id="port-conflict-msg" class="text-[13px] mb-2"></div>
-        <div class="text-[12px] text-t3 mb-3">
-            <b>Change</b> = ganti ke port lain (otomatis disarankan port bebas).<br>
-            <b>Replace</b> = hentikan & hapus aplikasi lama pemilik port, lalu buat aplikasi baru di port ini.<br>
-            Aplikasi yang bukan milik Weborn (proses OS) tidak akan disentuh.
-       </div>
-        <div class="flex justify-end gap-2">
-            <button type="button" class="btn sm" onclick="portConflictChange()">{{ icon('arrow-path', 'w-5 h-5') }} Change (port lain)</button>
-            <button type="button" id="port-conflict-replace" class="btn danger sm"
-                    onclick="portConflictReplace()">{{ icon('trash', 'w-5 h-5') }} Replace (hapus pemilik lama)</button>
-       </div>
-   </div>
-</div>
 
 {% endblock %}

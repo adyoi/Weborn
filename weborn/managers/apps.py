@@ -130,6 +130,24 @@ LANG_STUB = {
     "php": ("public/index.php",
         "<?php header('Content-Type: application/json');\n"
         "echo json_encode(['app' => '{name}', 'ok' => true]);\n"),
+    "deno": ("main.ts",
+        "const server = Deno.serve({\n"
+        "  hostname: '0.0.0.0',\n"
+        "  port: Number(Deno.env.get('PORT') || 8000),\n"
+        "  handler: () => new Response(JSON.stringify({ app: '{name}', ok: true }), {\n"
+        "    headers: { 'Content-Type': 'application/json' },\n"
+        "  }),\n"
+        "});\n"),
+    "bun": ("main.ts",
+        "Bun.serve({\n"
+        "  hostname: '0.0.0.0',\n"
+        "  port: Number(Bun.env.PORT || 8000),\n"
+        "  fetch() {\n"
+        "    return new Response(JSON.stringify({ app: '{name}', ok: true }), {\n"
+        "      headers: { 'Content-Type': 'application/json' },\n"
+        "    });\n"
+        "  },\n"
+        "});\n"),
 }
 
 
@@ -160,16 +178,25 @@ def _app_type_for(language: str, framework: str) -> str:
         return "asgi"
     if fw_lower in ("tornado", "pyramid", "bottle"):
         return "wsgi"
-    if fw_lower in ("laravel", "wordpress", "codeigniter", "symfony", "slim"):
-        return "laravel"
+    if fw_lower in ("laravel", "wordpress", "codeigniter", "symfony", "slim",
+                "spiral", "yii3", "yii"):
+        return "laravel" if fw_lower in ("laravel", "wordpress", "codeigniter", "symfony", "slim") else "php"
     if fw_lower in ("express", "next", "nuxt", "fastify", "nest", "hono", "sveltekit", "astro"):
         return "nodejs"
+    if fw_lower in ("fresh", "hono-deno", "oak", "deno-http"):
+        return "deno"
+    if fw_lower in ("elysia", "hono-bun", "bun-express", "bun-http"):
+        return "bun"
     if lang_lower == "php":
         return "laravel"
     if lang_lower == "python":
         return "wsgi"
     if lang_lower == "nodejs":
         return "nodejs"
+    if lang_lower == "deno":
+        return "deno"
+    if lang_lower == "bun":
+        return "bun"
     return "static"
 
 
@@ -357,15 +384,13 @@ class AppManager:
         # Skip stubs for scaffolding frameworks (create-project / npx create-* / nest new)
         # These generate their own project structure
         _scaffold_keywords = ("create-project", "create-next-app", "nest new",
-                              "sv create", "create astro", "wp core")
+                              "sv create", "create astro", "wp core",
+                              "fresh.deno.dev", "bun create")
         _is_scaffold = fw and any(kw in ((fw or {}).get("pkg") or "")
                                   for kw in _scaffold_keywords)
         stub = None
         if not _is_scaffold:
-            if fw and fw["id"] in STUBS:
-                stub = STUBS[fw["id"]]
-            elif not fw:
-                stub = LANG_STUB.get(language)
+            stub = STUBS.get(fw["id"] if fw else None) or LANG_STUB.get(language)
 
         steps, failed = [], None
         if self.ex.mode in ("local", "wsl"):
