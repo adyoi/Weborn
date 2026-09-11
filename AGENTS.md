@@ -64,6 +64,7 @@ Jangan commit sebelum 3 langkah di atas lolos. Ikuti pola commit repo: pesan sin
 - **Rspamd via milter proxy** `localhost:11332` + `milter_default_action=accept` (milter error → email tetap diterima, tanpa header). Threshold `Add header` rspamd = 6.0 → mail round-trip normal (skor <6) TIDAK diberi header spam; bukan bug. Uji deteksi manual: `echo ... | rspamc -h 127.0.0.1:11333`.
 - **Klien email kirim via 587 STARTTLS / 465 TLS wrap** (SASL Dovecot). Port 25 hanya untuk penerimaan; dari luar WSL tidak ada akses SMTP.
 - **DKIM TXT panjang (420 char)** — value di tabel `email_dns.html` di-**slice** (20 char + ellipsis) dengan tooltip `title` nilai utuh; nilai lengkap tampil di kartu "DNS Records yang Dibutuhkan" (`textarea` readonly, tanpa whitespace). Regenerasi kunci: POST `/email/dns/dkim/generate` (opendkim-genkey → rename `{domain}.weborn.*` → root:root 0700 → upsert TXT `weborn._domainkey.{domain}` → restart opendkim) — record DNS di-update otomatis.
+- **Roundcube menolak alamat tanpa domain bertitik**: `rcube_check_email` (program/js/common.js) mensyaratkan `local@domain.tld` (TLD ≥2 char). Alamat `user@localhost` dianggap invalid → saat kirim di compose muncul **"Please enter at least one recipient"** (padahal To terisi). Bukan bug panel; untuk uji kirim webmail gunakan domain beneran (mis. `@test.example.com`). Seed `admin@localhost` hanya untuk log-in panel.
 
 ## Checklist Sebelum "Selesai"
 
