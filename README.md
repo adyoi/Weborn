@@ -17,14 +17,11 @@ Weborn is a self-hosted control panel for running, securing, and managing server
 ## Screenshots
 
 <p align="center">
-  <img src="assets/weborn-shots/dashboard.png" alt="Weborn Dashboard" width="380" />
-  <img src="assets/weborn-shots/apps.png" alt="Weborn Apps" width="380" />
+  <img src="assets/weborn-shots/mail_overview.png" alt="Weborn Mail Overview" width="380" />
+  <img src="assets/weborn-shots/mail_accounts.png" alt="Weborn Mail Accounts" width="380" />
   <br/>
-  <img src="assets/weborn-shots/settings.png" alt="Weborn Settings" width="380" />
-  <img src="assets/weborn-shots/accounts.png" alt="Weborn Panel Accounts" width="380" />
-  <br/>
-  <img src="assets/weborn-shots/logs.png" alt="Weborn Logs" width="380" />
-  <img src="assets/weborn-shots/monitor.png" alt="Weborn Apps Monitor" width="380" />
+  <img src="assets/weborn-shots/mail_dns.png" alt="Weborn Mail DNS" width="380" />
+  <img src="assets/weborn-shots/mail_aliases.png" alt="Weborn Mail Aliases" width="380" />
 </p>
 
 ## Architecture
