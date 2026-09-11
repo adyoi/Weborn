@@ -11,7 +11,7 @@
 {% endif %}
 
 {% if domains %}
-<div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] items-start gap-4">
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start gap-4">
         <div class="flex flex-col gap-4">
             <div class="card" id="dns-add-card">
                 <h3 class="text-sm mb-3 font-bold">{{ icon('plus', 'w-5 h-5') }} <span id="dns-add-title">Tambah DNS Record</span></h3>
@@ -112,7 +112,7 @@
         </div>
         <div class="overflow-x-auto">
         <table>
-            <thead><tr><th>Type</th><th>Name</th><th>Value</th><th>TTL</th><th class="text-right">Aksi</th></tr></thead>
+            <thead><tr><th>Type</th><th>Name</th><th>Value</th><th>TTL</th><th>Aksi</th></tr></thead>
             <tbody>
             {% for r in dns_records %}
             <tr>
