@@ -72,10 +72,13 @@ class Addon:
                    for f in self.fields}
         set_setting(f"addon:{self.id}", json.dumps(allowed))
 
-    async def render_config(self) -> str:
+    async def render_config(self) -> str | None:
+        """Render template config addon; None bila template tak ada/tak tersedia."""
         template_name = self.config.get("template")
         if not template_name:
-            return ""
+            return None
+        if not (CONF_TEMPLATES_DIR / template_name).is_file():
+            return None
         template = CONF_TEMPLATES.get_template(template_name)
         return template.render(
             addon=self,

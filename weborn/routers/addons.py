@@ -65,11 +65,23 @@ async def addon_detail(addon_id: str, request: Request, user: dict = Depends(req
     if addon is None:
         return JSONResponse({"error": "addon tidak ditemukan"}, status_code=404)
     status = await manager.status(addon)
+    values = addon.config_values()
     preview = ""
     try:
-        preview = await addon.render_config()
-    except Exception:
-        preview = "(gagal render template)"
+        rendered = await addon.render_config()
+    except Exception as e:
+        rendered = f"// Gagal render template: {type(e).__name__}: {e}"
+    if rendered is None:
+        if addon.fields:
+            lines = ["# Addon ini belum memiliki template konfigurasi (Jinja).",
+                     "# Nilai konfigurasi saat ini:"]
+            for f in addon.fields:
+                lines.append(f"{f['name']} = {values.get(f['name'], f.get('default', ''))}")
+            rendered = "\n".join(lines)
+        else:
+            rendered = ("# Addon ini belum memiliki template konfigurasi.\n"
+                        "# Simpan & Terapkan akan memakainya setelah template tersedia.")
+    preview = rendered
     return render(request, "addon_detail.html", {
         "user": user,
         "addon": addon,

@@ -296,7 +296,18 @@ function openTrace(appId, appName, unit) {
     /* Dispose previous terminal if any */
     closeTrace();
 
+    /* Bersihkan kontainer agar xterm lama (lebar stale) tidak menumpuk */
+    container.innerHTML = '';
+
     modal.classList.add('open');
+
+    function fitTrace() {
+        if (!traceFitAddon) return;
+        try { traceFitAddon.fit(); } catch (e) {}
+    }
+    function fitTraceSoon() {
+        requestAnimationFrame(function() { requestAnimationFrame(fitTrace); });
+    }
 
     /* Create xterm.js terminal */
     traceTerm = new Terminal({
@@ -310,18 +321,21 @@ function openTrace(appId, appName, unit) {
         },
         disableStdin: true,
         scrollback: 5000,
+        convertEol: true,
         allowProposedApi: true,
     });
     traceFitAddon = new FitAddon.FitAddon();
     traceTerm.loadAddon(traceFitAddon);
     traceTerm.open(container);
-    traceFitAddon.fit();
+    fitTraceSoon();
 
-    /* Refit when container becomes visible */
+    /* Refit berlapis begitu modal tampil / selesai transisi */
     modalBox.addEventListener('transitionend', function handler() {
         modalBox.removeEventListener('transitionend', handler);
-        traceFitAddon.fit();
+        fitTraceSoon();
     });
+    setTimeout(fitTraceSoon, 60);
+    setTimeout(fitTraceSoon, 250);
 
     /* Connect WebSocket for live logs */
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -345,7 +359,10 @@ function openTrace(appId, appName, unit) {
     };
 
     /* Fit terminal on window resize */
-    window._traceResizeHandler = function() { if (traceFitAddon) traceFitAddon.fit(); };
+    window._traceResizeHandler = function() {
+        if (!traceFitAddon) return;
+        try { traceFitAddon.fit(); } catch(e) {}
+    };
     window.addEventListener('resize', window._traceResizeHandler);
 }
 

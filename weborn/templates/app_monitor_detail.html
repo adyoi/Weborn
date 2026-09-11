@@ -155,11 +155,16 @@
         },
         disableStdin: true,
         scrollback: 5000,
+        convertEol: true,
     });
     var fitAddon = new FitAddon.FitAddon();
     term.loadAddon(fitAddon);
     term.open(document.getElementById('trace-terminal'));
-    fitAddon.fit();
+    function fitTerm() {
+        try { fitAddon.fit(); } catch(e) {}
+    }
+    fitTerm();
+    requestAnimationFrame(function() { requestAnimationFrame(fitTerm); });
 
     var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     var ws = new WebSocket(proto + '//' + location.host + '/ws/apps/{{ app.id }}/logs');
@@ -180,7 +185,7 @@
         statusEl.textContent = 'Error koneksi';
     };
 
-    window.addEventListener('resize', function() { fitAddon.fit(); });
+    window.addEventListener('resize', function() { try { fitAddon.fit(); } catch(e) {} });
 
     /* Expose clear for the Clear button */
     window.clearTrace = function() { term.clear(); };

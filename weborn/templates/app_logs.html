@@ -34,18 +34,22 @@
         },
         disableStdin: true,
         scrollback: 5000,
+        convertEol: true,
     });
     var fitAddon = new FitAddon.FitAddon();
     term.loadAddon(fitAddon);
     term.open(document.getElementById('logterm'));
-    fitAddon.fit();
+    try { fitAddon.fit(); } catch(e) {}
+    requestAnimationFrame(function() {
+        requestAnimationFrame(function() { try { fitAddon.fit(); } catch(e) {} });
+    });
 
     var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     var ws = new WebSocket(proto + '//' + location.host + '/ws/apps/{{ app.id }}/logs');
     ws.onmessage = function(e) { term.write(e.data); term.scrollToBottom(); };
     ws.onclose = function() { term.write('\r\n\033[1;33m[Log stream berhenti]\033[0m'); };
     ws.onerror = function() { term.write('\r\n\033[1;31m[Error koneksi]\033[0m'); };
-    window.addEventListener('resize', function() { fitAddon.fit(); });
+    window.addEventListener('resize', function() { try { fitAddon.fit(); } catch(e) {} });
 })();
 </script>
 {% endblock %}

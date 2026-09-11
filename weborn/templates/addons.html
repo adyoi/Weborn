@@ -24,13 +24,46 @@
         <span><span class="st failed text-[13px]">failed</span> = Error (check logs)</span>
         <span><span class="st inactive text-[13px]">unknown</span> = Runtime tanpa systemd (normal)</span>
         <span><span class="st failed text-[13px]">not installed</span> = Belum terpasang</span>
-        <span><span class="badge info">⚡ inti Weborn</span> = Aplikasi default Weborn (tidak bisa di-uninstall)</span>
+        <span><span class="badge info">⚡ Weborn Core</span> = Komponen inti Weborn (tidak bisa di-uninstall)</span>
    </div>
 </div>
 
+{# ── Featured: Weborn Core ── #}
+{% for a in addons if a.core %}
+{% set st = statuses[a.id] %}
+<div class="card mb-3" style="border:1px solid color-mix(in srgb, var(--accent-2) 45%, transparent); box-shadow:0 0 26px color-mix(in srgb, var(--accent-2) 22%, transparent); background:linear-gradient(135deg, color-mix(in srgb, var(--accent-2) 10%, transparent), transparent 55%), var(--bg-1);">
+    <div class="flex items-center justify-between gap-4 flex-wrap">
+        <div class="flex items-center gap-3">
+            <div class="shrink-0" style="width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;background:color-mix(in srgb, var(--accent-2) 16%, transparent);">{{ a.icon }}</div>
+            <div>
+                <div class="flex flex-wrap items-center" style="gap:6px;">
+                    <span class="text-[14px] font-bold">{{ a.name }}</span>
+                    <span class="badge info" style="padding:2px 8px;font-size:10px;">{{ icon('bolt', 'w-4 h-4') }} Weborn Core</span>
+                    <span class="st active">running</span>
+                </div>
+                <p class="text-t2 text-[13px] leading-[1.5] mt-1" style="max-width:640px;">{{ a.description }}</p>
+                <div class="text-[13px] text-t3 mt-1 flex flex-wrap" style="gap:12px;">
+                    <span>{{ a.category }} • {{ a.type }}</span>
+                    {% if a.ports %}<span class="mono">:{{ a.ports|join('/:') }}</span>{% endif %}
+                    {% if st.installed and st.version and st.version != '—' %}<span class="mono">{{ st.version[:24] }}</span>{% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="flex flex-col" style="gap:4px; align-items:flex-end;">
+            <a class="btn sm primary" href="/">{{ icon('computer-desktop', 'w-5 h-5') }} Buka Panel</a>
+            <a class="btn sm" href="/apps/monitor">{{ icon('eye', 'w-5 h-5') }} Apps Monitor</a>
+            <a class="btn sm" href="/addons/{{ a.id }}">{{ icon('cog-6-tooth', 'w-5 h-5') }} Kelola</a>
+        </div>
+    </div>
+    <div class="text-t3 text-[12px] mt-4 pt-2 flex flex-wrap border-t border-line" style="gap:10px;">
+        <span class="flex items-center" style="gap:4px;">{{ icon('lock-closed', 'w-4 h-4') }} Komponen inti — selalu tersedia, tidak dapat di-uninstall</span>
+    </div>
+</div>
+{% endfor %}
+
 {# ── Addon Grid ── #}
 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-    {% for a in addons %}
+    {% for a in addons if not a.core %}
     {% set st = statuses[a.id] %}
     <div class="card">
         <div class="flex justify-between items-start">
@@ -44,7 +77,7 @@
             {% endif %}
        </div>
         <h3 class="text-[13px] font-bold mt-1.5 flex items-center gap-1.5">{{ a.name }}
-            {% if a.core %}<span class="badge info !py-0 !text-[10px]">{{ icon('bolt', 'w-3 h-3') }} inti Weborn<span class="hidden sm:inline"> (default weborn)</span></span>{% endif %}
+            {% if a.core %}<span class="badge info !py-0 !text-[10px]">{{ icon('bolt', 'w-3 h-3') }} Weborn Core</span>{% endif %}
         </h3>
         <p class="text-t2 text-[13px] leading-[1.5] mb-1.5">{{ a.description }}</p>
         <div class="text-[14px] text-t3 mb-2">
