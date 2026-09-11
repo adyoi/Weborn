@@ -151,6 +151,7 @@ Jika user dikonfigurasi `session_timeout > 0`, session yang tidak aktif otomatis
 | POST | `/email/dns/record` | `domain, record_type, name, value, ttl` | Tambah DNS record |
 | POST | `/email/dns/record/edit` | `record_id, domain, record_type, name, value, ttl` | Ubah DNS record |
 | POST | `/email/dns/record/delete` | `record_id, domain` | Hapus DNS record |
+| GET | `/email/accounts/webmail/{username}?domain=` | — | Auto-login ke Roundcube mailbox (respon berisi `Set-Cookie` sesi `roundcube_sessid` + `roundcube_sessauth` lalu redirect ke webmail) |
 | GET | `/email/webmail` · `/email/webmail/install` | — | Roundcube webmail |
 | GET | `/email/security` | — | Mail Security (Rspamd·OpenDKIM·ClamAV) |
 | POST | `/email/security/install` | — | Install stack anti-spam/DKIM |

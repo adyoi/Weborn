@@ -68,7 +68,7 @@ Jangan commit sebelum 3 langkah di atas lolos. Ikuti pola commit repo: pesan sin
 ## Checklist Sebelum "Selesai"
 
 - [ ] `py_compile` semua file Python yang disentuh.
-- [ ] Unit test 52/52 hijau (deploy dulu via `update.sh`).
+- [ ] Unit test 55/55 hijau (deploy dulu via `update.sh`).
 - [ ] Smoke live: login + GET utama 200 + POST CSRF bukan 403 + WS `/ws/term` echo.
 - [ ] `git status` bersih dari artefak; tanpa secret.
 - [ ] Bila fitur/dokumen berubah, refresh README/CHANGELOG/doc terkait.
@@ -81,4 +81,6 @@ Jangan commit sebelum 3 langkah di atas lolos. Ikuti pola commit repo: pesan sin
 - Mail stack (email.py) live-tested: kirim/terima via 25/587/465, DKIM sign + crypto-verify (dkimpy True), Rspamd milter scan aktif, virtual mailboxes multi-domain + kuota + autoresponder + catch-all, DNS records MX/A/SPF/DMARC/DKIM-TXT tampil di panel.
 - **SpamAssassin dihapus** dari overview & Mail Security — Rspamd anti-spam tunggal (addon store `spamassassin.json` tetap ada).
 - Dokumentasi (README, DEVELOPMENT §11, API Panel Mail, WORKFLOW email = menu final, CHANGELOG, AGENTS) diperbarui menyusul fitur email.
-- Belum dieksekusi (opsional): screenshot panel per halaman mail via CDP; dan item lama instalasi `D:\localhost\pyth-webapps` (FastAPI/PostgreSQL:8080).
+- **Mailbox auto-login webmail selesai & settle**: `/email/accounts/webmail/{user}` melakukan login Roundcube server-side (password Fernet tersimpan), mengembalikan `roundcube_sessid` + `roundcube_sessauth` sebagai `Set-Cookie` (HttpOnly, SameSite=Lax, Secure bila HTTPS), redirect ke `/roundcube/` — E2E browser teruji (masuk `?_task=mail&_mbox=INBOX`, tanpa form login). Unit `test/test_webmail.py` (HTTP server lokal, tanpa deps) — 55/55 test (bertambah 3).
+- Screenshot README kini 4 halaman mail via CDP (`assets/weborn-shots/mail_*.png`; kunci: chromium headless + CDP, mint JWT `weborn.auth.encode_jwt`, set cookie via `Network.setCookie`, screenshot `Page.captureScreenshot`).
+- Belum dieksekusi (opsional): item lama instalasi `D:\localhost\pyth-webapps` (FastAPI/PostgreSQL:8080).

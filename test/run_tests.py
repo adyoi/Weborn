@@ -55,12 +55,15 @@ print("\n[DryRunExecutor]")
 run_test(TestDryRunExecutor)
 
 from test_apps_security import TestConfigPathWhitelist, TestResolveConfigPath, TestWorkerClasses
+from test_webmail import TestRoundcubeAutoLogin
 print("\n[ConfigPathWhitelist]")
 run_test(TestConfigPathWhitelist)
 print("\n[ResolveConfigPath]")
 run_test(TestResolveConfigPath)
 print("\n[WorkerClasses]")
 run_test(TestWorkerClasses)
+print("\n[RoundcubeAutoLogin]")
+run_test(TestRoundcubeAutoLogin)
 
 print("\n" + "=" * 60)
 print(f"Results: {passed} passed, {failed} failed, {passed + failed} total")

@@ -87,6 +87,7 @@ WEBORN_PASS=yourpassword sudo -E .venv/bin/python test/test_apps_integration.py
 #### Webmail (`/email/webmail`)
 - Install & manage Roundcube webmail
 - Status detection via `/var/lib/roundcube` directory check
+- Auto-login mailbox: tombol ✉ di Mail Account (`GET /email/accounts/webmail/{username}?domain=`) → login roundcube server-side pakai password tersimpan (Fernet) → `Set-Cookie` `roundcube_sessid` + `roundcube_sessauth` (HttpOnly, SameSite=Lax) → redirect ke `/roundcube/`
 
 #### Mail List (`/email/lists`)
 - Mailing list dari mailbox yang ada (anggota CSV) → virtual map Postfix

@@ -1205,13 +1205,17 @@ async def email_list_delete(source: str = Form(...),
                             status_code=303)
 
 
-def _roundcube_autologin(email: str, password: str) -> str | None:
-    """Login ke Roundcube server-side (biarkan sesi aktif di browser).
+def _roundcube_autologin(email: str, password: str,
+                         base: str = "http://127.0.0.1/roundcube") -> dict[str, str]:
+    """Login ke Roundcube server-side dan kembalikan SEMUA cookie sesi.
 
-    Mengembalikan nilai cookie `roundcube_sessid` siap disuntikkan ke browser,
-    atau None bila gagal.
+    Roundcube 1.6+ menerbitkan dua cookie penanda sesi:
+    `roundcube_sessid` (PHP session) dan `roundcube_sessauth`
+    (anti session-hijacking). Keduanya wajib dipasang di browser agar
+    sesi dianggap sah; mengembalikan dict nama->nilai, atau {} bila gagal.
+    `base` bisa diganti untuk test/instalasi non-standar.
     """
-    base = "http://127.0.0.1/roundcube"
+    base = base.rstrip("/")
     jar = http.cookiejar.CookieJar()
     opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
     try:
@@ -1220,8 +1224,8 @@ def _roundcube_autologin(email: str, password: str) -> str | None:
             html = resp.read().decode("utf-8", "replace")
         m = re.search(r'name="_token"\s+value="([^"]+)"', html)
         if not m:
-            return None
-        token = m.group(1)
+            return {}
+        token = m.group(1).replace("&amp;", "&")
 
         # 2) POST kredensial.
         data = urllib.parse.urlencode({
@@ -1235,16 +1239,17 @@ def _roundcube_autologin(email: str, password: str) -> str | None:
             "_pass": password,
         }).encode()
         req = urllib.request.Request(base + "/?_task=login", data=data)
-        with opener.open(req, timeout=20) as resp:
+        with opener.open(req, timeout=25) as resp:
             resp.read()
 
-        # 3) Ambil cookie sesi final.
+        # 3) Kumpulkan semua cookie penanda sesi dari cookie jar.
+        cookies: dict[str, str] = {}
         for c in jar:
-            if c.name == "roundcube_sessid" and c.value:
-                return c.value
+            if c.name.startswith("roundcube_sess"):
+                cookies[c.name] = c.value
+        return cookies
     except Exception:
-        return None
-    return None
+        return {}
 
 
 @router.get("/email/accounts/webmail/{username}")
@@ -1259,20 +1264,25 @@ async def email_account_webmail(username: str, request: Request,
         return HTMLResponse("<div style='font-family:system-ui;padding:2rem'>"
                             "Password mailbox tidak tersimpan — set password dahulu.</div>",
                             status_code=400)
-    sid = _roundcube_autologin(email, password)
-    if not sid:
+    cookies = _roundcube_autologin(email, password)
+    if not cookies or "roundcube_sessid" not in cookies:
         return HTMLResponse("<div style='font-family:system-ui;padding:2rem'>"
                             "Auto-login ke Roundcube gagal. Cek layanan mail server.</div>",
                             status_code=502)
-    # Set cookie di host ini (browser cookie berbasis host, port bebas),
-    # lalu buka Roundcube di port 80 (nginx proxy).
-    script = f"""<!DOCTYPE html><html><body>
-<script>
-document.cookie = "roundcube_sessid={sid}; path=/; HttpOnly";
-window.location.replace("http://" + window.location.hostname + "/roundcube/");
-</script>
-</body></html>"""
-    return HTMLResponse(script)
+    # Pasang cookie sesi Roundcube via Set-Cookie (HttpOnly + SameSite=Lax)
+    # sehingga browser memakainya saat dialihkan ke webmail di host yang sama
+    # (cookie berbasis host, port bebas). Skema & host diambil dari request panel.
+    secure = request.url.scheme == "https"
+    scheme = request.url.scheme
+    host = request.url.hostname
+    resp = HTMLResponse(
+        f"<!DOCTYPE html><html><body><script>\n"
+        f"window.location.replace(\"{scheme}://{host}/roundcube/\");\n"
+        f"</script></body></html>")
+    for name, value in cookies.items():
+        resp.set_cookie(name, value, path="/", secure=secure,
+                        httponly=True, samesite="lax")
+    return resp
 
 
 # ────────────────────────────────── DNS Records ────────────────────────────────
