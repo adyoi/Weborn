@@ -11,7 +11,7 @@
 {% endif %}
 
 {% if domains %}
-<div class="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] items-start gap-4">
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] items-start gap-4">
         <div class="flex flex-col gap-4">
             <div class="card" id="dns-add-card">
                 <h3 class="text-sm mb-3 font-bold">{{ icon('plus', 'w-5 h-5') }} <span id="dns-add-title">Tambah DNS Record</span></h3>
@@ -110,29 +110,28 @@
         <div class="px-4 py-3 border-b border-line flex items-center gap-3">
             <span class="text-sm font-bold">{{ icon('signal', 'w-5 h-5') }} Current DNS Records</span>
         </div>
+        <div class="overflow-x-auto">
         <table>
-            <thead><tr><th>Type</th><th>Name</th><th>Value</th><th>TTL</th><th></th></tr></thead>
+            <thead><tr><th>Type</th><th>Name</th><th>Value</th><th>TTL</th><th class="text-right">Aksi</th></tr></thead>
             <tbody>
             {% for r in dns_records %}
             <tr>
                 <td><span class="badge">{{ r.type }}</span></td>
                 <td class="mono text-[14px]">{{ r.name }}</td>
-                <td class="mono text-[13px] max-w-[140px] truncate" title="{{ r.value }}">{{ r.value[:20] }}{% if r.value|length > 20 %}…{% endif %} </td>
+                <td class="mono text-[13px] max-w-[140px] truncate" title="{{ r.value }}">{{ r.value[:20] }}{% if r.value|length > 20 %}…{% endif %}</td>
                 <td class="text-[13px]">{{ r.ttl }}</td>
-                <td class="text-right">
+                <td class="whitespace-nowrap">
                     <div class="flex gap-1 justify-end items-center">
-                    <button type="button" class="btn sm !py-0.5 !px-2 text-[13px] dns-edit-btn"
-                            data-edit-id="{{ r.id }}"
-                            data-edit-type="{{ r.type }}"
-                            data-edit-name="{{ r.name }}"
-                            data-edit-value="{{ r.value }}"
-                            data-edit-ttl="{{ r.ttl }}"
-                            title="Edit record">{{ icon('pencil', 'w-5 h-5') }}</button>
-                    <form method="post" action="/email/dns/record/delete" style="display:inline">
-                        <input type="hidden" name="record_id" value="{{ r.id }}">
-                        <input type="hidden" name="domain" value="{{ selected_domain }}">
-                        <button class="btn danger !py-0.5 !px-2 text-[13px]">{{ icon('trash', 'w-5 h-5') }} ️</button>
-                    </form>
+                        <button type="button" class="btn sm !py-0.5 !px-2 text-[13px] dns-edit-btn"
+                                data-edit-id="{{ r.id }}"
+                                data-edit-type="{{ r.type }}"
+                                data-edit-name="{{ r.name }}"
+                                data-edit-value="{{ r.value }}"
+                                data-edit-ttl="{{ r.ttl }}"
+                                title="Edit record">{{ icon('pencil', 'w-5 h-5') }}</button>
+                        <button type="button" class="btn danger sm !py-0.5 !px-2 text-[13px] dns-del-btn"
+                                data-del-id="{{ r.id }}" data-del-domain="{{ selected_domain }}"
+                                title="Hapus record">{{ icon('trash', 'w-5 h-5') }}</button>
                     </div>
                 </td>
             </tr>
@@ -141,6 +140,7 @@
             {% endfor %}
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 {% endif %}
@@ -181,5 +181,19 @@ document.querySelectorAll('.dns-edit-btn').forEach(btn => {
   });
 });
 dnsCancel.addEventListener('click', dnsReset);
+document.querySelectorAll('.dns-del-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (!confirm('Hapus DNS record ini?')) return;
+    const body = new FormData();
+    body.set('record_id', btn.dataset.delId);
+    body.set('domain', btn.dataset.delDomain);
+    fetch('/email/dns/record/delete', {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': document.getElementById('weborn-csrf').value },
+      body
+    }).then(r => { if (r.ok || r.redirected) window.location.reload(); })
+      .catch(() => window.location.reload());
+  });
+});
 </script>
 {% endblock %}
