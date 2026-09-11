@@ -6,8 +6,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.responses import JSONResponse
 
 from ..auth import require_admin, require_user
-from ..config import FRAMEWORKS, RUNTIMES
-from ..db import get_app, get_app_by_port, set_app_status
+from ..config import APP_TYPES_IN_GROUP, APP_TYPE_GROUPS, FRAMEWORKS, RUNTIMES
+from ..db import get_app, get_app_by_port, get_conn, set_app_status
 from ..executors import get_executor
 from ..managers.apps import AppManager
 from ..ui import render
@@ -22,14 +22,20 @@ async def apps_page(request: Request, user: dict = Depends(require_user),
         return user
     manager = AppManager(get_executor())
     apps = manager.list()
-    # Filter by type (wsgi, asgi, flask, django, fastapi, etc.)
+    # Filter by group (wsgi, asgi, js, php) atau app_type legacy (nodejs, laravel, …)
     if type:
-        apps = [a for a in apps if a.get("app_type") == type]
+        allowed = APP_TYPES_IN_GROUP.get(type) or {type}
+        apps = [a for a in apps if a.get("app_type") in allowed]
+    with get_conn() as conn:
+        domains = [r["name"] for r in conn.execute(
+            "SELECT name FROM domains WHERE kind = 'domain' AND enabled = 1 ORDER BY name")]
     return render(request, "apps.html", {
         "user": user,
         "apps": apps,
+        "domains": domains,
         "runtimes": RUNTIMES,
         "frameworks": FRAMEWORKS,
+        "app_type_groups": APP_TYPE_GROUPS,
         "active": "apps",
         "app_type_filter": type,
     })
@@ -279,6 +285,14 @@ async def apps_edit_page(request: Request, app_id: int,
     run_host, run_port = _AM.parse_bind(app.get("command", ""))
     app["link_host"] = run_host if run_host and run_host not in ("0.0.0.0", "::") else "localhost"
     app["link_port"] = run_port if run_port else (app.get("port") or 8000)
+    # Serve-only: dikontrol murni oleh Nginx (PHP-FPM / static) → unit systemd opsional.
+    serve_only = app_type in ("php", "laravel", "static") or pm == "php-fpm"
+    unit_exists = False
+    ex = get_executor()
+    if ex.mode in ("local", "wsl"):
+        r = await ex.run("bash", "-c",
+                         f"test -f /etc/systemd/system/{app['unit']} && echo Y || echo N")
+        unit_exists = (r.stdout.strip() == "Y")
     return render(request, "app_edit.html", {
         "user": user,
         "app": app,
@@ -286,6 +300,8 @@ async def apps_edit_page(request: Request, app_id: int,
         "process_manager": pm,
         "app_type": app_type,
         "process_config": process_config,
+        "serve_only": serve_only,
+        "unit_exists": unit_exists,
         "active": "apps",
     })
 
@@ -293,29 +309,90 @@ async def apps_edit_page(request: Request, app_id: int,
 @router.post("/apps/{app_id}/edit")
 async def apps_edit(request: Request, app_id: int,
                     command: str = Form(...),
+                    os_user: str = Form(""),
+                    port: str = Form(""),
+                    dir_path: str = Form(""),
+                    systemd_enabled: str = Form(""),
                     user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
         return user
+    import re
     app = get_app(app_id)
     if not app:
         return RedirectResponse("/apps?msg=App%20tidak%20ditemukan", status_code=303)
-    # Cek port ACTUAL dari command baru sebelum menyimpan perubahan.
-    # Bila port berubah dan masih dipakai (app lain / proses live) → tolak.
-    new_port = None
-    _h, _p = AppManager.parse_bind(command)
-    if _p and _p != app.get("port"):
-        if get_app_by_port(_p):
-            return JSONResponse({"ok": False, "error": f"port {_p} sudah dipakai app lain"}, status_code=400)
-        ex = get_executor()
-        if await AppManager(ex)._port_busy(_p):
-            return JSONResponse({"ok": False, "error": f"port {_p} sedang dipakai proses lain"}, status_code=400)
-        new_port = _p
+    from ..managers.apps import _app_type_for, _detect_pm
+    stored = app.get("app_type", "")
+    app_type = stored if stored else _app_type_for(app["language"], app.get("framework", ""))
+    pm = _detect_pm(app.get("command", ""))
+    serve_only = app_type in ("php", "laravel", "static") or pm == "php-fpm"
+    ex = get_executor()
+
+    # ── Port (eksplisit dari form, atau hasil parse-bind command baru) ──
+    explicit_port = None
+    if (port or "").strip():
+        try:
+            explicit_port = int(port.strip())
+        except ValueError:
+            return JSONResponse({"ok": False, "error": "port harus berupa angka"}, status_code=400)
+        if not 0 < explicit_port < 65536:
+            return JSONResponse({"ok": False, "error": "port di luar rentang 1 s/d 65535"}, status_code=400)
+    new_cmd = command.strip() or app.get("command", "")
+    _h, bind_p = AppManager.parse_bind(new_cmd)
+    target = explicit_port if explicit_port is not None else (bind_p if bind_p else None)
+    if not target:
+        target = app.get("port") or 8000
+    if target != app.get("port"):
+        if get_app_by_port(target):
+            return JSONResponse({"ok": False, "error": f"port {target} sudah dipakai app lain"}, status_code=400)
+        if await AppManager(ex)._port_busy(target):
+            return JSONResponse({"ok": False, "error": f"port {target} sedang dipakai proses lain"}, status_code=400)
+
+    # ── User OS (www-data atau user app) ──
+    new_user = (os_user or "").strip()
+    if new_user and not re.fullmatch(r"[a-z][a-z0-9_-]*", new_user):
+        return JSONResponse({"ok": False, "error": "User OS tidak valid"}, status_code=400)
+
+    # ── Direktori ──
+    new_home = (dir_path or "").strip()
+    if new_home and (not new_home.startswith("/") or ".." in new_home):
+        return JSONResponse({"ok": False, "error": "direktori harus path absolut tanpa '..'"}, status_code=400)
+    home = (new_home or app["home_dir"]).rstrip("/")
+
+    want_unit = systemd_enabled == "on"
+    # Serve-only (PHP/static): unit opsional. Sudah ada + tidak disimpan aktif → unit dihapus.
+    unit_applies = (not serve_only) or want_unit
+    exec_cmd = new_cmd if not serve_only else None
+
+    if ex.mode in ("local", "wsl"):
+        steps = []
+        q = shlex.quote
+        if new_home and home != app["home_dir"]:
+            steps.append(("mkdir", f"sudo mkdir -p {q(home)}"))
+        if new_user and new_user != app["user"]:
+            steps.append(("chown", f"sudo chown -R {q(new_user)}:{q(new_user)} {q(home)}"))
+        steps.insert(0, ("env", AppManager._write_env(home, target, app_type, app["name"],
+                                                      venv_dir=app.get("venv_dir", ""))))
+        if unit_applies:
+            steps.append(("unit", AppManager._write_unit(app["unit"], new_user or app["user"],
+                                                         home, exec_cmd, app_type,
+                                                         venv_dir=app.get("venv_dir", ""))))
+        else:
+            steps.append(("unit-off", f"sudo systemctl disable --quiet {q(app['unit'])} 2>/dev/null; "
+                                      f"sudo rm -f /etc/systemd/system/{q(app['unit'])}"))
+        steps.append(("reload", "sudo systemctl daemon-reload"))
+        if unit_applies:
+            steps.append(("enable", f"sudo systemctl enable --quiet {q(app['unit'])}"))
+            steps.append(("restart", f"sudo systemctl restart {q(app['unit'])}"))
+        for label, cmd in steps:
+            r = await ex.run("bash", "-c", cmd)
+            if ex.mode in ("local", "wsl") and not r.ok:
+                return JSONResponse({"ok": False, "error": f"{label}: {r.stderr or 'gagal'}"}, status_code=400)
+
     from ..db import get_conn
     with get_conn() as conn:
-        if new_port:
-            conn.execute("UPDATE apps SET command = ?, port = ? WHERE id = ?", (command, new_port, app_id))
-        else:
-            conn.execute("UPDATE apps SET command = ? WHERE id = ?", (command, app_id))
+        conn.execute(
+            "UPDATE apps SET command = ?, port = ?, user = ?, home_dir = ? WHERE id = ?",
+            (new_cmd, target, new_user or app["user"], home, app_id))
         conn.commit()
     return RedirectResponse("/apps?msg=App%20diperbarui", status_code=303)
 
@@ -325,6 +402,7 @@ async def apps_create(name: str = Form(...), language: str = Form(...),
                       framework: str = Form(""), port: str = Form("0"),
                       webserver: str = Form("nginx"),
                       webserver_port: str = Form(""),
+                      domain: str = Form(""),
                       venv: str = Form("inside"),
                       user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
@@ -346,7 +424,7 @@ async def apps_create(name: str = Form(...), language: str = Form(...),
     ws_port = int(webserver_port) if webserver_port and webserver_port.isdigit() else 0
     ex = get_executor()
     if ex.mode in ("local", "wsl"):
-        slug = name.strip().lower().replace(" ", "-")[:63]
+        slug = (domain.strip().lower() or name.strip().lower().replace(" ", "-")[:63])
         home = result.get("home_dir", f"/var/www/{slug}")
         upstream = f"http://127.0.0.1:{result.get('port', 8000)}"
         if webserver == "apache":
@@ -377,10 +455,11 @@ async def apps_create(name: str = Form(...), language: str = Form(...),
 @router.post("/apps/create-native")
 async def apps_create_native(name: str = Form(...), app_type: str = Form("wsgi"),
                               launcher: str = Form("gunicorn"), module_app: str = Form("main:app"),
-                              workers: str = Form("4"), host: str = Form("0.0.0.0"),
+                              workers: str = Form("2"), host: str = Form("0.0.0.0"),
                               port: str = Form("8000"), dir_path: str = Form(""),
                               webserver: str = Form("nginx"),
                               webserver_port: str = Form(""),
+                              domain: str = Form(""),
                               venv: str = Form("inside"),
                               user: dict = Depends(require_admin)):
     if hasattr(user, "headers"):
@@ -390,9 +469,9 @@ async def apps_create_native(name: str = Form(...), app_type: str = Form("wsgi")
     except ValueError:
         return JSONResponse({"ok": False, "error": "port harus angka"}, status_code=400)
     try:
-        workers_int = int((workers or "4").strip())
+        workers_int = int((workers or "2").strip())
     except ValueError:
-        workers_int = 4
+        workers_int = 2
 
     # Build command from user selections
     import re as _re
@@ -426,7 +505,7 @@ async def apps_create_native(name: str = Form(...), app_type: str = Form("wsgi")
     ex = get_executor()
     ws_port = int(webserver_port) if webserver_port and webserver_port.isdigit() else 0
     if ex.mode in ("local", "wsl"):
-        slug = name.strip().lower().replace(" ", "-")[:63]
+        slug = (domain.strip().lower() or name.strip().lower().replace(" ", "-")[:63])
         home = result.get("home_dir", dir_path.strip() or f"/var/www/{slug}")
         upstream = f"http://127.0.0.1:{port_int}"
         if webserver == "apache":

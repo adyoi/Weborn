@@ -9,32 +9,80 @@
     <div class="space-y-4">
         <div class="card">
             <h3 class="text-sm mb-3.5">{{ icon('cog-6-tooth', 'w-5 h-5') }} Pengaturan Aplikasi</h3>
-            <form method="post" action="/apps/{{ app.id }}/edit">
+<form method="post" action="/apps/{{ app.id }}/edit">
                 <div class="field">
                     <label>Nama</label>
                     <input value="{{ app.name }}" disabled>
                </div>
-                <div class="field">
-                    <label>Bahasa</label>
-                    <input value="{{ runtimes.get(app.language, {}).get('label', app.language) }}" disabled>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="field">
+                        <label>Bahasa</label>
+                        <input value="{{ runtimes.get(app.language, {}).get('label', app.language) }}" disabled>
+                   </div>
+                    <div class="field">
+                        <label>Framework</label>
+                        <input value="{{ app.framework or '—' }}" disabled>
+                   </div>
                </div>
-                <div class="field">
-                    <label>Framework</label>
-                    <input value="{{ app.framework or '—' }}" disabled>
-               </div>
-                <div class="field">
-                    <label>Port</label>
-                    <input value="{{ app.port }}" disabled>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="field">
+                        <label>Port</label>
+                        <input name="port" type="number" min="1" max="65535" value="{{ app.port }}">
+                        <div class="text-t3 text-[11px]">Dipakai via PORT di <span class="mono">.env</span>. Dicek otomatis bila berubah (port-busy ditolak).</div>
+                   </div>
+                    <div class="field col-span-2">
+                        <label>User OS</label>
+                        <select name="os_user" class="sm">
+                            {% if app.user != 'www-data' %}
+                            <option value="{{ app.user }}" selected>{{ app.user }} (dedicated)</option>
+                            {% endif %}
+                            <option value="www-data" {{ 'selected' if app.user == 'www-data' }}>www-data (nginx/php-fpm)</option>
+                       </select>
+                        <div class="text-t3 text-[11px]">
+                            {% if app.user == 'www-data' %}
+                            Berjalan sebagai <b>www-data</b> — user yang sama dengan nginx/php-fpm.
+                            {% else %}
+                            User dedicated <b>{{ app.user }}</b> untuk isolasi proses. Pilih <b>www-data</b> bila app perlu mengakses file yang sama dengan nginx/php-fpm.
+                            {% endif %}
+                       </div>
+                   </div>
                </div>
                 <div class="field">
                     <label>Perintah Start</label>
-                    <input name="command" value="{{ app.command }}">
+                    <input name="command" value="{{ app.command }}" class="mono"
+                           {% if serve_only %}placeholder="— dilayani Nginx (PHP-FPM/static) —"{% endif %}>
+                    <div class="text-t3 text-[11px] mt-1">
+                        {% if serve_only %}
+                        <b>Dilayani Nginx langsung</b> — PHP-FPM / file static. Perintah di atas hanyalah label; systemd (jika aktif) hanya penjaga izin.
+                        {% else %}
+                        Fungsi: perintah yang dijalankan <b>systemd</b> (<span class="mono">ExecStart</span>) atas nama User OS, dari direktori aplikasi, dengan env dari <span class="mono">.env</span>.
+                        Contoh: <span class="mono">gunicorn -w 2 app:app</span>, <span class="mono">uvicorn app:app --host 0.0.0.0 --port 8000</span>, <span class="mono">node server.js</span>, <span class="mono">bun run main.ts</span>.
+                        Bila crash, systemd restart otomatis (Restart=on-failure, jeda 5 dtk).
+                        {% endif %}
+                   </div>
                </div>
+                <div class="field">
+                    <label>Direktori</label>
+                    <input name="dir_path" value="{{ app.home_dir }}" class="mono">
+                    <div class="text-t3 text-[11px]">WorkingDirectory + EnvironmentFile systemd. Dibuat otomatis bila belum ada; kepemilikan disesuaikan ke User OS.</div>
+               </div>
+                {% if serve_only %}
+                <div class="field">
+                    <label class="flex items-center gap-2 text-[13px] cursor-pointer">
+                        <input type="checkbox" name="systemd_enabled" {{ 'checked' if unit_exists }}>
+                        Aktifkan unit systemd ({{ app.unit }})
+                   </label>
+                    <div class="text-t3 text-[11px]">
+                        Tidak semua aplikasi butuh unit systemd. App PHP/static dilayani langsung oleh Nginx — unit hanya penanda
+                        <span class="mono">ExecStart=/bin/true</span>. Matikan kotak ini untuk menghapus unit dari systemd.
+                   </div>
+               </div>
+                {% endif %}
                 <div class="flex gap-2 mt-3">
                     <button type="submit" class="btn primary">{{ icon('arrow-down-tray', 'w-5 h-5') }} Simpan</button>
                     <a href="/apps" class="btn">← Batal</a>
                </div>
-           </form>
+            </form>
        </div>
 
         {# ── Quick Actions ── #}
@@ -55,9 +103,17 @@
         <div class="card">
             <h3 class="text-sm mb-3.5">{{ icon('information-circle', 'w-5 h-5') }} Info Aplikasi</h3>
             <table class="text-[13px]">
-                <tr><td class="text-t3 pr-3 py-1">User OS</td><td class="mono">{{ app.user }}</td></tr>
-                <tr><td class="text-t3 pr-3 py-1">Direktori</td><td class="mono text-[13px]">{{ app.home_dir }}</td></tr>
-                <tr><td class="text-t3 pr-3 py-1">Unit Systemd</td><td class="mono text-[13px]">{{ app.unit }}</td></tr>
+                <tr><td class="text-t3 pr-3 py-1">User OS</td><td class="mono">{{ app.user }} <span class="text-t3 text-[11px]">(edit di form kiri)</span></td></tr>
+                <tr><td class="text-t3 pr-3 py-1">Direktori</td><td class="mono text-[13px]">{{ app.home_dir }} <span class="text-t3 text-[11px]">(edit di form kiri)</span></td></tr>
+                <tr><td class="text-t3 pr-3 py-1">Port</td><td class="mono text-[13px]">{{ app.port }} <span class="text-t3 text-[11px]">(edit di form kiri)</span></td></tr>
+                <tr><td class="text-t3 pr-3 py-1">Unit Systemd</td>
+                    <td>
+                        <span class="mono text-[13px]">{{ app.unit }}</span>
+                        {% if serve_only %}
+                            {% if unit_exists %}<span class="badge info">{{ icon('check', 'w-5 h-5') }} OPTIONAL (stub)</span>
+                            {% else %}<span class="badge warn">{{ icon('x-mark', 'w-5 h-5') }} NONAKTIF</span>{% endif %}
+                        {% else %}<span class="badge info">DIBUTUHKAN</span>{% endif %}
+                    </td></tr>
                 <tr><td class="text-t3 pr-3 py-1">Link</td>
                     <td class="mono text-[13px]"><a href="http://{{ app.link_host }}:{{ app.link_port }}" target="_blank" class="text-accent hover:underline">http://{{ app.link_host }}:{{ app.link_port }}</a></td></tr>
                 <tr><td class="text-t3 pr-3 py-1">Status</td>
