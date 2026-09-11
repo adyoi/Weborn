@@ -21,7 +21,7 @@ All notable changes to Weborn will be documented in this file.
 - **DKIM TXT otomatis**: publikasi `weborn._domainkey.<domain>` TXT ke `dns_records` saat setup; nilai tampil di "DNS Records yang Dibutuhkan" & current records
 - **SpamAssassin dihapus** dari overview (`email.html`) dan Mail Security (`email_security.html`) — Rspamd menjadi satu-satunya anti-spam; `spamc` tidak lagi di MAIL_STACK/install stack
 - **Dokumen**: README (overview mail + menu), API.md (bagian Panel Mail), DEVELOPMENT.md (bagian 11 email stack + gotchas), WORKFLOW.md (email section sesuai menu final) diperbarui
-- **`/email/dns`**: kolom Value tabel di-slice (60 char + ellipsis, tooltip nilai utuh); tombol aksi edit/hapus sebaris `flex gap-1`; kartu TXT/DKIM menampilkan value tanpa whitespace + tombol **Regenerate** untuk membuat ulang pasangan kunci DKIM (POST `/email/dns/dkim/generate`: genkey → rename → chown root:root → upsert TXT → restart opendkim; teruji live, dkimpy verify True)
+- **`/email/dns`**: kolom Value tabel di-slice (20 char + ellipsis, tooltip nilai utuh); tombol aksi edit/hapus sebaris `flex gap-1`; kartu TXT/DKIM = `textarea` readonly tanpa whitespace + tombol **Regenerate** (POST `/email/dns/dkim/generate`: genkey → rename → chown root:root → upsert TXT → restart opendkim; teruji live, dkimpy verify True)
 
 ## [1.0.1] - 2026-08-23
 

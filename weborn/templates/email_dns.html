@@ -89,9 +89,7 @@
                             Name: {{ dkim_name or 'weborn._domainkey.' + (selected_domain or 'example.com') }} <br>
                             Value:
                         </code>
-                        <div class="mono text-[12px] mt-1 break-all whitespace-pre-wrap max-h-32 overflow-y-auto rounded border border-line/60 bg-black/5 p-2">
-                            {% if dkim_value %}{{ dkim_value }}{% else %}(kunci belum ada — klik Regenerate untuk membuat){% endif %}
-                        </div>
+                        <textarea readonly rows="4" spellcheck="false" class="mono !min-h-0 text-[12px] mt-1 p-2 leading-relaxed">{% if dkim_value %}{{ dkim_value }}{% else %}(kunci belum ada — klik Regenerate untuk membuat){% endif %}</textarea>
                         <form method="post" action="/email/dns/dkim/generate" class="mt-2" onsubmit="return confirm('Generate ulang pasangan kunci DKIM? TXT `weborn._domainkey.<domain>` akan diganti.')">
                             <input type="hidden" name="domain" value="{{ selected_domain }}">
                             <button type="submit" class="btn sm !py-0.5 !px-2 text-[12px]">Regenerate</button>
@@ -119,7 +117,7 @@
             <tr>
                 <td><span class="badge">{{ r.type }}</span></td>
                 <td class="mono text-[14px]">{{ r.name }}</td>
-                <td class="mono text-[13px] max-w-[260px] truncate" title="{{ r.value }}">{{ r.value[:60] }}{% if r.value|length > 60 %}…{% endif %} </td>
+                <td class="mono text-[13px] max-w-[140px] truncate" title="{{ r.value }}">{{ r.value[:20] }}{% if r.value|length > 20 %}…{% endif %} </td>
                 <td class="text-[13px]">{{ r.ttl }}</td>
                 <td class="text-right">
                     <div class="flex gap-1 justify-end items-center">
