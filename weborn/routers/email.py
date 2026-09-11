@@ -241,32 +241,46 @@ async def _read_virtual_map() -> list[dict]:
     return _parse_virtual(await _read_text_file(VIRTUAL_PATH))
 
 
+def _catchall_identity_entries(entries: list[dict]) -> list[dict]:
+    """Entry alias identitas (source→source) untuk mailbox di domain yang punya
+    catch-all. Kehadirannya wajib agar mail ke mailbox TIDAK tertangkap catch-all:
+    Postfix memilih virtual_alias paling spesifik (alamat penuh menang atas @domain).
+    Dipakai `_write_virtual_map` dan `_create_mailbox` (mailbox baru setelah
+    catch-all aktif harus langsung mendapat alias identitas)."""
+    catch_doms = {e["source"][1:] for e in entries if e["source"].startswith("@")}
+    if not catch_doms:
+        return []
+    with get_conn() as conn:
+        emails = [k.split(":", 1)[1] for k, in conn.execute(
+            "SELECT key FROM settings WHERE key LIKE 'mail_pass:%'").fetchall()
+            if ":" in k]
+    cur_sources = {e["source"] for e in entries}
+    out: list[dict] = []
+    for em in sorted(set(emails)):
+        if em.rsplit("@", 1)[-1] in catch_doms and em not in cur_sources:
+            out.append({"source": em, "dest": [em]})
+    return out
+
+
 async def _write_virtual_map(entries: list[dict]):
     entries = list(entries)
-    # Catch-all (@domain) menjaring SEMUA alamat; tambah alias identitas untuk
-    # mailbox yang sudah ada agar mail-nya tetap jatuh ke mailbox sendiri
-    # (Postfix menganggap alias identitas = tidak berubah → lanjut ke mailbox).
-    catch_doms = {e["source"][1:] for e in entries if e["source"].startswith("@")}
-    if catch_doms:
-        with get_conn() as conn:
-            emails = [k.split(":", 1)[1] for k, in conn.execute(
-                "SELECT key FROM settings WHERE key LIKE 'mail_pass:%'").fetchall()
-                if ":" in k]
-        cur_sources = {e["source"] for e in entries}
-        for em in emails:
-            dom = em.rsplit("@", 1)[-1]
-            if dom in catch_doms and em not in cur_sources:
-                entries.append({"source": em, "dest": [em]})
+    entries.extend(_catchall_identity_entries(entries))
     content = "".join(f"{e['source']}\t{', '.join(e['dest'])}\n" for e in entries)
     await _write_text_file(VIRTUAL_PATH, content, chown="root:root")
     await get_executor().run("bash", "-c", f"sudo postmap {VIRTUAL_PATH}")
 
 
 def _entry_kind(entry: dict) -> str:
-    """Tipe entry virtual map: 'alias', 'forwarder', 'list', atau 'catchall'."""
+    """Tipe entry virtual map: 'alias', 'forwarder', 'list', 'catchall', atau
+    'identity' (entry otomatis: root/postmaster & alias identitas mailbox)."""
     kind = get_setting(f"mail_vk:{entry['source']}")
     if kind in ("alias", "forwarder", "list", "catchall"):
         return kind
+    local = entry["source"].split("@", 1)[0]
+    if local in ("root", "postmaster"):
+        return "identity"
+    if len(entry["dest"]) == 1 and entry["dest"][0] == entry["source"]:
+        return "identity"
     domains = {d["name"] for d in _mail_domains()} | {"localhost"}
     if any(dest.rsplit("@", 1)[-1] in domains for dest in entry["dest"]):
         return "alias"
@@ -357,9 +371,17 @@ async def _create_mailbox(email: str, password: str):
     pwmap[email] = await _dovecot_hash(password)
     await _write_dovecot_passwd(pwmap)
     _set_mailbox_pass(email, password)
+    # Mailbox baru di domain ber-catch-all wajib dapat alias identitas seketika,
+    # selain mail akan tertangkap catch-all sampai virtual map ditulis ulang.
+    vm = await _read_virtual_map()
+    if any(e["source"].startswith("@") for e in vm):
+        await _write_virtual_map(vm)
 
 
 async def _delete_mailbox(email: str):
+    # Hapus settings dahulu agar `_write_virtual_map` (di bawah) tidak menambahkan
+    # ulang alias identitas mailbox ini (helper membaca kunci mail_pass:*).
+    _del_mailbox_pass(email)
     if get_executor().mode in ("local", "wsl"):
         emails = await _read_vmailbox_emails()
         if email in emails:
@@ -374,7 +396,6 @@ async def _delete_mailbox(email: str):
                 if e["source"] != email and email not in e["dest"]]
         if len(keep) < len(await _read_virtual_map()):
             await _write_virtual_map(keep)
-    _del_mailbox_pass(email)
 
 
 async def _set_mailbox_password(email: str, password: str):
@@ -977,7 +998,11 @@ async def email_alias_catchall_clear(domain: str = Form(""),
     if hasattr(user, "headers"):
         return user
     source = f"@{domain}"
-    entries = [e for e in await _read_virtual_map() if e["source"] != source]
+    # Buang entry @domain + alias identitas sisa mailbox domain tsb (rapi).
+    entries = [e for e in await _read_virtual_map()
+               if e["source"] != source and not (
+                   e["source"].endswith(f"@{domain}")
+                   and len(e["dest"]) == 1 and e["dest"][0] == e["source"])]
     await _write_virtual_map(entries)
     with get_conn() as conn:
         conn.execute("DELETE FROM settings WHERE key = ?", (f"mail_vk:{source}",))

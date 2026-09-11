@@ -24,6 +24,16 @@ All notable changes to Weborn will be documented in this file.
 - **`/email/dns`**: kolom Value tabel di-slice (20 char + ellipsis, tooltip nilai utuh); tombol aksi edit/hapus sebaris `flex gap-1`; kartu TXT/DKIM = `textarea` readonly tanpa whitespace + tombol **Regenerate** (POST `/email/dns/dkim/generate`: genkey → rename → chown root:root → upsert TXT → restart opendkim; teruji live, dkimpy verify True)
 - **Mailbox Auto-Login diperbaiki**: `_roundcube_autologin` kini mengembalikan **semua** cookie sesi Roundcube (`roundcube_sessid` + `roundcube_sessauth` — sebelumnya hanya sessid, sesi ditolak Roundcube 1.6 dan kembali ke login); cookie dipasang via header HTTP `Set-Cookie` (HttpOnly + SameSite=Lax + Secure bila panel HTTPS, skema/host mengikuti request) bukan lagi `document.cookie`; `base` URL dapat ditimpa untuk instalasi/test — teruji E2E browser: redirect ke `?_task=mail&_mbox=INBOX`, tanpa form login
 
+### Fixed
+- **Catch-all menangkap mailbox baru**: `_create_mailbox` kini menulis ulang `virtual_alias_maps` seketika (helper `_catchall_identity_entries` — dipakai bersama `_write_virtual_map`) sehingga mailbox yang dibuat SETELAH catch-all aktif langsung mendapat alias identitas; sebelumnya mail ke mailbox baru jatuh ke target catch-all (Postfix memilih alias paling spesifik; teruji live: `newbox*@localhost` masuk ke INBOX sendiri, bukan writer)
+- **Identity/system alias bukan "alias" lagi**: `_entry_kind` kini mengembalikan `identity` untuk `root@`/`postmaster@` dan alias identitas `x@domain → x@domain`; halaman Mail Alias/List/Forwarder hanya menampilkan entry buatan user — tidak ada lagi noise/risiko hapus tak sengaja (form alias diberi keterangan)
+- **Residu alias identitas saat hapus mailbox**: `_del_mailbox_pass` dijalankan sebelum tulis ulang virtual map di `_delete_mailbox`, sehingga entry `old@domain → old@domain` tidak ditambahkan ulang untuk mailbox yang baru dihapus (hanya kebetulan muncul di domain ber-catch-all)
+- **Catch-all dibersihkan saat nonaktif**: `POST /email/aliases/catchall/clear` ikut membuang alias identitas sisa untuk domain tersebut
+
+### Verified (live, post-reset mail stack)
+- Reset mail stack ke baseline: satu domain `localhost`, satu mailbox `admin@localhost`, sistem alias `root`/`postmaster`, tanpa catch-all/list/forwarder
+- Alias (`info@localhost → reader@localhost`) terantarkan ke reader; list (`team@localhost`) ke seluruh anggota; forwarder (`sales@localhost → writer@localhost`) ke tujuan; catch-all mengarah alamat tak dikenal ke target namun tidak mengambil alamat mailbox yang ada; forwarder eksternal antri relay via Postfix
+
 ## [1.0.1] - 2026-08-23
 
 ### Added
